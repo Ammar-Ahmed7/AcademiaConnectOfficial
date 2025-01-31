@@ -3,7 +3,6 @@ const app = express();
 const mongoose = require("mongoose");
 const TeacherRoutes = require("./Routes/Teacher");
 const StudentRoutes = require("./Routes/Student");
-const ClassRoutes = require("./Routes/Class");
 const SchoolRoutes = require("./Routes/School");
 const NotificationRoutes = require("./Routes/Notification");  
 const cors = require("cors");
@@ -15,7 +14,6 @@ app.use(express.json());
 
 app.use("/teacher", TeacherRoutes);
 app.use("/student", StudentRoutes);
-app.use("/class", ClassRoutes);
 app.use("/school", SchoolRoutes);
 app.use("/notification", NotificationRoutes);
 
