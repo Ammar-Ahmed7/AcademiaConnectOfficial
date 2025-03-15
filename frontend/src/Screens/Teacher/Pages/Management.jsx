@@ -1,6 +1,6 @@
-// eslint-disable-next-line no-unused-vars
 import React from 'react';
-import { Box, Paper, Typography, IconButton } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Button, Box, Paper, Typography, IconButton } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PeopleIcon from '@mui/icons-material/People';
 import GradingIcon from '@mui/icons-material/Grading';
@@ -8,29 +8,33 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Sidebar from '../Components/Sidebar';
 
 const Management = () => {
-    
+  const navigate = useNavigate();
+
   const managementOptions = [
     {
       title: 'Upload Study Material',
       icon: <UploadFileIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
-      description: 'Upload and manage study materials, resources, and documents for your class'
+      description: 'Upload and manage study materials, resources, and documents for your class',
+      path: '/study-material'
     },
     {
       title: 'Attendance',
       icon: <PeopleIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
-      description: 'Mark and manage student attendance, view attendance reports'
+      description: 'Mark and manage student attendance, view attendance reports',
+      path: '/attendance'
     },
     {
       title: 'Grade Assignments and Quizzes',
       icon: <GradingIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
-      description: 'Grade student assignments, quizzes, and manage academic performance'
+      description: 'Grade student assignments, quizzes, and manage academic performance',
+      path: '/grade'
     }
   ];
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
-      
+
       <Box
         component="main"
         sx={{
@@ -38,7 +42,6 @@ const Management = () => {
           p: 3,
           ml: '240px',
           height: '100vh',
-          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: 3
@@ -47,10 +50,11 @@ const Management = () => {
         <Typography variant="h4" sx={{ mb: 3, color: '#1a1a2e' }}>
           Class Management
         </Typography>
-        
+
         {managementOptions.map((option, index) => (
           <Paper
             key={index}
+            onClick={() => navigate(option.path)}
             sx={{
               p: 3,
               display: 'flex',
@@ -89,6 +93,18 @@ const Management = () => {
             </IconButton>
           </Paper>
         ))}
+
+        {/* Back Button at the Bottom */}
+        <Box sx={{display:'flex', mt: 'auto', textAlign: 'center', pb: 2 }}>
+          <Button 
+            variant="contained" 
+            sx={{ background: '#4ade80' }} 
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
+        </Box>
+
       </Box>
     </Box>
   );
