@@ -10,7 +10,9 @@ import AdminDashboard from "./Screens/Admin/AdminDashbord";
 import TeacherDashboard from './Screens/Teacher/Pages/Dashboard'
 import ClassManagement from './Screens/Teacher/Pages/Management'
 import SupabaseCrudPage from "./Screens/Teacher/Pages/SupabaseCRUD";
-
+import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
+import Attendance from "./Screens/Teacher/Pages/Attendance";
+import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
 function App() {
   return (
     <Router>
@@ -27,6 +29,10 @@ function App() {
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/class-management" element={<ClassManagement />} />
         <Route path="/supabase-crud" element={<SupabaseCrudPage />} />
+        <Route path="/study-material" element={<StudyMaterial />} />
+        <Route path="/attendance" element={<Attendance />} />
+        <Route path="/grade" element={<AssignmentQuizPage />} />
+
         
       </Routes>
     </Router>
