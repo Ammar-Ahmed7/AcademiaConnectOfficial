@@ -6,18 +6,24 @@ import AddStudentPage from "./Screens/School/AddStudent";
 import ForgetPage from "./Screens/ForgetPage";
 
 import ChoseRole from "./Screens/ChoseRole";
-import AdminDashboard from "./Screens/Admin/AdminDashbord";
+import AdminDashboard from "./Screens/Admin/AdminTemplate";
 import TeacherDashboard from './Screens/Teacher/Pages/Dashboard'
 import ClassManagement from './Screens/Teacher/Pages/Management'
 import SupabaseCrudPage from "./Screens/Teacher/Pages/SupabaseCRUD";
 import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
 import Attendance from "./Screens/Teacher/Pages/Attendance";
 import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
+
+
+import AdminTemplate from "./Screens/Admin/AdminTemplate";
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<ChoseRole />} />
+        <Route path="/admin/*" element={<AdminTemplate />} />
+        {/* <Route path="/" element={<ChoseRole />} />
+        <Route path="/" element={<ChoseRole />} /> */}
 
         <Route path="/Login" element={<Login />} />
 
