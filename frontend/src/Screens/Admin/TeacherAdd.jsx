@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
 
 import {
   Grid,
@@ -16,6 +15,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import supabase from "../../../supabase-client";
 
 const TeacherAdd = () => {
   const [schools, setSchools] = useState([]); // List of schools from API
@@ -25,7 +25,99 @@ const TeacherAdd = () => {
     severity: "",
   });
   const [formData, setFormData] = useState({
-    personalinformation: {
+    ID: "T-",
+    cnic: "",
+    name: "",
+    email: "",
+    password: "ww@123", // Default value
+    phoneNumber: "",
+    gender: "", // "Male" or "Female"
+    dateOfBirth: "",
+    disability: "No", // Default value
+    disabilitydetails: "", // Optional
+    qualification: "",
+    experienceyears: 0, // Default to 0 if no experience
+    hireDate: "", // Optional, defaults to current date on backend
+    SchoolId: "",
+    employeetype: "", // "Principal", "Head-Teacher", "Teacher"
+    employmentStatus: "", // "Working", "Retired", "Removed"
+    employmentType: "", // "Permanent", "Contract", "Part-Time"
+    address: "",
+  });
+
+  useEffect(() => {
+    fetchSchools();
+  }, []);
+
+  const fetchSchools = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("School")
+        .select("SchoolID, SchoolName")
+        .order("SchoolID", { ascending: true });
+      console.log(data);
+      if (error) throw error;
+      setSchools(data);
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+      setAlert({
+        open: true,
+        message: "Failed to load schools!",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { data, error } = await supabase.from("Teacher").insert([
+      {
+        TeacherID: formData.ID,
+        CNIC: formData.cnic,
+        Name: formData.name,
+        Email: formData.email,
+        Password: formData.password, // Default value
+        PhoneNumber: formData.phoneNumber,
+        Gender: formData.gender, // "Male" or "Female"
+        DateOfBirth: formData.dateOfBirth,
+        Disability: formData.disability, // Default value
+        DisabilityDetails: formData.disabilitydetails, // Optional
+        Qualification: formData.qualification,
+        ExperienceYear: formData.experienceyears, // Default to 0 if no experience
+        HireDate: formData.hireDate, // Optional, defaults to current date on backend
+        SchoolID: formData.SchoolId,
+        EmployeeType: formData.employeetype, // "Principal", "Head-Teacher", "Teacher"
+        EmployementStatus: formData.employmentStatus, // "Working", "Retired", "Removed"
+        EmployementType: formData.employmentType, // "Permanent", "Contract", "Part-Time"
+        Address: formData.address,
+      },
+    ]);
+
+    if (error) {
+      console.error("Error adding Teacher:", error.message);
+      setAlert({
+        open: true,
+        message: "Failed to add teacher. Try again!",
+        severity: "error",
+      });
+    } else {
+      setAlert({
+        open: true,
+        message: "Teacher added successfully!",
+        severity: "success",
+      });
+    }
+
+    setFormData({
+      ID: "T-",
       cnic: "",
       name: "",
       email: "",
@@ -34,133 +126,16 @@ const TeacherAdd = () => {
       gender: "", // "Male" or "Female"
       dateOfBirth: "",
       disability: "No", // Default value
-    },
-    educationaldetails: {
+      disabilitydetails: "", // Optional
       qualification: "",
-      experience: {
-        years: 0, // Default to 0 if no experience
-        details: "", // Optional
-      },
-      subjects: [], // Array of subjects
-    },
-    schoolinformation: {
-      employeId: "",
-      school: "", // ID of the school (e.g., from the schools array)
+      experienceyears: 0, // Default to 0 if no experience
       hireDate: "", // Optional, defaults to current date on backend
+      SchoolId: "",
       employeetype: "", // "Principal", "Head-Teacher", "Teacher"
       employmentStatus: "", // "Working", "Retired", "Removed"
       employmentType: "", // "Permanent", "Contract", "Part-Time"
-    },
-    address: {
-      street: "", // Optional
-      city: "", // Optional
-      district: "", // Optional
-      province: "Punjab", // Default value
-      country: "Pakistan", // Default value
-    },
- 
-  });
-
-
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const response = await axios.get("http://localhost:4000/school/allfullname");
-        const schoolNames = response.data.map((school) => ({
-          id: school._id, // Use the real _id from the API
-          name: school.fullName, // Assuming 'fullName' is returned
-        }));
-        setSchools(schoolNames);
-      } catch (error) {
-        console.error("Error fetching school names:", error);
-        setAlert({
-          open: true,
-          message: "Failed to load school names!",
-          severity: "error",
-        });
-      }
-    };
-
-    fetchSchools();
-  }, []);
-  const handleNestedInputChange = (parent, child, value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [parent]: {
-        ...prevData[parent],
-        [child]: value,
-      },
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const response = await fetch("http://localhost:4000/teacher/addteacher", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setAlert({
-          open: true,
-          message: "teacher added successfully!",
-          severity: "success",
-        });
-        setFormData(
-       {
-        personalinformation: {
-          cnic: "",
-          name: "",
-          email: "",
-          password: "ww@123", // Default value
-          phoneNumber: "",
-          gender: "", // "Male" or "Female"
-          dateOfBirth: "",
-          disability: "No", // Default value
-        },
-        educationaldetails: {
-          qualification: "",
-          experience: {
-            years: 0, // Default to 0 if no experience
-            details: "", // Optional
-          },
-          subjects: [], // Array of subjects
-        },
-        schoolinformation: {
-          employeId: "",
-          school: "", // ID of the school (e.g., from the schools array)
-          hireDate: "", // Optional, defaults to current date on backend
-          employeetype: "", // "Principal", "Head-Teacher", "Teacher"
-          employmentStatus: "", // "Working", "Retired", "Removed"
-          employmentType: "", // "Permanent", "Contract", "Part-Time"
-        },
-        address: {
-          street: "", // Optional
-          city: "", // Optional
-          district: "", // Optional
-          province: "Punjab", // Default value
-          country: "Pakistan", // Default value
-        },
-     
-       }
-      );
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to add teacher");
-      }
-    } catch (error) {
-      console.error("Error submitting data:", error);
-      setAlert({
-        open: true,
-        message: "Failed to add teacher. Try again!",
-        severity: "error",
-      });
-    }
+      address: "",
+    });
   };
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
@@ -198,49 +173,32 @@ const TeacherAdd = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="CNIC"
+                label="Name"
                 fullWidth
-                name="cnic"
-                value={formData.personalinformation.cnic}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "cnic",
-                    e.target.value
-                  )
-                }
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Name"
+                label="CNIC"
                 fullWidth
-                name="name"
-                value={formData.personalinformation.name}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "name",
-                    e.target.value
-                  )
-                }
+                name="cnic"
+                value={formData.cnic}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
+
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Email"
                 fullWidth
                 name="email"
-                value={formData.personalinformation.email}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "email",
-                    e.target.value
-                  )
-                }
+                value={formData.email}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
@@ -250,14 +208,8 @@ const TeacherAdd = () => {
                 type="password"
                 fullWidth
                 name="password"
-                value={formData.personalinformation.password}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "password",
-                    e.target.value
-                  )
-                }
+                value={formData.password}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
@@ -266,14 +218,8 @@ const TeacherAdd = () => {
                 label="Phone Number"
                 fullWidth
                 name="phoneNumber"
-                value={formData.personalinformation.phoneNumber}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "phoneNumber",
-                    e.target.value
-                  )
-                }
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
@@ -283,14 +229,8 @@ const TeacherAdd = () => {
                 <Select
                   label="Gender"
                   name="gender"
-                  value={formData.personalinformation.gender}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "personalinformation",
-                      "gender",
-                      e.target.value
-                    )
-                  }
+                  value={formData.gender}
+                  onChange={handleInputChange}
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>
@@ -304,37 +244,49 @@ const TeacherAdd = () => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 name="dateOfBirth"
-                value={formData.personalinformation.dateOfBirth}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "personalinformation",
-                    "dateOfBirth",
-                    e.target.value
-                  )
-                }
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                label="Address"
+                fullWidth
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+              />
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
                 <InputLabel>Disability</InputLabel>
                 <Select
                   label="Disability"
                   name="disability"
-                  value={formData.personalinformation.disability}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "personalinformation",
-                      "disability",
-                      e.target.value
-                    )
-                  }
+                  value={formData.disability}
+                  onChange={handleInputChange}
                 >
                   <MenuItem value="Yes">Yes</MenuItem>
                   <MenuItem value="No">No</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
+
+            {formData.disability === "Yes" && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Disability Details"
+                  fullWidth
+                  name="disabilitydetails"
+                  value={formData.disabilitydetails}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
+            )}
 
             {/* Educational Details Section */}
             <Grid item xs={12}>
@@ -347,82 +299,31 @@ const TeacherAdd = () => {
                 label="Qualification"
                 fullWidth
                 name="qualification"
-                value={formData.educationaldetails.qualification}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "educationaldetails",
-                    "qualification",
-                    e.target.value
-                  )
-                }
+                value={formData.qualification}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
+
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Experience (Years)"
-                type="number"
                 fullWidth
-                name="experienceYears"
-                value={formData.educationaldetails.experience.years}
-                onChange={(e) =>
-                  handleNestedInputChange("educationaldetails", "experience", {
-                    ...formData.educationaldetails.experience,
-                    years: e.target.value,
-                  })
-                }
+                name="experience"
+                type="number"
+                value={formData.experience}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  handleInputChange({
+                    target: {
+                      name: "experience",
+                      value: value >= 0 ? value : 0, // Ensures non-negative values
+                    },
+                  });
+                }}
+                inputProps={{ min: 0 }} // Prevents negative values in number input
                 required
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Experience Details"
-                fullWidth
-                name="experienceDetails"
-                value={formData.educationaldetails.experience.details}
-                onChange={(e) =>
-                  handleNestedInputChange("educationaldetails", "experience", {
-                    ...formData.educationaldetails.experience,
-                    details: e.target.value,
-                  })
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Subjects</InputLabel>
-                <Select
-                  multiple
-                  label="Subjects"
-                  name="subjects"
-                  value={formData.educationaldetails.subjects}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "educationaldetails",
-                      "subjects",
-                      e.target.value
-                    )
-                  }
-                  renderValue={(selected) => selected.join(", ")}
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        backgroundColor: "white",
-                        color: "black",
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="Physics">Physics</MenuItem>
-                  <MenuItem value="Science">Science</MenuItem>
-                  <MenuItem value="Math">Math</MenuItem>
-                  <MenuItem value="English">English</MenuItem>
-                  <MenuItem value="Urdu">Urdu</MenuItem>
-                  <MenuItem value="Computer">Computer</MenuItem>
-                  <MenuItem value="Islamic Studies">Islamic Studies</MenuItem>
-                  <MenuItem value="Pakistan Studies">Pakistan Studies</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
 
             {/* School Information Section */}
@@ -433,40 +334,34 @@ const TeacherAdd = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                label="Employee ID"
+                label="Teacher ID"
+                type="text"
                 fullWidth
-                name="employeeId"
-                value={formData.schoolinformation.employeId}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "schoolinformation",
-                    "employeId",
-                    e.target.value
-                  )
-                }
+                InputLabelProps={{ shrink: true }}
+                name="ID"
+                value={formData.ID}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-  <FormControl fullWidth required>
-    <InputLabel>School Name</InputLabel>
-    <Select
-      label="School Name"
-      name="school"
-      value={formData.schoolinformation.school}
-      onChange={(e) =>
-        handleNestedInputChange("schoolinformation", "school", e.target.value)
-      }
-    >
-      {schools.map((school) => (
-        <MenuItem key={school.id} value={school.id}>
-          {school.name}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
 
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>School ID</InputLabel>
+                <Select
+                  label="School Id"
+                  name="SchoolId"
+                  value={formData.SchoolId}
+                  onChange={handleInputChange}
+                >
+                  {schools.map((school) => (
+                    <MenuItem key={school.SchoolID} value={school.SchoolID}>
+                      {school.SchoolID} - {school.SchoolName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
 
             <Grid item xs={12} sm={6}>
               <TextField
@@ -475,14 +370,8 @@ const TeacherAdd = () => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 name="hireDate"
-                value={formData.schoolinformation.hireDate}
-                onChange={(e) =>
-                  handleNestedInputChange(
-                    "schoolinformation",
-                    "hireDate",
-                    e.target.value
-                  )
-                }
+                value={formData.hireDate}
+                onChange={handleInputChange}
                 required
               />
             </Grid>
@@ -492,14 +381,8 @@ const TeacherAdd = () => {
                 <Select
                   label="Employee Type"
                   name="employeetype"
-                  value={formData.schoolinformation.employeetype}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "schoolinformation",
-                      "employeetype",
-                      e.target.value
-                    )
-                  }
+                  value={formData.employeetype}
+                  onChange={handleInputChange}
                 >
                   <MenuItem value="Principal">Principal</MenuItem>
                   <MenuItem value="Head-Teacher">Head-Teacher</MenuItem>
@@ -513,14 +396,8 @@ const TeacherAdd = () => {
                 <Select
                   label="Employment Status"
                   name="employmentStatus"
-                  value={formData.schoolinformation.employmentStatus}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "schoolinformation",
-                      "employmentStatus",
-                      e.target.value
-                    )
-                  }
+                  value={formData.employmentStatus}
+                  onChange={handleInputChange}
                 >
                   <MenuItem value="Working">Working</MenuItem>
                   <MenuItem value="Retired">Retired</MenuItem>
@@ -534,82 +411,14 @@ const TeacherAdd = () => {
                 <Select
                   label="Employment Type"
                   name="employmentType"
-                  value={formData.schoolinformation.employmentType}
-                  onChange={(e) =>
-                    handleNestedInputChange(
-                      "schoolinformation",
-                      "employmentType",
-                      e.target.value
-                    )
-                  }
+                  value={formData.employmentType}
+                  onChange={handleInputChange}
                 >
                   <MenuItem value="Permanent">Permanent</MenuItem>
                   <MenuItem value="Contract">Contract</MenuItem>
                   <MenuItem value="Part-Time">Part-Time</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-
-            {/* Address Section */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                Address
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Street"
-                fullWidth
-                name="street"
-                value={formData.address.street}
-                onChange={(e) =>
-                  handleNestedInputChange("address", "street", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="City"
-                fullWidth
-                name="city"
-                value={formData.address.city}
-                onChange={(e) =>
-                  handleNestedInputChange("address", "city", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="District"
-                fullWidth
-                name="district"
-                value={formData.address.district}
-                onChange={(e) =>
-                  handleNestedInputChange("address", "district", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Province"
-                fullWidth
-                name="province"
-                value={formData.address.province}
-                onChange={(e) =>
-                  handleNestedInputChange("address", "province", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Country"
-                fullWidth
-                name="country"
-                value={formData.address.country}
-                onChange={(e) =>
-                  handleNestedInputChange("address", "country", e.target.value)
-                }
-              />
             </Grid>
 
             {/* Submit Button */}

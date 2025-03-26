@@ -14,13 +14,17 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  TablePagination,
 } from "@mui/material";
+import supabase from "../../../supabase-client";
 
 const TeacherListPage = () => {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchTeachers();
@@ -29,9 +33,12 @@ const TeacherListPage = () => {
   const fetchTeachers = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/teacher/all");
-      if (!response.ok) throw new Error("Failed to fetch teachers");
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .order("TeacherID", { ascending: true });
+      if (error) throw error;
+
       setTeachers(data);
     } catch (error) {
       setErrorMessage("An error occurred while fetching the data.");
@@ -39,6 +46,13 @@ const TeacherListPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -76,110 +90,145 @@ const TeacherListPage = () => {
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: "#e0e0e0" }}>
-                    <TableCell>
-                      <strong>CNIC</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Name</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Email</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Phone</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Gender</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>DOB</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Qualification</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Experience</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Subjects</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>School</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Hire Date</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Employment Type</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Address</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {teachers.map((teacher) => (
-                    <TableRow key={teacher._id}>
-                      <TableCell>{teacher.personalinformation.cnic}</TableCell>
-                      <TableCell>{teacher.personalinformation.name}</TableCell>
-                      <TableCell>{teacher.personalinformation.email}</TableCell>
+            <>
+              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: "#e0e0e0" }}>
                       <TableCell>
-                        {teacher.personalinformation.phoneNumber}
+                        <strong> Teacher ID</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.personalinformation.gender}
+                        <strong>CNIC</strong>
                       </TableCell>
                       <TableCell>
-                        {new Date(
-                          teacher.personalinformation.dateOfBirth
-                        ).toLocaleDateString()}
+                        <strong>Name</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.educationaldetails.qualification}
+                        <strong>Email</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.educationaldetails.experience?.years} years
-                        <br />
+                        <strong>Phone Number</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.educationaldetails.subjects?.join(", ") ||
-                          "N/A"}
-                      </TableCell>
-
-                      <TableCell>
-                        {teacher.schoolinformation.school.name} for{" "}
-                        {teacher.schoolinformation.school.schoolfor}
-                        {teacher.schoolinformation.school.address.city}
-                        {teacher.schoolinformation.school.address.district}{" "}
-                      </TableCell>
-
-                      <TableCell>
-                        {new Date(
-                          teacher.schoolinformation.hireDate
-                        ).toLocaleDateString()}
+                        <strong>Gender</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.schoolinformation.employmentType}
+                        <strong>Date of Birth</strong>
+                      </TableCell>
+                      <TableCell sx={{ width: "30%", minWidth: "300px" }}>
+                        <strong>Address</strong>
                       </TableCell>
                       <TableCell>
-                        {teacher.address.street ? teacher.address.street : "-"},{" "}
-                        {teacher.address.city ? teacher.address.city : "-"},
-                        <br />
-                        {teacher.address.district
-                          ? teacher.address.district
-                          : "-"}
-                        , {teacher.address?.province},<br />
-                        {teacher.address?.country}
+                        <strong>Disability</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Disability Details</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Qualification</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Experience (Years)</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>School ID</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Hire Date</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Employement Status</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Employee Type</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Employment Type</strong>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {teachers
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+
+                      .map((teacher) => (
+                        <TableRow key={teacher.TeacherID}>
+                                                    <TableCell>{teacher.TeacherID}</TableCell>
+
+                          <TableCell>{teacher.CNIC}</TableCell>
+                          <TableCell>{teacher.Name}</TableCell>
+                          <TableCell>{teacher.Email}</TableCell>
+                          <TableCell>{teacher.PhoneNumber}</TableCell>
+                          <TableCell>{teacher.Gender}</TableCell>
+                          <TableCell>
+                            {new Date(teacher.DateOfBirth).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              width: "30%",
+                              minWidth: "300px",
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {teacher.Address}
+                          </TableCell>
+                          <TableCell>{teacher.Disability}</TableCell>
+
+                          <TableCell>
+                            {teacher.DisabilityDetails
+                              ? teacher.DisabilityDetails
+                              : "-"}
+                          </TableCell>
+                          <TableCell>{teacher.Qualification}</TableCell>
+
+                          <TableCell>
+                            {teacher.ExperienceYear} years
+                            <br />
+                          </TableCell>
+
+                          <TableCell>
+                           
+                           {teacher.SchoolID}
+                       </TableCell>
+
+                          <TableCell>
+                            {new Date(
+                              teacher.HireDate
+                            ).toLocaleDateString()}
+                          </TableCell>
+
+                          <TableCell>
+                            {teacher.EmployementStatus}
+                          </TableCell>
+                          <TableCell>
+                            {teacher.EmployeeType}
+                          </TableCell>
+
+                          <TableCell>
+                            {teacher.EmployementType}
+                          </TableCell>
+                         
+                         
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50]}
+                component="div"
+                count={teachers.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
