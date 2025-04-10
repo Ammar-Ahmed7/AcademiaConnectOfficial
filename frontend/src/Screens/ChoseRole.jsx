@@ -13,9 +13,9 @@ const ChooseRole = () => {
       description: 'Login as an administrator to access and manage the dashboard.',
     },
     {
-      label: 'Student',
+      label: 'School',
       icon: <School fontSize="large" color="primary" />,
-      description: 'Login as a student to explore courses and materials.',
+      description: 'Login as a School to explore.',
     },
     {
       label: 'Teacher',
@@ -28,6 +28,14 @@ const ChooseRole = () => {
     if (role=='Admin') 
       {
         navigate('/AdminDashboard');
+    }else if (role == 'School')
+    {
+      navigate('/school/dashboard');
+    }else if
+    (role == 'Teacher')
+    {
+      navigate('/teacher/dashboard');
+
     }
     else{
       navigate('/login', { state: { selectedRole: role } }); // Pass selected role to the Login component

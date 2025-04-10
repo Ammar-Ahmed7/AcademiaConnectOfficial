@@ -15,19 +15,19 @@ const Management = () => {
       title: 'Upload Study Material',
       icon: <UploadFileIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
       description: 'Upload and manage study materials, resources, and documents for your class',
-      path: '/study-material'
+      path: '/teacher/study-material'
     },
     {
       title: 'Attendance',
       icon: <PeopleIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
       description: 'Mark and manage student attendance, view attendance reports',
-      path: '/attendance'
+      path: '/teacher/attendance'
     },
     {
       title: 'Grade Assignments and Quizzes',
       icon: <GradingIcon sx={{ fontSize: 40, color: '#4ade80' }} />,
       description: 'Grade student assignments, quizzes, and manage academic performance',
-      path: '/grade'
+      path: '/teacher/grade'
     }
   ];
 

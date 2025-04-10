@@ -22,7 +22,7 @@ const Dashboard = () => {
 
   const handleManageClick = (classInfo) => {
     // You can pass class information through state if needed
-    navigate('/class-management', { state: { classInfo } });
+    navigate('/teacher/class-management', { state: { classInfo } });
   };
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
