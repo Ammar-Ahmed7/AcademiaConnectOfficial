@@ -1,18 +1,36 @@
-// eslint-disable-next-line no-unused-vars
-import React, { useState } from "react";
-import { Button, TextField, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import Sidebar from "../Components/Sidebar";
+import React, { useState } from 'react';
+import { 
+  Box, Typography, Paper, Grid, Button, TextField, Table, 
+  TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Modal, IconButton, Tooltip 
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import Sidebar from '../Components/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
-const AssignmentQuizPage = () => {
+const Grade = () => {
+  const navigate = useNavigate();
+  const [openModal, setOpenModal] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+
   const [students, setStudents] = useState([
     { rollNo: "101", name: "John Doe", marks: "" },
     { rollNo: "102", name: "Jane Smith", marks: "" },
+    { rollNo: "103", name: "Alex Johnson", marks: "" },
+    { rollNo: "104", name: "Sarah Williams", marks: "" },
+    { rollNo: "105", name: "Robert Brown", marks: "" },
   ]);
-  const [formData, setFormData] = useState({ name: "", subject: "", description: "", file: null });
-  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({ 
+    name: "", subject: "", description: "", file: null 
+  });
+
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,6 +45,7 @@ const AssignmentQuizPage = () => {
     e.preventDefault();
     setAssignments([...assignments, { ...formData, id: assignments.length + 1 }]);
     setFormData({ name: "", subject: "", description: "", file: null });
+    handleCloseModal();
   };
 
   const handleAssignmentClick = (assignment) => {
@@ -34,75 +53,250 @@ const AssignmentQuizPage = () => {
   };
 
   const handleMarksChange = (index, value) => {
-    const updatedStudents = [...students];
-    updatedStudents[index].marks = value;
-    setStudents(updatedStudents);
+    const updated = [...students];
+    updated[index].marks = value;
+    setStudents(updated);
   };
 
   const handleMarksSubmit = () => {
-    console.log("Marks submitted:", students);
     alert("Marks saved successfully!");
+    setSelectedAssignment(null);
+  };
+
+  const handleBack = () => {
+    setSelectedAssignment(null);
+  };
+
+  const handleDownload = (file) => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    }
+  };
+
+  const modalStyle = {
+    position: 'absolute', top: '50%', left: '50%',
+    transform: 'translate(-50%, -50%)', width: 500,
+    bgcolor: 'background.paper', borderRadius: 2,
+    boxShadow: 24, p: 4,
   };
 
   return (
-    <div style={{ display: "flex" }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
-      <div style={{ flexGrow: 1, padding: "20px" , marginLeft:'500px'}}>
-        <Button variant="contained" onClick={() => navigate(-1)} style={{ marginBottom: "20px" }}>Back</Button>
-        
-        {!selectedAssignment ? (
-          <>
-            <Typography variant="h5">Create Assignment/Quiz</Typography>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          ml: '240px',
+          height: '100vh',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box sx={{ flexGrow: 1 }}>
+          {!selectedAssignment ? (
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" color="primary">
+                    Assignment & Grade Management
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleOpenModal}
+                    sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+                  >
+                    Create Assignment
+                  </Button>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, minHeight: 400 }}>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    Assignments & Quizzes
+                  </Typography>
+                  {assignments.length === 0 ? (
+                    <Typography>No assignments created yet.</Typography>
+                  ) : (
+                    assignments.map((assignment) => (
+                      <Box
+                        key={assignment.id}
+                        sx={{
+                          p: 2,
+                          borderBottom: '1px solid #eee',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f8fafc' }
+                        }}
+                        onClick={() => handleAssignmentClick(assignment)}
+                      >
+                        <Box>
+                          <Typography variant="subtitle1">{assignment.name}</Typography>
+
+                          <Typography variant="body2" color="text.secondary">
+  {assignment.subject} {assignment.file && `• ${assignment.file.name}`}
+</Typography>
+                          
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          {assignment.file && (
+                            <Tooltip title="Download File">
+                              <IconButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(assignment.file);
+                                }}
+                              >
+                                <DownloadIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Button
+                            variant="contained"
+                            size="small"
+                            sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAssignmentClick(assignment);
+                            }}
+                          >
+                            Grade
+                          </Button>
+                        </Box>
+                      </Box>
+                    ))
+                  )}
+                </Paper>
+              </Grid>
+            </Grid>
+          ) : (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h6">{selectedAssignment.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedAssignment.subject}
+                    </Typography>
+                    {selectedAssignment.file && (
+  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+    <AttachFileIcon fontSize="small" sx={{ mr: 0.5, color: '#4ade80' }} />
+    <Typography variant="body2">{selectedAssignment.file.name}</Typography>
+  </Box>
+)}
+
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {selectedAssignment.file && (
+                      <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => handleDownload(selectedAssignment.file)}
+                        size="small"
+                      >
+                        Download
+                      </Button>
+                    )}
+                    <Button variant="outlined" onClick={handleBack}>
+                      Back to Assignments
+                    </Button>
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6">Student Grades</Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {selectedAssignment.description || 'No description provided'}
+                  </Typography>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Roll No</TableCell>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Marks</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {students.map((student, idx) => (
+                          <TableRow key={student.rollNo}>
+                            <TableCell>{student.rollNo}</TableCell>
+                            <TableCell>{student.name}</TableCell>
+                            <TableCell>
+                              <TextField
+                                type="number"
+                                value={student.marks}
+                                onChange={(e) => handleMarksChange(idx, e.target.value)}
+                                size="small"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                    <Button variant="contained" onClick={handleMarksSubmit} sx={{ backgroundColor: '#4ade80' }}>
+                      Submit Marks
+                    </Button>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+          )}
+        </Box>
+
+        {/* Bottom Back Button only in list view */}
+        {!selectedAssignment && (
+          <Box sx={{ textAlign: 'left', pt: 2 }}>
+            <Button variant="contained" onClick={() => navigate(-1)} sx={{ backgroundColor: '#4ade80' }}>
+              Back
+            </Button>
+          </Box>
+        )}
+
+        {/* Modal */}
+        <Modal open={openModal} onClose={handleCloseModal}>
+          <Box sx={modalStyle}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6">Create Assignment</Typography>
+              <IconButton onClick={handleCloseModal}><CloseIcon /></IconButton>
+            </Box>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <TextField label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
               <TextField label="Subject" name="subject" value={formData.subject} onChange={handleInputChange} required />
-              <TextField label="Description" name="description" value={formData.description} onChange={handleInputChange} multiline rows={3} />
-              <input type="file" onChange={handleFileChange} />
-              <Button type="submit" variant="contained">Create</Button>
+              <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
+              <Box>
+                <Typography variant="body2">Attach File</Typography>
+                <input type="file" onChange={handleFileChange} />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                <Button onClick={handleCloseModal}>Cancel</Button>
+                <Button type="submit" variant="contained" sx={{ backgroundColor: '#4ade80' }}>
+                  Create
+                </Button>
+              </Box>
             </form>
-            
-            <Typography variant="h5" style={{ marginTop: "20px" }}>Assignments/Quizzes</Typography>
-            {assignments.map((assignment) => (
-              <Paper key={assignment.id} style={{ padding: "10px", marginTop: "10px", cursor: "pointer" }} onClick={() => handleAssignmentClick(assignment)}>
-                {assignment.name} - {assignment.subject}
-              </Paper>
-            ))}
-          </>
-        ) : (
-          <>
-            <Typography variant="h5">{selectedAssignment.name} - {selectedAssignment.subject}</Typography>
-            <TableContainer component={Paper} style={{ marginTop: "20px" }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Roll No</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Marks</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {students.map((student, index) => (
-                    <TableRow key={student.rollNo}>
-                      <TableCell>{student.rollNo}</TableCell>
-                      <TableCell>{student.name}</TableCell>
-                      <TableCell>
-                        <TextField
-                          type="number"
-                          value={student.marks}
-                          onChange={(e) => handleMarksChange(index, e.target.value)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <Button variant="contained" onClick={handleMarksSubmit} style={{ marginTop: "20px" }}>Submit Marks</Button>
-          </>
-        )}
-      </div>
-    </div>
+          </Box>
+        </Modal>
+      </Box>
+    </Box>
   );
 };
 
-export default AssignmentQuizPage;
+export default Grade;

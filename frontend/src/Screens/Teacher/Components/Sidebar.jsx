@@ -15,7 +15,7 @@ const Sidebar = () => {
     setSelected(value);
     switch (value) {
         case 'dashboard':
-          navigate('/teacher-dashboard');
+          navigate('/teacher/dashboard');
           break;
     }
   };
