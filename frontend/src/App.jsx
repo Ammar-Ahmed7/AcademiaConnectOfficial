@@ -40,7 +40,8 @@ function App() {
         <Route path="/admin/*" element={<AdminTemplate />} />
         {/* <Route path="/" element={<ChoseRole />} />
         <Route path="/" element={<ChoseRole />} /> */}
-
+        
+        <Route path="/ChoseRole" element={<ChoseRole />} />
         <Route path="/Login" element={<Login />} />
 
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
@@ -76,3 +77,9 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+
