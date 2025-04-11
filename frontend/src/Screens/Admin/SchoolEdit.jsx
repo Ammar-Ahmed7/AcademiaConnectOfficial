@@ -125,7 +125,7 @@ const EditSchool = () => {
   };
 
   const handleSubmit = async (e) => {
-    event.preventDefault(); // Prevent form submission default behavior
+    e.preventDefault(); // Prevent form submission default behavior
 
     const boardattestationId = formData.boardattestationId
       ? String(formData.boardattestationId).trim()
