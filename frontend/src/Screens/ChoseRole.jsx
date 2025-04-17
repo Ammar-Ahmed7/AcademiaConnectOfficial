@@ -27,14 +27,14 @@ const ChooseRole = () => {
   const handleRoleSelect = (role) => {
     if (role=='Admin') 
       {
-        navigate('/loginauth');
+        navigate('/admin-login');
     }else if (role == 'School')
     {
-      navigate('/loginauth');
+      navigate('/school-login');
     }else if
     (role == 'Teacher')
     {
-      navigate('/loginauth');
+      navigate('/teacher-login');
 
     }
     else{
