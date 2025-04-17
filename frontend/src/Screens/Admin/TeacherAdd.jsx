@@ -25,11 +25,11 @@ const TeacherAdd = () => {
     severity: "",
   });
   const [formData, setFormData] = useState({
-    ID: "T-",
+    ID: "T-12",
     cnic: "",
     name: "",
     email: "",
-    password: "ww@123", // Default value
+    password: "ww@123#w", // Default value
     phoneNumber: "",
     gender: "", // "Male" or "Female"
     dateOfBirth: "",
@@ -76,33 +76,159 @@ const TeacherAdd = () => {
     }));
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //    // 1. Create user in auth.users
+  //    const { data: authData, error: authError } = await supabase.auth.signUp({
+  //     email: formData.email,
+  //     password: formData.password,
+  //   });
+  //   console.log("i am here", formData.email, formData.password);
+  
+  //   if (authError) {
+  //     console.error("Auth Error:", authError.message);
+  //     setAlert({
+  //       open: true,
+  //       message: "Failed to create auth user. Try again!",
+  //       severity: "error",
+  //     });
+  //     return;
+  //   }
+  //   const user = authData.user;
+  //   // 2. Create user in supabase.users
+  //   const { data, error: teacherError } = await supabase.from("Teacher").insert([
+  //     {
+  //       TeacherID: formData.ID,
+  //       CNIC: formData.cnic,
+  //       Name: formData.name,
+  //       Email: formData.email,
+  //       Password: formData.password, // Default value
+  //       PhoneNumber: formData.phoneNumber,
+  //       Gender: formData.gender, // "Male" or "Female"
+  //       DateOfBirth: formData.dateOfBirth,
+  //       Disability: formData.disability, // Default value
+  //       DisabilityDetails: formData.disabilitydetails, // Optional
+  //       Qualification: formData.qualification,
+  //       ExperienceYear: formData.experienceyears, // Default to 0 if no experience
+  //       HireDate: formData.hireDate, // Optional, defaults to current date on backend
+  //       SchoolID: formData.SchoolId,
+  //       EmployeeType: formData.employeetype, // "Principal", "Head-Teacher", "Teacher"
+  //       EmployementStatus: formData.employmentStatus, // "Working", "Retired", "Removed"
+  //       EmployementType: formData.employmentType, // "Permanent", "Contract", "Part-Time"
+  //       Address: formData.address,
+  //       Role: "Teacher",
+  //       user_id: user.id,
+  //     },
+  //   ]);
+
+  //   if (teacherError) {
+  //     console.error("Error adding Teacher:", teacherError.message);
+  //     setAlert({
+  //       open: true,
+  //       message: "Failed to add teacher. Try again!",
+  //       severity: "error",
+  //     });
+  //   } else {
+  //     setAlert({
+  //       open: true,
+  //       message: "Teacher added successfully!",
+  //       severity: "success",
+  //     });
+  //   }
+
+  //   setFormData({
+  //     ID: "T-",
+  //     cnic: "",
+  //     name: "",
+  //     email: "",
+  //     password: "ww@123", // Default value
+  //     phoneNumber: "",
+  //     gender: "", // "Male" or "Female"
+  //     dateOfBirth: "",
+  //     disability: "No", // Default value
+  //     disabilitydetails: "", // Optional
+  //     qualification: "",
+  //     experienceyears: 0, // Default to 0 if no experience
+  //     hireDate: "", // Optional, defaults to current date on backend
+  //     SchoolId: "",
+  //     employeetype: "", // "Principal", "Head-Teacher", "Teacher"
+  //     employmentStatus: "", // "Working", "Retired", "Removed"
+  //     employmentType: "", // "Permanent", "Contract", "Part-Time"
+  //     address: "",
+  //   });
+  // };
+
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { data, error } = await supabase.from("Teacher").insert([
+  
+    if (!formData.email || !formData.password) {
+      setAlert({
+        open: true,
+        message: "Email and Password are required.",
+        severity: "error",
+      });
+      return;
+    }
+  
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+    });
+  
+    console.log("i am here", formData.email, formData.password);
+  
+    if (authError) {
+      console.error("Auth Error:", authError.message);
+      setAlert({
+        open: true,
+        message: "Failed to create auth user. Try again!",
+        severity: "error",
+      });
+      return;
+    }
+  
+    if (!authData?.user) {
+      console.error("User creation incomplete, email confirmation likely required.");
+      setAlert({
+        open: true,
+        message: "User created! Please confirm the email before proceeding.",
+        severity: "warning",
+      });
+      return;
+    }
+  
+    const user = authData.user;
+  
+    const { data, error: teacherError } = await supabase.from("Teacher").insert([
       {
         TeacherID: formData.ID,
         CNIC: formData.cnic,
         Name: formData.name,
         Email: formData.email,
-        Password: formData.password, // Default value
+        Password: formData.password,
         PhoneNumber: formData.phoneNumber,
-        Gender: formData.gender, // "Male" or "Female"
+        Gender: formData.gender,
         DateOfBirth: formData.dateOfBirth,
-        Disability: formData.disability, // Default value
-        DisabilityDetails: formData.disabilitydetails, // Optional
+        Disability: formData.disability,
+        DisabilityDetails: formData.disabilitydetails,
         Qualification: formData.qualification,
-        ExperienceYear: formData.experienceyears, // Default to 0 if no experience
-        HireDate: formData.hireDate, // Optional, defaults to current date on backend
+        ExperienceYear: formData.experienceyears,
+        HireDate: formData.hireDate,
         SchoolID: formData.SchoolId,
-        EmployeeType: formData.employeetype, // "Principal", "Head-Teacher", "Teacher"
-        EmployementStatus: formData.employmentStatus, // "Working", "Retired", "Removed"
-        EmployementType: formData.employmentType, // "Permanent", "Contract", "Part-Time"
+        EmployeeType: formData.employeetype,
+        EmployementStatus: formData.employmentStatus,
+        EmployementType: formData.employmentType,
         Address: formData.address,
+        Role: "Teacher",
+        user_id: user.id,
       },
     ]);
-
-    if (error) {
-      console.error("Error adding Teacher:", error.message);
+  
+    if (teacherError) {
+      console.error("Error adding Teacher:", teacherError.message);
       setAlert({
         open: true,
         message: "Failed to add teacher. Try again!",
@@ -115,28 +241,46 @@ const TeacherAdd = () => {
         severity: "success",
       });
     }
-
+  
     setFormData({
       ID: "T-",
       cnic: "",
       name: "",
       email: "",
-      password: "ww@123", // Default value
+      password: "ww@123",
       phoneNumber: "",
-      gender: "", // "Male" or "Female"
+      gender: "",
       dateOfBirth: "",
-      disability: "No", // Default value
-      disabilitydetails: "", // Optional
+      disability: "No",
+      disabilitydetails: "",
       qualification: "",
-      experienceyears: 0, // Default to 0 if no experience
-      hireDate: "", // Optional, defaults to current date on backend
+      experienceyears: 0,
+      hireDate: "",
       SchoolId: "",
-      employeetype: "", // "Principal", "Head-Teacher", "Teacher"
-      employmentStatus: "", // "Working", "Retired", "Removed"
-      employmentType: "", // "Permanent", "Contract", "Part-Time"
+      employeetype: "",
+      employmentStatus: "",
+      employmentType: "",
       address: "",
     });
   };
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
@@ -309,18 +453,32 @@ const TeacherAdd = () => {
               <TextField
                 label="Experience (Years)"
                 fullWidth
-                name="experience"
+                name="experienceyears"
                 type="number"
                 value={formData.experience}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
                   handleInputChange({
                     target: {
-                      name: "experience",
-                      value: value >= 0 ? value : 0, // Ensures non-negative values
+                      name: "experienceyears",
+                      value: value >= 0 ? value : 0,
                     },
                   });
                 }}
+                
+
+
+                // onChange={(e) => {
+                //   const value = parseInt(e.target.value, 10);
+
+
+                //   handleInputChange({
+                //     target: {
+                //       name: "experience",
+                //       value: value >= 0 ? value : 0, // Ensures non-negative values
+                //     },
+                //   });
+                // }}
                 inputProps={{ min: 0 }} // Prevents negative values in number input
                 required
               />

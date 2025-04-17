@@ -70,6 +70,41 @@ const SchoolManagement = () => {
       return;
     }
 
+    if (!formData.email || !formData.password) {
+      setAlert({
+        open: true,
+        message: "Email and Password are required.",
+        severity: "error",
+      });
+      return;
+    }
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+    });
+    if (authError) {
+      console.error("Auth Error:", authError.message);
+      setAlert({
+        open: true,
+        message: "Failed to create auth user. Try again!",
+        severity: "error",
+      });
+      return;
+    }
+  
+    if (!authData?.user) {
+      console.error("User creation incomplete, email confirmation likely required.");
+      setAlert({
+        open: true,
+        message: "User created! Please confirm the email before proceeding.",
+        severity: "warning",
+      });
+      return;
+    }
+  
+    const user = authData.user;
+
+
     const { data, error } = await supabase.from("School").insert([
       {
         SchoolID: formData.ID, // Ensure UUID format in Supabase
@@ -91,6 +126,8 @@ const SchoolManagement = () => {
         BoardattestationId: formData.boardattestationId
           ? parseInt(formData.boardattestationId)
           : null,
+          Role: "School",
+          user_id: user.id,
       },
     ]);
 
