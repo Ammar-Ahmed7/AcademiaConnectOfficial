@@ -173,7 +173,7 @@ export default function LoginAuth() {
                 placeholder="Enter your email"
               />
               <p className="mt-2 text-sm text-gray-600">
-                We'll send you an email with instructions to reset your password.
+                We will send you an email with instructions to reset your password.
               </p>
             </div>
 

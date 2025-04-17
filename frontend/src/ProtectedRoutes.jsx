@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import supabase from "../supabase-client.js"; // Adjust the path as necessary
@@ -12,6 +13,7 @@ export function ProtectedRoute({ children }) {
     checkAuth();
     
     // Set up auth state listener
+    // eslint-disable-next-line no-unused-vars
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         setAuthenticated(true);
