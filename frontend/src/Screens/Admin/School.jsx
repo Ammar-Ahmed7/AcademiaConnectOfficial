@@ -14,13 +14,17 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  TablePagination,
 } from "@mui/material";
+import supabase from "../../../supabase-client";
 
 const Schools = () => {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchSchools();
@@ -29,16 +33,30 @@ const Schools = () => {
   const fetchSchools = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/school/all");
-      if (!response.ok) throw new Error("Failed to fetch schools");
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("School")
+        .select("*")
+        .order("SchoolID", { ascending: true });
+
+      if (error) throw error;
       setSchools(data);
     } catch (error) {
-      setErrorMessage("An error occurred while fetching the schools.");
+      setErrorMessage(
+        error.message || "An error occurred while fetching schools"
+      );
       setOpenSnackbar(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -76,142 +94,114 @@ const Schools = () => {
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: "#e0e0e0" }}>
-                    <TableCell>
-                      <strong>School Number</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Email</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Name</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Street</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>City</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>District</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Province</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Country</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Level</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>School For</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>School Phone number</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Website</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Established Year</strong>
-                    </TableCell>
-
-                    <TableCell>
-                      <strong>Principal</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Principal Contact Number</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Principal email</strong>
-                    </TableCell>
-
-                    <TableCell>
-                      <strong>Library</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Sports</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Computer Lab</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Science Lab</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Auditorium</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong> Attestation with Board</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Attestation ID</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {schools.map((school) => (
-                    <TableRow key={school._id}>
-                      <TableCell>{school.number}</TableCell>
-                      <TableCell>{school.email}</TableCell>
-                      <TableCell>{school.name}</TableCell>
-                      <TableCell>{school.address.street}</TableCell>
-                      <TableCell>{school.address.city}</TableCell>
-                      <TableCell>{school.address.district}</TableCell>
-                      <TableCell>{school.address.province}</TableCell>
-                      <TableCell>{school.address.country}</TableCell>
-                      <TableCell>{school.schoollevel}</TableCell>
-                      <TableCell>{school.schoolfor}</TableCell>
-                      <TableCell>{school.contact.phoneNumber}</TableCell>
-
+            <>
+              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: "#e0e0e0" }}>
                       <TableCell>
-                        <a
-                          href={school.contact.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {school.contact.website}
-                        </a>
-                      </TableCell>
-                      <TableCell>{school.establishedYear}</TableCell>
-
-                      <TableCell>{school.principal.name}</TableCell>
-
-                      <TableCell>{school.principal.phoneNumber}</TableCell>
-                      <TableCell>{school.principal.email}</TableCell>
-
-                      <TableCell>
-                        {school.facilities.library ? "Yes" : "No"}
+                        <strong>School ID</strong>
                       </TableCell>
                       <TableCell>
-                        {school.facilities.sports ? "Yes" : "No"}
+                        <strong>Email</strong>
                       </TableCell>
                       <TableCell>
-                        {school.facilities.computerLab ? "Yes" : "No"}
+                        <strong>School Name</strong>
                       </TableCell>
                       <TableCell>
-                        {school.facilities.scienceLab ? "Yes" : "No"}
+                        <strong>School For</strong>
                       </TableCell>
                       <TableCell>
-                        {school.facilities.auditorium ? "Yes" : "No"}
+                        <strong>School Level</strong>
                       </TableCell>
-                      <TableCell>{school.recognizedby.board}</TableCell>
+                      <TableCell sx={{ width: "30%", minWidth: "300px" }}>
+                        <strong>Address</strong>
+                      </TableCell>
                       <TableCell>
-                        {school.recognizedby.accreditationId}
+                        <strong>Phone Number</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Established Year</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Library</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Sports Ground</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Science Lab</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Computer Lab</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Recognized with Board</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Attestation ID</strong>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {schools
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                      .map((school) => (
+                        <TableRow key={school.SchoolID}>
+                          <TableCell>{school.SchoolID}</TableCell>
+                          <TableCell>{school.Email}</TableCell>
+                          <TableCell>{school.SchoolName}</TableCell>
+                          <TableCell>{school.SchoolFor}</TableCell>
+                          <TableCell>{school.SchoolLevel}</TableCell>
+                          <TableCell
+                            sx={{
+                              width: "30%",
+                              minWidth: "300px",
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {school.Address}
+                          </TableCell>
+                          <TableCell>{school.PhoneNumber}</TableCell>
+                          <TableCell>{school.EstablishedYear}</TableCell>
+                          <TableCell>{school.Library ? "Yes" : "No"}</TableCell>
+                          <TableCell>
+                            {school.SportsGround ? "Yes" : "No"}
+                          </TableCell>
+                          <TableCell>
+                            {school.ComputerLab ? "Yes" : "No"}
+                          </TableCell>
+                          <TableCell>
+                            {school.ScienceLab ? "Yes" : "No"}
+                          </TableCell>
+                          <TableCell>
+                            {school.Recognizedbyboard || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {school.BoardattestationId || "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50]}
+                component="div"
+                count={schools.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
-
       {/* Snackbar */}
       <Snackbar
         open={openSnackbar}
