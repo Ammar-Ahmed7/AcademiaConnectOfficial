@@ -14,7 +14,7 @@ import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
 import Attendance from "./Screens/Teacher/Pages/Attendance";
 import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
 
-import Navigation from "./Screens/School/Navigation"
+
 import Dashboard from './Screens/School//Dashboard';
 import AddStudent from './Screens/School/AddStudent';
 import ManageTeachers from './Screens/School/ManageTeachers';
@@ -29,14 +29,18 @@ import AddaStudent from './Screens/School/addaStudent';
 import AddStaffMember from './Screens/School/addStaffMember';
 import UploadTeacherAttendance from './Screens/School/UploadTeacherAttendance';
 import SchoolLayout from "./Screens/School/SchoolLayout";
+
+
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<ChoseRole />} />
+        
         <Route path="/ChoseRole" element={<ChoseRole />} />
 
         <Route path="/Login" element={<Login />} />
+
 
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
 
