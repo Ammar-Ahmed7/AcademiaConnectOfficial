@@ -6,17 +6,47 @@ import PersonIcon from '@mui/icons-material/Person';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
+import supabase from "../../../../supabase-client.js"; // Update this path as needed
 
 const Sidebar = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [selected, setSelected] = React.useState('dashboard');
   
   const handleItemClick = (value) => {
     setSelected(value);
     switch (value) {
-        case 'dashboard':
-          navigate('/teacher/dashboard');
-          break;
+      case 'dashboard':
+        navigate('/teacher/dashboard');
+        break;
+      case 'notifications':
+        navigate('/teacher/notifications');
+        break;
+      case 'profile':
+        navigate('/teacher/profile');
+        break;
+      case 'salary':
+        navigate('/teacher/salary');
+        break;
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Show some visual feedback (could be a loading state in a real app)
+      console.log("Logging out...");
+      
+      // Call Supabase signOut method
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error logging out:", error.message);
+        return;
+      }
+      
+      // Redirect to home/login page after successful logout
+      navigate('/');
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
     }
   };
 
@@ -90,8 +120,8 @@ const Sidebar = () => {
       </Box>
       <Box>
         <ListItem
-        onClick={()=>{navigate('/')}}
           button
+          onClick={handleLogout}
           sx={{
             '&:hover': {
               backgroundColor: '#2d2d44',

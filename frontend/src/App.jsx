@@ -14,7 +14,7 @@ import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
 import Attendance from "./Screens/Teacher/Pages/Attendance";
 import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
 
-import Navigation from "./Screens/School/Navigation"
+
 import Dashboard from './Screens/School//Dashboard';
 import AddStudent from './Screens/School/AddStudent';
 import ManageTeachers from './Screens/School/ManageTeachers';
@@ -30,32 +30,56 @@ import AddStaffMember from './Screens/School/addStaffMember';
 import UploadTeacherAttendance from './Screens/School/UploadTeacherAttendance';
 import SchoolLayout from "./Screens/School/SchoolLayout";
 
+import ResetPassword from "./components/ResetPassword";
 
+import TeacherLogin from "../src/Screens/Teacher/Components/TeacherLogin"
+import AdminLogin from "../src/Screens/Admin/AdminLogin"
+import SchoolLogin from "../src/Screens/School/SchoolLogin"
 import AdminTemplate from "./Screens/Admin/AdminTemplate";
+// Import our protected route components
+import { ProtectedRoute, TeacherRoute, AdminRoute, SchoolRoute } from "./ProtectedRoutes";
+
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<ChoseRole />} />
+        
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/teacher-login" element={<TeacherLogin />} />
+        <Route path="/school-login" element={<SchoolLogin />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+
+        <Route element={<AdminRoute />}>
         <Route path="/admin/*" element={<AdminTemplate />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard />} />
+        </Route>
+
+
         {/* <Route path="/" element={<ChoseRole />} />
         <Route path="/" element={<ChoseRole />} /> */}
         
         <Route path="/ChoseRole" element={<ChoseRole />} />
-        <Route path="/Login" element={<Login />} />
+        {/* <Route path="/Login" element={<Login />} /> */}
 
-        <Route path="/AdminDashboard" element={<AdminDashboard />} />
+
+        
 
         <Route path="/forget" element={<ForgetPage />} />
         <Route path="/add-student" element={<AddStudentPage />} />
+
+        <Route element={<TeacherRoute />}>
         <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/class-management" element={<ClassManagement />} />
+
         <Route path="/supabase-crud" element={<SupabaseCrudPage />} />
 
-        <Route path="/study-material" element={<StudyMaterial />} />
+        <Route path="/teacher/study-material" element={<StudyMaterial />} />
         <Route path="/teacher/attendance" element={<Attendance />} />
         <Route path="/teacher/grade" element={<AssignmentQuizPage />} />
+        </Route>
 
+        <Route element={<SchoolRoute />}>
         < Route path="/school" element={<SchoolLayout />}>
           <Route path="/school/dashboard" element={<Dashboard />} />
           <Route path="/school/add-student" element={<AddStudent />} />
@@ -70,6 +94,7 @@ function App() {
           <Route path="/school/add-new-student" element={<AddaStudent />} />
           <Route path="/school/add-staff-member" element={<AddStaffMember />} />
           <Route path="/school/upload-teacher-attendance" element={<UploadTeacherAttendance />} />
+        </Route>
         </Route>
       </Routes>
     </Router>

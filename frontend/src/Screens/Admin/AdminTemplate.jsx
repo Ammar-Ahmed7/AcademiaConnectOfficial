@@ -89,6 +89,7 @@
 
 
 
+// eslint-disable-next-line no-unused-vars
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "./AdminSidebar";
@@ -129,7 +130,7 @@ const AdminTemplate = () => {
             <Route path="/add-teacher" element={<TeacherAdd />} />
             <Route path="/edit-teacher" element={<TeacherEdit />} />
             <Route path="/teacher-transfer" element={<TeacherTransfer />} />
-            <Route path="/all-students" element={<Students />} />
+            <Route path="/all-students" element={<Students />} />           
           </Routes>
         </div>
       </div>
