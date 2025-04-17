@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import {
   LayoutGrid,
@@ -35,20 +36,29 @@ const Navigation = () => {
 
 
   const handleLogout = async () => {
+    console.log("Logging out...");
+  
     try {
-      // Show some visual feedback (could be a loading state in a real app)
-      console.log("Logging out...");
-      
-      // Call Supabase signOut method
+      // Call Supabase signOut
       const { error } = await supabase.auth.signOut();
-      
-      if (error) {
+  
+      // Suppress harmless "session missing" error
+      if (error && error.message !== "Auth session missing!") {
         console.error("Error logging out:", error.message);
         return;
       }
-      
-      // Redirect to home/login page after successful logout
-      navigate('/');
+  
+      // Remove Supabase's cached auth session manually
+      localStorage.removeItem('supabase.auth.token'); // For older versions
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+  
+      // Clear all localStorage if needed (optional)
+      // localStorage.clear();
+  
+      // Force reload the app to reset state
+      window.location.href = '/school-login';
+  
     } catch (err) {
       console.error("Unexpected error during logout:", err);
     }

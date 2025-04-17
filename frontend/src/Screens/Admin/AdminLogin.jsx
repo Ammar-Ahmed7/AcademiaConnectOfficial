@@ -50,8 +50,9 @@ export default function LoginAuth() {
         return navigate('/admin/dashboard');
       }
 
+      await supabase.auth.signOut();
       // If we get here, user is authenticated but has no role
-      setErrorMsg("User doesn't have an assigned role");
+      setErrorMsg("User doesn't have the assigned role");
     } catch (err) {
       console.error("Error checking user role:", err);
     }
@@ -125,7 +126,7 @@ export default function LoginAuth() {
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="p-8 text-center">
           <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-700">Checking session...</p>
+          <p className="text-gray-700">Loading...</p>
         </div>
       </div>
     );
@@ -170,7 +171,7 @@ export default function LoginAuth() {
                 placeholder="Enter your email"
               />
               <p className="mt-2 text-sm text-gray-600">
-                We'll send you an email with instructions to reset your password.
+                We will send you an email with instructions to reset your password.
               </p>
             </div>
 
@@ -250,11 +251,7 @@ export default function LoginAuth() {
                   Forgot your password?
                 </button>
               </div>
-              <div className="text-sm">
-                <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                  Create an account
-                </a>
-              </div>
+              
             </div>
           </form>
         )}

@@ -1,7 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./Screens/LoginScreen";
 import AddStudentPage from "./Screens/School/AddStudent";
 import ForgetPage from "./Screens/ForgetPage";
 
@@ -37,7 +36,7 @@ import AdminLogin from "../src/Screens/Admin/AdminLogin"
 import SchoolLogin from "../src/Screens/School/SchoolLogin"
 import AdminTemplate from "./Screens/Admin/AdminTemplate";
 // Import our protected route components
-import { ProtectedRoute, TeacherRoute, AdminRoute, SchoolRoute } from "./ProtectedRoutes";
+import { TeacherRoute, AdminRoute, SchoolRoute } from "./ProtectedRoutes";
 
 function App() {
   return (
