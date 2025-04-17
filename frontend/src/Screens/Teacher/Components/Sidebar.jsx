@@ -31,25 +31,35 @@ const Sidebar = () => {
   };
 
   const handleLogout = async () => {
+    console.log("Logging out...");
+  
     try {
-      // Show some visual feedback (could be a loading state in a real app)
-      console.log("Logging out...");
-      
-      // Call Supabase signOut method
+      // Call Supabase signOut
       const { error } = await supabase.auth.signOut();
-      
-      if (error) {
+  
+      // Suppress harmless "session missing" error
+      if (error && error.message !== "Auth session missing!") {
         console.error("Error logging out:", error.message);
         return;
       }
-      
-      // Redirect to home/login page after successful logout
-      navigate('/');
+  
+      // Remove Supabase's cached auth session manually
+      localStorage.removeItem('supabase.auth.token'); // For older versions
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+  
+      // Clear all localStorage if needed (optional)
+      // localStorage.clear();
+  
+      // Force reload the app to reset state
+      window.location.href = '/teacher-login';
+  
     } catch (err) {
       console.error("Unexpected error during logout:", err);
     }
   };
-
+  
+  
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, value: "dashboard"},
     { text: "Notifications", icon: <NotificationsIcon />, value: "notifications" },
@@ -122,11 +132,12 @@ const Sidebar = () => {
         <ListItem
           button
           onClick={handleLogout}
+          className='cursor-pointer'
           sx={{
             '&:hover': {
               backgroundColor: '#2d2d44',
             },
-          }}
+          } }
         >
           <ListItemIcon sx={{ color: '#4ade80' }}>
             <LogoutIcon />
