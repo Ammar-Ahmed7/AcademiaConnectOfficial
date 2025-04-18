@@ -93,7 +93,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "./AdminSidebar";
-import HeaderBar from "../../components/Headerbar";
+import HeaderBar from "./AdminHeader";
 
 import Home from "./Home";
 import Schools from "./School";

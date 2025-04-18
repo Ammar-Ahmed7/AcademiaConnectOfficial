@@ -222,6 +222,7 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import SchoolIcon from "@mui/icons-material/School";
 import ChildCareIcon from "@mui/icons-material/ChildCare";
+import supabase from "../../../supabase-client";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -254,9 +255,38 @@ const Sidebar = () => {
     { icon: <AssessmentIcon />, label: "Reports", path: "/admin/reports" }
   ];
 
-  const handleLogout = () => {
-    navigate("/ChoseRole");
+ 
+
+  const handleLogout = async () => {
+    console.log("Logging out...");
+  
+    try {
+      // Call Supabase signOut
+      const { error } = await supabase.auth.signOut();
+  
+      // Suppress harmless "session missing" error
+      if (error && error.message !== "Auth session missing!") {
+        console.error("Error logging out:", error.message);
+        return;
+      }
+  
+      // Remove Supabase's cached auth session manually
+      localStorage.removeItem('supabase.auth.token'); // For older versions
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+  
+      // Clear all localStorage if needed (optional)
+      // localStorage.clear();
+  
+      // Force reload the app to reset state
+      window.location.href = '/admin-login';
+  
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
+    }
   };
+  
+ 
 
   return (
     <Box sx={{ width: 240, height: "100vh", backgroundColor: "#fff", boxShadow: "2px 0px 8px rgba(0, 0, 0, 0.1)", position: "fixed" }}>

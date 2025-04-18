@@ -47,7 +47,7 @@ export default function LoginAuth() {
         .single();
 
       if (admin) {
-        return navigate('/admin/dashboard');
+        return navigate('/admin');
       }
 
       await supabase.auth.signOut();
