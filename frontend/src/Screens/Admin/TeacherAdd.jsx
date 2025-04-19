@@ -84,7 +84,7 @@ const TeacherAdd = () => {
   //     password: formData.password,
   //   });
   //   console.log("i am here", formData.email, formData.password);
-  
+
   //   if (authError) {
   //     console.error("Auth Error:", authError.message);
   //     setAlert({
@@ -158,12 +158,9 @@ const TeacherAdd = () => {
   //   });
   // };
 
-
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!formData.email || !formData.password) {
       setAlert({
         open: true,
@@ -172,14 +169,14 @@ const TeacherAdd = () => {
       });
       return;
     }
-  
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
     });
-  
+
     console.log("i am here", formData.email, formData.password);
-  
+
     if (authError) {
       console.error("Auth Error:", authError.message);
       setAlert({
@@ -189,9 +186,11 @@ const TeacherAdd = () => {
       });
       return;
     }
-  
+
     if (!authData?.user) {
-      console.error("User creation incomplete, email confirmation likely required.");
+      console.error(
+        "User creation incomplete, email confirmation likely required."
+      );
       setAlert({
         open: true,
         message: "User created! Please confirm the email before proceeding.",
@@ -199,34 +198,36 @@ const TeacherAdd = () => {
       });
       return;
     }
-  
+
     const user = authData.user;
-  
-    const { data, error: teacherError } = await supabase.from("Teacher").insert([
-      {
-        TeacherID: formData.ID,
-        CNIC: formData.cnic,
-        Name: formData.name,
-        Email: formData.email,
-        Password: formData.password,
-        PhoneNumber: formData.phoneNumber,
-        Gender: formData.gender,
-        DateOfBirth: formData.dateOfBirth,
-        Disability: formData.disability,
-        DisabilityDetails: formData.disabilitydetails,
-        Qualification: formData.qualification,
-        ExperienceYear: formData.experienceyears,
-        HireDate: formData.hireDate,
-        SchoolID: formData.SchoolId,
-        EmployeeType: formData.employeetype,
-        EmployementStatus: formData.employmentStatus,
-        EmployementType: formData.employmentType,
-        Address: formData.address,
-        Role: "Teacher",
-        user_id: user.id,
-      },
-    ]);
-  
+
+    const { data, error: teacherError } = await supabase
+      .from("Teacher")
+      .insert([
+        {
+          TeacherID: formData.ID,
+          CNIC: formData.cnic,
+          Name: formData.name,
+          Email: formData.email,
+          Password: formData.password,
+          PhoneNumber: formData.phoneNumber,
+          Gender: formData.gender,
+          DateOfBirth: formData.dateOfBirth,
+          Disability: formData.disability,
+          DisabilityDetails: formData.disabilitydetails,
+          Qualification: formData.qualification,
+          ExperienceYear: formData.experienceyears,
+          HireDate: formData.hireDate,
+          SchoolID: formData.SchoolId,
+          EmployeeType: formData.employeetype,
+          EmployementStatus: formData.employmentStatus,
+          EmployementType: formData.employmentType,
+          Address: formData.address,
+          Role: "Teacher",
+          user_id: user.id,
+        },
+      ]);
+
     if (teacherError) {
       console.error("Error adding Teacher:", teacherError.message);
       setAlert({
@@ -241,7 +242,7 @@ const TeacherAdd = () => {
         severity: "success",
       });
     }
-  
+
     setFormData({
       ID: "T-",
       cnic: "",
@@ -263,24 +264,6 @@ const TeacherAdd = () => {
       address: "",
     });
   };
-  
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
@@ -465,12 +448,8 @@ const TeacherAdd = () => {
                     },
                   });
                 }}
-                
-
-
                 // onChange={(e) => {
                 //   const value = parseInt(e.target.value, 10);
-
 
                 //   handleInputChange({
                 //     target: {

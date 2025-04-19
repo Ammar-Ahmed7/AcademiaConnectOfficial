@@ -9,9 +9,7 @@ import {
   ListItem,
   ListItemText,
 } from "@mui/material";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+
 import {
   LineChart,
   Line,
@@ -22,8 +20,12 @@ import {
   Legend,
 } from "recharts";
 import supabase from "../../../supabase-client";
-import AdminSidebarCalender from "./AdminSidebar-Calender";
+import AdminSidebarCalender from "./AdminDashBoard-Calender";
+import AdminDashBoardNotices from "./AdminDashBoard-Notices";
 
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 const Home = () => {
   const [data, setData] = useState({
@@ -226,12 +228,12 @@ const Home = () => {
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
-  // const [notificationDates, setNotificationDates] = useState([]);
-  const notificationDates = [
-    { startDate: new Date("2025-01-08"), endDate: new Date("2025-01-14") },
-    { startDate: new Date("2025-01-01"), endDate: new Date("2025-01-02") },
-    // add more date ranges
-  ];
+  // // const [notificationDates, setNotificationDates] = useState([]);
+  // const notificationDates = [
+  //   { startDate: new Date("2025-01-08"), endDate: new Date("2025-01-14") },
+  //   { startDate: new Date("2025-01-01"), endDate: new Date("2025-01-02") },
+  //   // add more date ranges
+  // ];
 
   // Fetch and update functions
   const fetchSchools = async () => {
@@ -330,60 +332,59 @@ const Home = () => {
     }
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("Notice")
-        .select("*")
-        .order("NoticeID", { ascending: true });
+  // const fetchNotifications = async () => {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from("Notice")
+  //       .select("*")
+  //       .order("NoticeID", { ascending: true });
 
-      if (error) throw error;
-      console.log(data);
+  //     if (error) throw error;
+  //     console.log(data);
 
-      const formattedEvents = data.map((item) => {
-        const isUrgent = item.Urgent; // Assuming isUrgent is a boolean field
-        let notificationColor = "#F28A30"; // Default color
+  //     const formattedEvents = data.map((item) => {
+  //       const isUrgent = item.Urgent; // Assuming isUrgent is a boolean field
+  //       let notificationColor = "#F28A30"; // Default color
 
-        if (isUrgent) {
-          notificationColor = "#FFEB3B"; // Yellow for urgent notifications
-        } else {
-          // Apply color based on subtype
-          if (item.SubType === "Holiday") {
-            notificationColor = "#006400"; // Dark Green for holidays
-          } else if (item.SubType === "Event") {
-            notificationColor = "#8A2BE2"; // Purple for events
-          }
-        }
+  //       if (isUrgent) {
+  //         notificationColor = "#FFEB3B"; // Yellow for urgent notifications
+  //       } else {
+  //         // Apply color based on subtype
+  //         if (item.SubType === "Holiday") {
+  //           notificationColor = "#006400"; // Dark Green for holidays
+  //         } else if (item.SubType === "Event") {
+  //           notificationColor = "#8A2BE2"; // Purple for events
+  //         }
+  //       }
 
-        return {
-          Startdate: item.StartDate,
-          Enddate: item.EndDate,
-          title: item.Title,
-          type: item.Type,
-          subtype: item.SubType,
-          description: item.Message,
-          notificationColor, // Add the color here
-          isUrgent: item.Urgent, // Add urgency flag
-        };
-      });
+  //       return {
+  //         Startdate: item.StartDate,
+  //         Enddate: item.EndDate,
+  //         title: item.Title,
+  //         type: item.Type,
+  //         subtype: item.SubType,
+  //         description: item.Message,
+  //         notificationColor, // Add the color here
+  //         isUrgent: item.Urgent, // Add urgency flag
+  //       };
+  //     });
 
-      // Sort notifications: urgent notifications first, then others
-      const sortedEvents = formattedEvents.sort((a, b) => {
-        return b.isUrgent - a.isUrgent; // This ensures urgent notifications come first
-      });
+  //     // Sort notifications: urgent notifications first, then others
+  //     const sortedEvents = formattedEvents.sort((a, b) => {
+  //       return b.isUrgent - a.isUrgent; // This ensures urgent notifications come first
+  //     });
 
-      setUpcomingEvents(sortedEvents);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
+  //     setUpcomingEvents(sortedEvents);
+  //   } catch (error) {
+  //     console.error("Error fetching notifications:", error);
+  //   }
+  // };
 
- 
   useEffect(() => {
     fetchSchools();
     fetchTeachers();
     fetchStudents();
-    fetchNotifications();
+    // fetchNotifications();
   }, []);
 
   return (
@@ -436,15 +437,14 @@ const Home = () => {
               <Typography variant="h6" fontWeight="bold" mb={2}>
                 Upcoming Events
               </Typography>
-
-              <List>
+              <AdminDashBoardNotices />
+              {/* <List>
                 {upcomingEvents.map((event, index) => (
                   <ListItem
                     key={index}
                     sx={{ bgcolor: event.notificationColor, mb: 2 }}
                   >
-                    {/* {" "} */}
-                    {/* Added margin bottom */}
+                    
                     <ListItemText
                       primary={
                         <>
@@ -464,7 +464,7 @@ const Home = () => {
                     />
                   </ListItem>
                 ))}
-              </List>
+              </List> */}
             </CardContent>
           </Card>
         </Grid>
@@ -506,5 +506,3 @@ const Home = () => {
 };
 
 export default Home;
-
-
