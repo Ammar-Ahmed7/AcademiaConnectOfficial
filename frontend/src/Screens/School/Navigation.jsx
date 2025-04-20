@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import {
   LayoutGrid,
@@ -12,9 +13,12 @@ import {
   LogOut
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import supabase from "../../../supabase-client.js"
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: <LayoutGrid className="h-5 w-5" />, text: 'Dashboard', path: '/school/dashboard' },
@@ -30,6 +34,36 @@ const Navigation = () => {
     { icon: <File className="h-5 w-5" />, text: 'Edit School Details', path: '/school/edit-school-details' },
   ];
 
+
+  const handleLogout = async () => {
+    console.log("Logging out...");
+  
+    try {
+      // Call Supabase signOut
+      const { error } = await supabase.auth.signOut();
+  
+      // Suppress harmless "session missing" error
+      if (error && error.message !== "Auth session missing!") {
+        console.error("Error logging out:", error.message);
+        return;
+      }
+  
+      // Remove Supabase's cached auth session manually
+      localStorage.removeItem('supabase.auth.token'); // For older versions
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+  
+      // Clear all localStorage if needed (optional)
+      // localStorage.clear();
+  
+      // Force reload the app to reset state
+      window.location.href = '/school-login';
+  
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
+    }
+  };
+  
   return (
     <div className="w-20 bg-white flex flex-col items-center shadow-sm py-8 h-full overflow-y-auto">
       {/* Logo */}
@@ -60,7 +94,7 @@ const Navigation = () => {
       </div>
 
       {/* Logout Button */}
-      <button className="mt-auto flex flex-col items-center gap-1 text-gray-500 hover:text-amber-500 p-2">
+      <button className="mt-auto flex flex-col items-center gap-1 text-gray-500 hover:text-amber-500 p-2" onClick={handleLogout}>
         <div className="p-2 rounded-xl">
           <LogOut className="h-5 w-5" />
         </div>

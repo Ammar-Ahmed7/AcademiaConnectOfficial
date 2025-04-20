@@ -13,45 +13,32 @@ import {
   Alert,
   Box,
   CircularProgress,
+  FormControlLabel,
 } from "@mui/material";
+import supabase from "../../../supabase-client";
 
 const EditTeacher = () => {
   const [cnicList, setCnicList] = useState([]); // To store all CNICs fetched from the backend
   const [selectedCnic, setSelectedCnic] = useState(""); // Store selected CNIC
+
   const [formData, setFormData] = useState({
-    personalinformation: {
-      cnic: "",
-      name: "",
-      email: "",
-      password: "ww@123", // Default value
-      phoneNumber: "",
-      gender: "Male", // Default gender
-      dateOfBirth: "",
-      disability: "No", // Default value
-    },
-    educationaldetails: {
-      qualification: "",
-      experience: {
-        years: 0, // Default to 0 if no experience
-        details: "", // Optional
-      },
-      subjects: [], // Array of subjects
-    },
-    schoolinformation: {
-      employeId: "",
-      school: "", // ID of the school (e.g., from the schools array)
-      hireDate: "", // Optional, defaults to current date on backend
-      employeetype: "", // "Principal", "Head-Teacher", "Teacher"
-      employmentStatus: "", // "Working", "Retired", "Removed"
-      employmentType: "", // "Permanent", "Contract", "Part-Time"
-    },
-    address: {
-      street: "", // Optional
-      city: "", // Optional
-      district: "", // Optional
-      province: "Punjab", // Default value
-      country: "Pakistan", // Default value
-    },
+    TeacherID: "",
+    CNIC: "",
+    Name: "",
+    Email: "",
+    PhoneNumber: "",
+    Gender: "",
+    DateOfBirth: "",
+    Disability: "No",
+    DisabilityDetails: "",
+    Qualification: "",
+    ExperienceYear: 0,
+    HireDate: "",
+    SchoolID: "",
+    EmployeeType: "",
+    EmployementStatus: "",
+    EmployementType: "",
+    Address: "",
   });
 
   const [alert, setAlert] = useState({
@@ -59,148 +46,152 @@ const EditTeacher = () => {
     message: "",
     severity: "",
   });
+  const [loading, setLoading] = useState(false);
 
   // Fetch CNIC list from the backend
   useEffect(() => {
-    const fetchCnicList = async () => {
-      try {
-        const response = await fetch("http://localhost:4000/teacher/allcnic");
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setCnicList(data); // Set the CNIC list
-        } else {
-          throw new Error("Failed to fetch CNIC list");
-        }
-      } catch (error) {
-        console.error("Error fetching CNIC list:", error);
-        setAlert({
-          open: true,
-          message: "Failed to fetch CNIC list",
-          severity: "error",
-        });
-      }
-    };
-
     fetchCnicList();
   }, []);
-
-  // Fetch teacher details when a CNIC is selected
-  useEffect(() => {
-    if (!selectedCnic) return;
-
-    const fetchTeacherData = async () => {
-      const trimmedCnic = selectedCnic.trim(); // Remove any leading/trailing spaces
-
-      try {
-        const response = await fetch(
-          `http://localhost:4000/teacher/${trimmedCnic}`
-        );
-        const data = await response.json();
-        if (response.ok) {
-          // Convert dates to yyyy-mm-dd format
-          const teacherData = {
-            ...data,
-            personalinformation: {
-              ...data.personalinformation,
-              dateOfBirth: formatDate(data.personalinformation.dateOfBirth),
-            },
-            schoolinformation: {
-              ...data.schoolinformation,
-              hireDate: formatDate(data.schoolinformation.hireDate),
-            },
-          };
-        
-          setFormData(teacherData); // Populate form data with teacher details
-        } else {
-          throw new Error("Failed to fetch teacher data");
-        }
-      } catch (error) {
-        console.error("Error fetching teacher data:", error);
-        setAlert({
-          open: true,
-          message: "Failed to load teacher data",
-          severity: "error",
-        });
-      }
-    };
-
-    // Helper function to format the date to yyyy-mm-dd
-    const formatDate = (date) => {
-      if (!date) return ""; // Return an empty string if date is undefined or null
-      const d = new Date(date); // Create a Date object from the ISO string
-      const year = d.getFullYear(); // Get the full year (yyyy)
-      const month = String(d.getMonth() + 1).padStart(2, "0"); // Get the month (01-12)
-      const day = String(d.getDate()).padStart(2, "0"); // Get the day (01-31)
-      return `${year}-${month}-${day}`; // Return the date in yyyy-mm-dd format
-    };
-
-    fetchTeacherData();
-  }, [selectedCnic]);
-
-  const handleCnicSelection = (event) => {
-    setSelectedCnic(event.target.value);
-  };
-
-  const handleNestedChange = (parent, child, value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [parent]: {
-        ...prevData[parent],
-        [child]: value,
-      },
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
+  const fetchCnicList = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:4000/teacher/${selectedCnic}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-  
-      const responseData = await response.json(); // Parse the response body
-      console.log("i am response "+ responseData.message)
-  
-      if (response.ok) {
-        if (responseData.message === "Nothing to update. The data is identical.") {
-          // Handle the case where no changes were made
-          setAlert({
-            open: true,
-            message: "Nothing was updated. The data is identical.",
-            severity: "warning",
-          });
-        } else {
-          // Handle the case where the teacher was successfully updated
-          setAlert({
-            open: true,
-            message: "Teacher updated successfully!",
-            severity: "success",
-          });
-        }
-      } else {
-        // If the response is not ok, throw an error
-        throw new Error(responseData.message || "Failed to update teacher");
-      }
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("CNIC")
+        .order("TeacherID", { ascending: true });
+
+      if (error) throw error;
+      setCnicList(data);
+      console.log(data);
     } catch (error) {
-      console.error("Error submitting data:", error);
+      console.error("Error fetching CNIC list:", error);
       setAlert({
         open: true,
-        message: "Failed to update teacher. Try again!",
+        message: "Failed to fetch CNIC list",
         severity: "error",
       });
     }
   };
+
+  // Fetch teacher details when a CNIC is selected
+  useEffect(() => {
+    if (selectedCnic) {
+      console.log("i am here to you");
+
+      fetchTeacherData();
+    }
+  }, [selectedCnic]);
+
+  const fetchTeacherData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .eq("CNIC", selectedCnic)
+        .single();
+
+      if (error) throw error;
+
+      // Map Supabase data to form fields with proper null handling
+      const processedData = {
+        TeacherID: data.TeacherID || "",
+        CNIC: data.CNIC || "",
+        Name: data.Name || "",
+        Email: data.Email || "",
+        PhoneNumber: data.PhoneNumber || "",
+        Gender: data.Gender || "",
+        DateOfBirth: data.DateOfBirth ? data.DateOfBirth.split("T")[0] : "",
+        Disability: data.Disability || "No",
+        DisabilityDetails: data.DisabilityDetails || "",
+        Qualification: data.Qualification || "",
+        ExperienceYear: data.ExperienceYear || 0,
+        HireDate: data.HireDate ? data.HireDate.split("T")[0] : "",
+        SchoolID: data.SchoolID || "",
+        EmployeeType: data.EmployeeType || "",
+        EmployementStatus: data.EmployementStatus || "", // Match Supabase spelling
+        EmployementType: data.EmployementType || "", // Match Supabase spelling
+        Address: data.Address || "",
+      };
+
+      setFormData(processedData);
+    } catch (error) {
+      console.error("Error fetching Details:", error);
+      setAlert({
+        open: true,
+        message: "Failed to fetch details",
+        severity: "error",
+      });
+    }
+  };
+
+  // const handleInputChange = (e) => {
+  //   const { name, value, type, checked } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: type === "checkbox" ? checked : value,
+  //   }));
+  // };
+
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const inputValue = type === "checkbox" 
+      ? checked 
+      : type === "number" 
+        ? Number(value) || 0  // Handle empty number inputs
+        : value;
   
+    setFormData((prev) => ({
+      ...prev,
+      [name]: inputValue,
+    }));
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from("Teacher")
+        .update({
+          CNIC: formData.CNIC,
+          Name: formData.Name,
+          Email: formData.Email,
+          PhoneNumber: formData.PhoneNumber,
+          Gender: formData.Gender,
+          DateOfBirth: formData.DateOfBirth,
+          Disability: formData.Disability,
+          DisabilityDetails: formData.DisabilityDetails,
+          Qualification: formData.Qualification,
+          ExperienceYear: formData.ExperienceYear,
+          HireDate: formData.HireDate,
+          SchoolID: formData.SchoolID,
+          EmployeeType: formData.EmployeeType,
+          EmployementStatus: formData.EmployementStatus, // Match Supabase spelling
+          EmployementType: formData.EmployementType, // Match Supabase spelling
+          Address: formData.Address,
+        })
+        .eq("TeacherID", formData.TeacherID);
+
+      if (error) throw error;
+
+      setAlert({
+        open: true,
+        message: "Teacher updated successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error updating Teacher:", error.message);
+      setAlert({
+        open: true,
+        message: "Failed to update Teacher. Try again!",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
@@ -234,12 +225,12 @@ const EditTeacher = () => {
               <InputLabel>Select CNIC</InputLabel>
               <Select
                 value={selectedCnic}
-                onChange={handleCnicSelection}
+                onChange={(e) => setSelectedCnic(e.target.value)}
                 label="Select  CNIC"
               >
-                {cnicList.map((cnic) => (
-                  <MenuItem key={cnic} value={cnic}>
-                    {cnic}
+                {cnicList.map((teacher) => (
+                  <MenuItem key={teacher.CNIC} value={teacher.CNIC}>
+                    {teacher.CNIC}
                   </MenuItem>
                 ))}
               </Select>
@@ -261,15 +252,9 @@ const EditTeacher = () => {
                 <TextField
                   label="CNIC"
                   fullWidth
-                  name="cnic"
-                  value={formData.personalinformation.cnic}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "cnic",
-                      e.target.value
-                    )
-                  }
+                  name="CNIC"
+                  value={formData.CNIC}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -277,15 +262,9 @@ const EditTeacher = () => {
                 <TextField
                   label="Name"
                   fullWidth
-                  name="name"
-                  value={formData.personalinformation.name}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "name",
-                      e.target.value
-                    )
-                  }
+                  name="Name"
+                  value={formData.Name}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -293,48 +272,20 @@ const EditTeacher = () => {
                 <TextField
                   label="Email"
                   fullWidth
-                  name="email"
-                  value={formData.personalinformation.email}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "email",
-                      e.target.value
-                    )
-                  }
+                  name="Email"
+                  value={formData.Email}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Password"
-                  type="password"
-                  fullWidth
-                  name="password"
-                  value={formData.personalinformation.password}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "password",
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Phone Number"
                   fullWidth
-                  name="phoneNumber"
-                  value={formData.personalinformation.phoneNumber}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "phoneNumber",
-                      e.target.value
-                    )
-                  }
+                  name="PhoneNumber"
+                  value={formData.PhoneNumber}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -343,15 +294,9 @@ const EditTeacher = () => {
                   <InputLabel>Gender</InputLabel>
                   <Select
                     label="Gender"
-                    name="gender"
-                    value={formData.personalinformation.gender}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "personalinformation",
-                        "gender",
-                        e.target.value
-                      )
-                    }
+                    name="Gender"
+                    value={formData.Gender || ""}
+                    onChange={handleInputChange}
                   >
                     <MenuItem value="Male">Male</MenuItem>
                     <MenuItem value="Female">Female</MenuItem>
@@ -364,15 +309,9 @@ const EditTeacher = () => {
                   type="date"
                   fullWidth
                   InputLabelProps={{ shrink: true }}
-                  name="dateOfBirth"
-                  value={formData.personalinformation.dateOfBirth}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "personalinformation",
-                      "dateOfBirth",
-                      e.target.value
-                    )
-                  }
+                  name="DateOfBirth"
+                  value={formData.DateOfBirth}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -381,21 +320,27 @@ const EditTeacher = () => {
                   <InputLabel>Disability</InputLabel>
                   <Select
                     label="Disability"
-                    name="disability"
-                    value={formData.personalinformation.disability}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "personalinformation",
-                        "disability",
-                        e.target.value
-                      )
-                    }
+                    name="Disability"
+                    value={formData.Disability || ""}
+                    onChange={handleInputChange}
                   >
                     <MenuItem value="Yes">Yes</MenuItem>
                     <MenuItem value="No">No</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
+              {formData.Disability === "Yes" && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Disability Details"
+                    fullWidth
+                    name="DisabilityDetails"
+                    value={formData.DisabilityDetails}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Grid>
+              )}
 
               {/* Educational Details Section */}
               <Grid item xs={12}>
@@ -407,15 +352,9 @@ const EditTeacher = () => {
                 <TextField
                   label="Qualification"
                   fullWidth
-                  name="qualification"
-                  value={formData.educationaldetails.qualification}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "educationaldetails",
-                      "qualification",
-                      e.target.value
-                    )
-                  }
+                  name="Qualification"
+                  value={formData.Qualification}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -424,68 +363,12 @@ const EditTeacher = () => {
                   label="Experience (Years)"
                   type="number"
                   fullWidth
-                  name="experienceYears"
-                  value={formData.educationaldetails.experience.years}
-                  onChange={(e) =>
-                    handleNestedChange("educationaldetails", "experience", {
-                      ...formData.educationaldetails.experience,
-                      years: e.target.value,
-                    })
-                  }
+                  name="ExperienceYear"
+                  value={formData.ExperienceYear}
+                  onChange={handleInputChange}
                   required
+                  inputProps={{ min: 0 }}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Experience Details"
-                  fullWidth
-                  name="experienceDetails"
-                  value={formData.educationaldetails.experience.details}
-                  onChange={(e) =>
-                    handleNestedChange("educationaldetails", "experience", {
-                      ...formData.educationaldetails.experience,
-                      details: e.target.value,
-                    })
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Subjects</InputLabel>
-                  <Select
-                    multiple
-                    label="Subjects"
-                    name="subjects"
-                    value={formData.educationaldetails.subjects}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "educationaldetails",
-                        "subjects",
-                        e.target.value
-                      )
-                    }
-                    renderValue={(selected) => selected.join(", ")}
-                    MenuProps={{
-                      PaperProps: {
-                        style: {
-                          backgroundColor: "white",
-                          color: "black",
-                        },
-                      },
-                    }}
-                  >
-                    <MenuItem value="Physics">Physics</MenuItem>
-                    <MenuItem value="Science">Science</MenuItem>
-                    <MenuItem value="Math">Math</MenuItem>
-                    <MenuItem value="English">English</MenuItem>
-                    <MenuItem value="Urdu">Urdu</MenuItem>
-                    <MenuItem value="Computer">Computer</MenuItem>
-                    <MenuItem value="Islamic Studies">Islamic Studies</MenuItem>
-                    <MenuItem value="Pakistan Studies">
-                      Pakistan Studies
-                    </MenuItem>
-                  </Select>
-                </FormControl>
               </Grid>
 
               {/* School Information Section */}
@@ -496,40 +379,12 @@ const EditTeacher = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Employee ID"
+                  label="School ID"
                   fullWidth
-                  name="employeeId"
-                  value={formData.schoolinformation.employeId}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "schoolinformation",
-                      "employeId",
-                      e.target.value
-                    )
-                  }
+                  name="SchoolID"
+                  value={formData.SchoolID}
+                  onChange={handleInputChange}
                   required
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="School Name"
-                  fullWidth
-                  value={`${
-                    formData?.schoolinformation?.school?.name || "N/A"
-                  } for ${
-                    formData?.schoolinformation?.school?.schoolfor || "N/A"
-                  } ${
-                    formData?.schoolinformation?.school?.address?.city || "-"
-                  } ${
-                    formData?.schoolinformation?.school?.address?.district ||
-                    "-"
-                  } 
-
-    `}
-                  InputProps={{
-                    readOnly: true, // Makes the field read-only
-                  }}
                 />
               </Grid>
 
@@ -539,15 +394,9 @@ const EditTeacher = () => {
                   type="date"
                   fullWidth
                   InputLabelProps={{ shrink: true }}
-                  name="hireDate"
-                  value={formData.schoolinformation.hireDate}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "schoolinformation",
-                      "hireDate",
-                      e.target.value
-                    )
-                  }
+                  name="HireDate"
+                  value={formData.HireDate}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -556,15 +405,9 @@ const EditTeacher = () => {
                   <InputLabel>Employee Type</InputLabel>
                   <Select
                     label="Employee Type"
-                    name="employeetype"
-                    value={formData.schoolinformation.employeetype}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "schoolinformation",
-                        "employeetype",
-                        e.target.value
-                      )
-                    }
+                    name="EmployeeType"
+                    value={formData.EmployeeType || ""}
+                    onChange={handleInputChange}
                   >
                     <MenuItem value="Principal">Principal</MenuItem>
                     <MenuItem value="Head-Teacher">Head-Teacher</MenuItem>
@@ -577,15 +420,9 @@ const EditTeacher = () => {
                   <InputLabel>Employment Status</InputLabel>
                   <Select
                     label="Employment Status"
-                    name="employmentStatus"
-                    value={formData.schoolinformation.employmentStatus}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "schoolinformation",
-                        "employmentStatus",
-                        e.target.value
-                      )
-                    }
+                    name="EmployementStatus"
+                    value={formData.EmployementStatus || ""}
+                    onChange={handleInputChange}
                   >
                     <MenuItem value="Working">Working</MenuItem>
                     <MenuItem value="Retired">Retired</MenuItem>
@@ -598,15 +435,9 @@ const EditTeacher = () => {
                   <InputLabel>Employment Type</InputLabel>
                   <Select
                     label="Employment Type"
-                    name="employmentType"
-                    value={formData.schoolinformation.employmentType}
-                    onChange={(e) =>
-                      handleNestedChange(
-                        "schoolinformation",
-                        "employmentType",
-                        e.target.value
-                      )
-                    }
+                    name="EmployementType"
+                    value={formData.EmployementType || ""}
+                    onChange={handleInputChange}
                   >
                     <MenuItem value="Permanent">Permanent</MenuItem>
                     <MenuItem value="Contract">Contract</MenuItem>
@@ -621,59 +452,13 @@ const EditTeacher = () => {
                   Address
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Street"
+                  label="Address"
                   fullWidth
-                  name="street"
-                  value={formData.address.street}
-                  onChange={(e) =>
-                    handleNestedChange("address", "street", e.target.value)
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="City"
-                  fullWidth
-                  name="city"
-                  value={formData.address.city}
-                  onChange={(e) =>
-                    handleNestedChange("address", "city", e.target.value)
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="District"
-                  fullWidth
-                  name="district"
-                  value={formData.address.district}
-                  onChange={(e) =>
-                    handleNestedChange("address", "district", e.target.value)
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Province"
-                  fullWidth
-                  name="province"
-                  value={formData.address.province}
-                  onChange={(e) =>
-                    handleNestedChange("address", "province", e.target.value)
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Country"
-                  fullWidth
-                  name="country"
-                  value={formData.address.country}
-                  onChange={(e) =>
-                    handleNestedChange("address", "country", e.target.value)
-                  }
+                  name="Address"
+                  value={formData.Address}
+                  onChange={handleInputChange}
                 />
               </Grid>
 

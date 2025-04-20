@@ -6,20 +6,60 @@ import PersonIcon from '@mui/icons-material/Person';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
+import supabase from "../../../../supabase-client.js"; // Update this path as needed
 
 const Sidebar = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [selected, setSelected] = React.useState('dashboard');
   
   const handleItemClick = (value) => {
     setSelected(value);
     switch (value) {
-        case 'dashboard':
-          navigate('/teacher/dashboard');
-          break;
+      case 'dashboard':
+        navigate('/teacher/dashboard');
+        break;
+      case 'notifications':
+        navigate('/teacher/notifications');
+        break;
+      case 'profile':
+        navigate('/teacher/profile');
+        break;
+      case 'salary':
+        navigate('/teacher/salary');
+        break;
     }
   };
 
+  const handleLogout = async () => {
+    console.log("Logging out...");
+  
+    try {
+      // Call Supabase signOut
+      const { error } = await supabase.auth.signOut();
+  
+      // Suppress harmless "session missing" error
+      if (error && error.message !== "Auth session missing!") {
+        console.error("Error logging out:", error.message);
+        return;
+      }
+  
+      // Remove Supabase's cached auth session manually
+      localStorage.removeItem('supabase.auth.token'); // For older versions
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+  
+      // Clear all localStorage if needed (optional)
+      // localStorage.clear();
+  
+      // Force reload the app to reset state
+      window.location.href = '/teacher-login';
+  
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
+    }
+  };
+  
+  
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, value: "dashboard"},
     { text: "Notifications", icon: <NotificationsIcon />, value: "notifications" },
@@ -90,13 +130,14 @@ const Sidebar = () => {
       </Box>
       <Box>
         <ListItem
-        onClick={()=>{navigate('/')}}
           button
+          onClick={handleLogout}
+          className='cursor-pointer'
           sx={{
             '&:hover': {
               backgroundColor: '#2d2d44',
             },
-          }}
+          } }
         >
           <ListItemIcon sx={{ color: '#4ade80' }}>
             <LogoutIcon />

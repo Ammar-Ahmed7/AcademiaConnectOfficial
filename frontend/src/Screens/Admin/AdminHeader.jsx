@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Avatar } from '@mui/material';
+import supabase from '../../../supabase-client';
 
 const HeaderBar = () => {
     return (
@@ -9,7 +10,7 @@ const HeaderBar = () => {
                     Admin Dashboard
                 </Typography>
                 <IconButton color="inherit">
-                    <Avatar>C</Avatar>
+                    <Avatar>AZ</Avatar>
                 </IconButton>
             </Toolbar>
         </AppBar>
