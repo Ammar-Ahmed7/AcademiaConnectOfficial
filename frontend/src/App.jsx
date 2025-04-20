@@ -14,7 +14,7 @@ import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
 import Attendance from "./Screens/Teacher/Pages/Attendance";
 import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
 
-import Navigation from "./Screens/School/Navigation"
+
 import Dashboard from './Screens/School//Dashboard';
 import AddStudent from './Screens/School/AddStudent';
 import ManageTeachers from './Screens/School/ManageTeachers';
