@@ -11,7 +11,7 @@ function AddStudent() {
 
       {/* Navigation Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Link to="/add-new-student">
+        <Link to="/school/add-new-student">
           <div
             className={`p-4 rounded-lg shadow-md cursor-pointer ${activeView === 'add' ? 'bg-amber-100' : 'bg-white hover:bg-amber-50'}`}
             onClick={() => setActiveView('add')}
