@@ -213,6 +213,7 @@ import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import PeopleIcon from "@mui/icons-material/People";
 import PublishIcon from "@mui/icons-material/Publish";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -237,7 +238,9 @@ const Sidebar = () => {
       subItems: [
         { icon: <GroupsIcon />, label: "All Schools", path: "/admin/all-schools" },
         { icon: <AddCircleOutlineIcon />, label: "Add a School", path: "/admin/add-school" },
-        { icon: <EditIcon />, label: "Edit a School", path: "/admin/edit-school" }
+        { icon: <EditIcon />, label: "Edit a School", path: "/admin/edit-school" },
+        { icon: <DeleteIcon />, label: "Delete a School", path: "/admin/delete-school" }
+
       ]
     },
     { 

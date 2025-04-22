@@ -106,6 +106,7 @@ import Teacher from "./Teacher";
 import TeacherAdd from "./TeacherAdd";
 import TeacherEdit from "./TeacherEdit";
 import TeacherTransfer from "./TeacherTransfer";
+import SchoolDelete from "./SchoolDelete";
 
 const AdminTemplate = () => {
   return (
@@ -124,6 +125,7 @@ const AdminTemplate = () => {
             <Route path="/all-schools" element={<Schools />} />
             <Route path="/add-school" element={<AddSchool />} />
             <Route path="/edit-school" element={<SchoolEdit />} />
+            <Route path="/delete-school" element={<SchoolDelete />} />
             <Route path="/publish-notice" element={<Notices />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/all-teachers" element={<Teacher />} />
