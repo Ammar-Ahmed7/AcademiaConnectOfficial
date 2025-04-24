@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { Box, List, ListItem, ListItemIcon, ListItemText, Divider, Typography } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -10,7 +11,7 @@ import supabase from "../../../../supabase-client.js"; // Update this path as ne
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const [selected, setSelected] = React.useState('dashboard');
+  const [selected, setSelected] = useState('dashboard');
   
   const handleItemClick = (value) => {
     setSelected(value);
