@@ -4,7 +4,9 @@ import { Box, Typography, Paper, Grid, Button, CircularProgress } from '@mui/mat
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Sidebar from '../Components/Sidebar';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../../../supabase-client'; // Make sure you have this import
+import { supabase } from '../../../../supabase-client';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css'; // Make sure styles are loaded // Make sure you have this import
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+const [calendarValue, setCalendarValue] = useState(new Date());
   const notifications = [
     'Staff meeting scheduled for tomorrow at 9 AM',
     'Submit quarterly assessment reports by Friday',
@@ -29,7 +32,7 @@ const Dashboard = () => {
         if (userError) throw userError;
 
         if (!user) {
-          navigate('/login');
+          navigate('/');
           return;
         }
 
@@ -173,36 +176,38 @@ const Dashboard = () => {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Paper 
-              sx={{ 
-                p: 2, 
-                height: 400,
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#fff',
-                borderRadius: 2,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                Calendar
-              </Typography>
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  backgroundColor: '#f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 1
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Calendar Component Placeholder
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
+  <Paper 
+    sx={{ 
+      p: 2, 
+      height: 400,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#fff',
+      borderRadius: 2,
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }}
+  >
+    <Typography variant="h6" gutterBottom color="primary">
+      Calendar
+    </Typography>
+    <Box
+      sx={{
+        flexGrow: 1,
+        backgroundColor: '#f8fafc',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 1,
+        p: 1
+      }}
+    >
+      <Calendar 
+        onChange={setCalendarValue} 
+        value={calendarValue} 
+      />
+    </Box>
+  </Paper>
+</Grid>
 
           <Grid item xs={12} md={6}>
             <Paper 
