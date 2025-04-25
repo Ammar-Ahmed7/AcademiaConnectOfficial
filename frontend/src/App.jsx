@@ -28,6 +28,11 @@ import AddaStudent from './Screens/School/addaStudent';
 import AddStaffMember from './Screens/School/addStaffMember';
 import UploadTeacherAttendance from './Screens/School/UploadTeacherAttendance';
 import SchoolLayout from "./Screens/School/SchoolLayout";
+import ManageStudents from "./Screens/School/AddStudent";
+import EditStudent from "./Screens/School/EditStudent";
+import ManageStaff from "./Screens/School/AddStaff";
+import EditStaffMember from "./Screens/School/EditStaffMember";
+
 
 import ResetPassword from "./components/ResetPassword";
 
@@ -78,21 +83,28 @@ function App() {
         <Route path="/teacher/grade" element={<AssignmentQuizPage />} />
         </Route>
 
+        
         <Route element={<SchoolRoute />}>
-        < Route path="/school" element={<SchoolLayout />}>
-          <Route path="/school/dashboard" element={<Dashboard />} />
-          <Route path="/school/add-student" element={<AddStudent />} />
-          <Route path="/school/manage-teachers" element={<ManageTeachers />} />
-          <Route path="/school/add-staff" element={<AddStaff />} />
-          <Route path="/school/publish-notice" element={<PublishNotice />} />
-          <Route path="/school/upload-class-timetable" element={<UploadClassTimetable />} />
-          <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} />
-          <Route path="/school/upload-bus-routes" element={<UploadBusRoutes />} />
-          <Route path="/school/reports" element={<Reports />} />
-          <Route path="/school/edit-school-details" element={<EditSchoolDetails />} />
-          <Route path="/school/add-new-student" element={<AddaStudent />} />
-          <Route path="/school/add-staff-member" element={<AddStaffMember />} />
-          <Route path="/school/upload-teacher-attendance" element={<UploadTeacherAttendance />} />
+        <Route path="/school" element={<SchoolLayout />}>
+        <Route path="/school/dashboard" element={<Dashboard />} />
+        <Route path="/school/add-student" element={<AddStudent />} />
+        <Route path="/school/manage-teachers" element={<ManageTeachers />} />
+        <Route path="manage-staff"    element={<ManageStaff />} />
+        <Route path="add-staff-member" element={<AddStaffMember />} />
+        <Route path="edit-staff/:id"   element={<EditStaffMember />} />
+        <Route path="/school/add-staff" element={<AddStaff />} />
+        <Route path="/school/publish-notice" element={<PublishNotice />} />
+        <Route path="/school/upload-class-timetable" element={<UploadClassTimetable />} />
+        <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} />
+        <Route path="/school/upload-bus-routes" element={<UploadBusRoutes />} />
+        <Route path="/school/reports" element={<Reports />} />
+        <Route path="/school/edit-school-details" element={<EditSchoolDetails />} />
+        <Route path="/school/add-new-student" element={<AddaStudent />} />
+        <Route path="/school/add-staff-member" element={<AddStaffMember />} />
+        <Route path="/school/upload-teacher-attendance" element={<UploadTeacherAttendance />} />
+        <Route path="/school/manage-students"           element={<ManageStudents />} />
+        <Route path="/school/edit-student/:id"          element={<EditStudent />} />
+        <Route path="/school/edit-school-details/:id"    element={<EditSchoolDetails />} />
         </Route>
         </Route>
       </Routes>
@@ -101,9 +113,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-

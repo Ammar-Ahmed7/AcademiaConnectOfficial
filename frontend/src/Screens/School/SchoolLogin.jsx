@@ -39,26 +39,25 @@ export default function LoginAuth() {
   // Check user role and redirect accordingly
   const checkUserRoleAndRedirect = async (userId) => {
     try {
-     
-      // Check in Schools
-      const { data: school } = await supabase
+      const { data: school, error } = await supabase
         .from('School')
-        .select('Role')
+        .select('SchoolID, Role')
         .eq('user_id', userId)
         .single();
-
-      if (school) {
-        return navigate('/school/dashboard');
+  
+      if (error || !school) {
+        await supabase.auth.signOut();
+        setErrorMsg("User doesn't have the assigned role");
+        return;
       }
-
-      await supabase.auth.signOut();
-      // If we get here, user is authenticated but has no role
-      setErrorMsg("User doesn't have the assigned role");
+  
+      console.log("SchoolID:", school.SchoolID, "Role:", school.Role);
+      navigate('/school/dashboard');
     } catch (err) {
       console.error("Error checking user role:", err);
     }
   };
-
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
