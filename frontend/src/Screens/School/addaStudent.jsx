@@ -1,29 +1,38 @@
-import React, { useState } from 'react';
-import { supabase } from './supabaseClient';
+import React, { useState, useEffect } from 'react'
+import { supabase } from './supabaseClient'
+import { v4 as uuidv4 } from 'uuid'
 
-function AddaStudent() {
-  const [formData, setFormData] = useState({
+export default function AddaStudent() {
+  // today’s date for declaration
+  const today = new Date().toISOString().slice(0, 10)
+
+  const initialFormData = {
     fullName: '',
     dob: '',
     gender: '',
     religion: '',
     bFormNo: '',
-    residentialAddress: '',
+    studentEmail: '',
+    studentPassword: '',
+  
     city: '',
-    state: '',
+    residentialAddress: '',
     postalCode: '',
     postalAddress: '',
-    fatherName: '',
+  
     fatherCnic: '',
+    fatherName: '',
     fatherOccupation: '',
     fatherContact: '',
     fatherEmail: '',
     motherName: '',
     familyIncome: '',
+  
     lastSchool: '',
     leavingReason: '',
     lastClass: '',
     reportCard: null,
+  
     admissionSchool: '',
     admissionClass: '',
     academicYear: '',
@@ -32,520 +41,692 @@ function AddaStudent() {
     secondLanguage: '',
     sibling: '',
     siblingName: '',
+  
     bloodGroup: '',
     majorDisability: '',
     otherDisability: '',
     disabilityCertNo: '',
     allergies: '',
     emergencyContact: '',
-    documents: [], // Array to store selected documents
+  
+    documents: {
+      birthCert: false,
+      bForm: false,
+      transferCert: false,
+      reportCardDoc: false,
+      addressProof: false,
+      photos: false,
+      identityProof: false,
+      disabilityCert: false,
+    },
+  
     declaration: false,
-    parentSignature: '',
-    declarationDate: '',
+    declarationDate: new Date().toISOString().slice(0,10),
+  
     applicationNumber: '',
     admissionApproved: '',
     rejectionReason: '',
     classAllotted: '',
-    principalSignature: '',
-  });
+    principalName: '',
+  }
+  
+  // form state
+  const [formData, setFormData] = useState(initialFormData)
 
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-    const [documents, setDocuments] = useState({
-        birthCert: false,
-        bForm: false,
-        transferCert: false,
-        reportCardDoc: false,
-        addressProof: false,
-        photos: false,
-        identityProof: false,
-        disabilityCert: false,
-    });
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
-  const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+  // dropdown data
+  const [cities, setCities] = useState([])
+  const [classOptions, setClassOptions] = useState([])
 
-      if (type === 'checkbox' && ['birthCert', 'bForm', 'transferCert', 'reportCardDoc', 'addressProof', 'photos', 'identityProof', 'disabilityCert'].includes(name)) {
-          // Handle document checkboxes separately
-          setDocuments(prevDocuments => ({
-              ...prevDocuments,
-              [name]: checked
-          }));
-      } else {
-          setFormData((prevData) => ({
-              ...prevData,
-              [name]: type === 'checkbox' ? checked : type === 'file' ? files : value,
-          }));
-      }
-    setErrors((prevErrors) => ({ ...prevErrors, [name]: '' })); // Clear error on change
-  };
+  useEffect(() => {
+    async function fetchSchool() {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+      if (!userId) return
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({});
-    setIsSubmitting(true);
-    let formErrors = {};
-  
-    const requiredFields = [
-      'fullName', 'dob', 'gender', 'residentialAddress', 'city', 'state',
-      'fatherName', 'fatherCnic', 'fatherContact', 'motherName', 'admissionSchool',
-      'admissionClass', 'admissionDate', 'emergencyContact', 'declaration'
-    ];
-    requiredFields.forEach(field => {
-      if (!formData[field]) {
-        formErrors[field] = `${field} is required`;
-      }
-    });
-  
-    if (formData.fatherCnic && !/^\d{5}-\d{7}-\d$/.test(formData.fatherCnic)) {
-      formErrors.fatherCnic = 'Invalid CNIC format';
-    }
-  
-    if (formData.fatherContact && !/^\d{11}$/.test(formData.fatherContact)) {
-      formErrors.fatherContact = 'Invalid contact number format';
-    }
-  
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
-    }
-  
-    setIsSubmitting(true);
-  
-    try {
-      const { data, error } = await supabase.from('students').insert([
-        {
-          full_name: formData.fullName,
-          dob: formData.dob,
-          gender: formData.gender,
-          religion: formData.religion,
-          b_form_no: formData.bFormNo,
-          residential_address: formData.residentialAddress,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.postalCode,
-          postal_address: formData.postalAddress,
-          father_name: formData.fatherName,
-          father_cnic: formData.fatherCnic,
-          father_occupation: formData.fatherOccupation,
-          father_contact: formData.fatherContact,
-          father_email: formData.fatherEmail,
-          mother_name: formData.motherName,
-          family_income: formData.familyIncome,
-          last_school: formData.lastSchool,
-          leaving_reason: formData.leavingReason,
-          last_class: formData.lastClass,
-          admission_school: formData.admissionSchool,
-          admission_class: formData.admissionClass,
-          academic_year: formData.academicYear,
-          registration_no: formData.registrationNo,
-          admission_date: formData.admissionDate,
-          second_language: formData.secondLanguage,
-          sibling: formData.sibling,
-          sibling_name: formData.siblingName,
-          blood_group: formData.bloodGroup,
-          major_disability: formData.majorDisability,
-          other_disability: formData.otherDisability,
-          disability_cert_no: formData.disabilityCertNo,
-          allergies: formData.allergies,
-          emergency_contact: formData.emergencyContact,
-          documents: documents,
-          declaration: formData.declaration,
-          parent_signature: formData.parentSignature,
-          declaration_date: formData.declarationDate,
-          application_number: formData.applicationNumber,
-          admission_approved: formData.admissionApproved,
-          rejection_reason: formData.rejectionReason,
-          class_allotted: formData.classAllotted,
-          principal_signature: formData.principalSignature
-        }
-      ]);
-  
+      const { data, error } = await supabase
+        .from('School')
+        .select('SchoolName')
+        .eq('user_id', userId)
+        .single()
+
       if (error) {
-        console.error('Supabase Insert Error:', error.message);
-        return;
+        console.error('Error fetching school:', error)
+      } else if (data?.SchoolName) {
+        setFormData(f => ({
+          ...f,
+          admissionSchool: data.SchoolName
+        }))
       }
-  
-      console.log('Student inserted:', data);
-      setSuccessMessage('Student added successfully!');
-    } catch (err) {
-      console.error('Unexpected Error:', err.message);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+    fetchSchool()
+  }, [])
+
+  // CNIC formatter: XXXXX-XXXXXXX-X
+  const formatCnic = raw => {
+    const digits = raw.replace(/\D/g, '').slice(0, 13)
+    let out = digits.slice(0, 5)
+    if (digits.length > 5) out += '-' + digits.slice(5, 12)
+    if (digits.length > 12) out += '-' + digits.slice(12)
+    return out
+  }
+
+  // 1) Auto-fill parent if CNIC valid
+  useEffect(() => {
+    async function checkParent() {
+      if (/^\d{5}-\d{7}-\d$/.test(formData.fatherCnic)) {
+        const { data, error } = await supabase
+          .from('parents')
+          .select('*')
+          .eq('cnic', formData.fatherCnic)
+          .single()
+        if (!error && data) {
+          setFormData(f => ({
+            ...f,
+            fatherName:       data.name          ?? f.fatherName,
+            fatherOccupation: data.occupation    ?? f.fatherOccupation,
+            fatherContact:    data.contact       ?? f.fatherContact,
+            fatherEmail:      data.email         ?? f.fatherEmail,
+            motherName:       data.mother_name   ?? f.motherName,
+            familyIncome:     data.family_income ?? f.familyIncome,
+            sibling:          'yes',
+          }))
+        }
+      }
+    }
+    checkParent()
+  }, [formData.fatherCnic])
+
+  // 2) Load Punjab cities
+  useEffect(() => {
+    async function loadCities() {
+      const { data: prov } = await supabase
+        .from('provinces')
+        .select('province_id')
+        .eq('province_name', 'Punjab')
+        .single()
+      if (prov) {
+        const { data: cityList } = await supabase
+          .from('cities')
+          .select('city_id, city_name')
+          .eq('province_id', prov.province_id)
+          .order('city_name')
+        setCities(cityList || [])
+      }
+    }
+    loadCities()
+  }, [])
+
+  // 3) Load class/section options
+  useEffect(() => {
+    async function loadClasses() {
+      const { data } = await supabase
+        .from('sections')
+        .select('section_id, section_name, classes(class_id, class_name)')
+      setClassOptions(
+        (data || []).map(i => ({
+          section_id: i.section_id,
+          class_id:   i.classes.class_id,
+          label:      `${i.classes.class_name}${i.section_name}`,
+        }))
+      )
+    }
+    loadClasses()
+  }, [])
+
+  // unified onChange
+  const handleChange = e => {
+    const { name, type, checked, value, files } = e.target
+
+    // CNIC
+    if (name === 'fatherCnic') {
+      setFormData(f => ({ ...f, fatherCnic: formatCnic(value) }))
+      setErrors(err => ({ ...err, fatherCnic: '' }))
+      return
+    }
+
+    // report card file
+    if (name === 'reportCard') {
+      setFormData(f => ({ ...f, reportCard: files }))
+      return
+    }
+
+    // documents checklist
+    if (type === 'checkbox' && formData.documents[name] !== undefined) {
+      setFormData(f => ({
+        ...f,
+        documents: { ...f.documents, [name]: checked },
+      }))
+      return
+    }
+
+    // generic
+    setFormData(f => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+    setErrors(err => ({ ...err, [name]: '' }))
+  }
+
+  // onSubmit
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    const errs = {}
+
+    // required
+    ;[
+      'fullName','dob','gender','city','residentialAddress',
+      'fatherCnic','fatherName','fatherContact','motherName',
+      'admissionSchool','admissionClass','admissionDate',
+      'emergencyContact','studentEmail','studentPassword','declaration'
+    ].forEach(f => {
+      if (!formData[f]) errs[f] = 'Required'
+    })
+
+    // CNIC
+    if (formData.fatherCnic && !/^\d{5}-\d{7}-\d$/.test(formData.fatherCnic)) {
+      errs.fatherCnic = 'Invalid format'
+    }
+
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      setIsSubmitting(false)
+      return
+    }
+
+    // 1) signUp
+    const { error: authErr } = await supabase.auth.signUp({
+      email:    formData.studentEmail,
+      password: formData.studentPassword,
+    })
+    if (authErr) {
+      setErrors({ studentEmail: authErr.message })
+      setIsSubmitting(false)
+      return
+    }
+
+    // 2) upload report card
+    let reportCardUrl = null
+    if (formData.reportCard?.length > 0) {
+      const file     = formData.reportCard[0]
+      const ext      = file.name.split('.').pop()
+      const filename = `${uuidv4()}.${ext}`
+      const { error: upErr } = await supabase
+        .storage
+        .from('report-cards')
+        .upload(filename, file)
+      if (upErr) {
+        setErrors({ reportCard: 'Upload failed' })
+        setIsSubmitting(false)
+        return
+      }
+      const { publicURL, error: urlErr } = supabase
+        .storage
+        .from('report-cards')
+        .getPublicUrl(filename)
+      if (urlErr) {
+        setErrors({ reportCard: 'URL fetch failed' })
+        setIsSubmitting(false)
+        return
+      }
+      reportCardUrl = publicURL
+    }
+
+    // 3) insert student
+    const payload = {
+      full_name:           formData.fullName,
+      dob:                 formData.dob,
+      gender:              formData.gender,
+      religion:            formData.religion,
+      b_form_no:           formData.bFormNo,
+      city:                formData.city,
+      residential_address: formData.residentialAddress,
+      postal_code:         formData.postalCode,
+      postal_address:      formData.postalAddress,
+      father_cnic:         formData.fatherCnic,
+      father_name:         formData.fatherName,
+      father_occupation:   formData.fatherOccupation,
+      father_contact:      formData.fatherContact,
+      father_email:        formData.fatherEmail,
+      mother_name:         formData.motherName,
+      family_income:       formData.familyIncome,
+      last_school:         formData.lastSchool,
+      leaving_reason:      formData.leavingReason,
+      last_class:          formData.lastClass,
+      report_card_url:     reportCardUrl,
+      admission_school:    formData.admissionSchool,
+      admission_class:     formData.admissionClass,
+      academic_year:       formData.academicYear,
+      registration_no:     formData.registrationNo,
+      admission_date:      formData.admissionDate,
+      second_language:     formData.secondLanguage,
+      sibling:             formData.sibling,
+      sibling_name:        formData.siblingName,
+      blood_group:         formData.bloodGroup,
+      major_disability:    formData.majorDisability,
+      other_disability:    formData.otherDisability,
+      disability_cert_no:  formData.disabilityCertNo,
+      allergies:           formData.allergies,
+      emergency_contact:   formData.emergencyContact,
+      documents:           formData.documents,
+      declaration:         formData.declaration,
+      declaration_date:    formData.declarationDate,
+      application_number:  formData.applicationNumber,
+      admission_approved:  formData.admissionApproved,
+      rejection_reason:    formData.rejectionReason,
+      class_allotted:      formData.classAllotted,
+      principal_name:      formData.principalName,
+      student_email:       formData.studentEmail,
+      student_password:    formData.studentPassword,
+      role:                'student',
+    }
+
+    const { error: dbErr } = await supabase
+      .from('students')
+      .insert([payload])
+
+    if (dbErr) {
+      setErrors({ general: dbErr.message })
+    } else {
+      setSuccessMessage('Student added successfully!')
+      setFormData(initialFormData) // reset form data
+      // optionally reset formData here
+    }
+
+    setIsSubmitting(false)
+  }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mb-4">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Add Student</h2>
+    <div className="bg-white p-6 rounded-lg shadow mb-4">
+      <h2 className="text-2xl font-bold text-center mb-6">Add Student</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 1. Student Information */}
+        {/* 1. Student Info */}
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Student Information</h3>
+          <h3 className="text-xl font-semibold mb-4">Student Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name <span className="text-red-500">*</span></label>
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm">Full Name <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="fullName"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.fullName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.fullName ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
+              {errors.fullName && <p className="text-red-500 text-xs">{errors.fullName}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="dob" className="block text-sm font-medium text-gray-700">Date of Birth <span className="text-red-500">*</span></label>
+            {/* DOB */}
+            <div>
+              <label className="block text-sm">Date of Birth <span className="text-red-500">*</span></label>
               <input
                 type="date"
-                id="dob"
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.dob ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.dob ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
+              {errors.dob && <p className="text-red-500 text-xs">{errors.dob}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender <span className="text-red-500">*</span></label>
+            {/* Gender */}
+            <div>
+              <label className="block text-sm">Gender <span className="text-red-500">*</span></label>
               <select
-                id="gender"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.gender ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.gender ? 'border-red-500' : 'border-gray-300'
+                }`}
               >
-                <option value="">Select Gender</option>
+                <option value="">Select</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
-              {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+              {errors.gender && <p className="text-red-500 text-xs">{errors.gender}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="religion" className="block text-sm font-medium text-gray-700">Religion</label>
+            {/* Religion */}
+            <div>
+              <label className="block text-sm">Religion</label>
               <input
-                type="text"
-                id="religion"
                 name="religion"
                 value={formData.religion}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="bFormNo" className="block text-sm font-medium text-gray-700">B-Form No</label>
+            {/* B-Form */}
+            <div>
+              <label className="block text-sm">B-Form No</label>
               <input
-                type="text"
-                id="bFormNo"
                 name="bFormNo"
                 value={formData.bFormNo}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
+            </div>
+            {/* Email */}
+            <div>
+              <label className="block text-sm">Student Email <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                name="studentEmail"
+                value={formData.studentEmail}
+                onChange={handleChange}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.studentEmail ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.studentEmail && <p className="text-red-500 text-xs">{errors.studentEmail}</p>}
+            </div>
+            {/* Password */}
+            <div>
+              <label className="block text-sm">Student Password <span className="text-red-500">*</span></label>
+              <input
+                type="password"
+                name="studentPassword"
+                value={formData.studentPassword}
+                onChange={handleChange}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.studentPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.studentPassword && <p className="text-red-500 text-xs">{errors.studentPassword}</p>}
             </div>
           </div>
         </div>
 
         {/* 2. Residential Address */}
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Residential Address</h3>
+          <h3 className="text-xl font-semibold mb-4">Residential Address</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label htmlFor="residentialAddress" className="block text-sm font-medium text-gray-700">Address <span className="text-red-500">*</span></label>
-              <textarea
-                id="residentialAddress"
-                name="residentialAddress"
-                value={formData.residentialAddress}
-                onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.residentialAddress ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm resize-y`}
-              ></textarea>
-              {errors.residentialAddress && <p className="text-red-500 text-xs mt-1">{errors.residentialAddress}</p>}
-            </div>
-            <div className="mb-4">
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700">City <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                id="city"
+            {/* City */}
+            <div>
+              <label className="block text-sm">City <span className="text-red-500">*</span></label>
+              <select
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.city ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-              />
-              {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.city ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Select City</option>
+                {cities.map(c => (
+                  <option key={c.city_id} value={c.city_name}>{c.city_name}</option>
+                ))}
+              </select>
+              {errors.city && <p className="text-red-500 text-xs">{errors.city}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="state" className="block text-sm font-medium text-gray-700">State/Province <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                id="state"
-                name="state"
-                value={formData.state}
+            {/* Address */}
+            <div className="md:col-span-2">
+              <label className="block text-sm">Address <span className="text-red-500">*</span></label>
+              <textarea
+                name="residentialAddress"
+                value={formData.residentialAddress}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.state ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.residentialAddress ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+              {errors.residentialAddress && <p className="text-red-500 text-xs">{errors.residentialAddress}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">Postal Code</label>
+            {/* Postal Code */}
+            <div>
+              <label className="block text-sm">Postal Code</label>
               <input
-                type="text"
-                id="postalCode"
                 name="postalCode"
                 value={formData.postalCode}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="postalAddress" className="block text-sm font-medium text-gray-700">Postal Address (if different)</label>
+            {/* Postal Address */}
+            <div>
+              <label className="block text-sm">Postal Address (if diff.)</label>
               <textarea
-                id="postalAddress"
                 name="postalAddress"
                 value={formData.postalAddress}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm resize-y"
-              ></textarea>
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
             </div>
           </div>
         </div>
 
-        {/* 3. Parent/Guardian Information */}
+        {/* 3. Parent/Guardian */}
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Parent/Guardian Information</h3>
+          <h3 className="text-xl font-semibold mb-4">Parent/Guardian Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label htmlFor="fatherName" className="block text-sm font-medium text-gray-700">Father's Name <span className="text-red-500">*</span></label>
+            {/* CNIC */}
+            <div>
+              <label className="block text-sm">Father's CNIC <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="fatherName"
-                name="fatherName"
-                value={formData.fatherName}
-                onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.fatherName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-              />
-              {errors.fatherName && <p className="text-red-500 text-xs mt-1">{errors.fatherName}</p>}
-            </div>
-            <div className="mb-4">
-              <label htmlFor="fatherCnic" className="block text-sm font-medium text-gray-700">Father's CNIC <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                id="fatherCnic"
                 name="fatherCnic"
                 value={formData.fatherCnic}
                 onChange={handleChange}
-                required
                 placeholder="XXXXX-XXXXXXX-X"
-                className={`mt-1 block w-full px-3 py-2 border ${errors.fatherCnic ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.fatherCnic ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.fatherCnic && <p className="text-red-500 text-xs mt-1">{errors.fatherCnic}</p>}
+              {errors.fatherCnic && <p className="text-red-500 text-xs">{errors.fatherCnic}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="fatherOccupation" className="block text-sm font-medium text-gray-700">Father's Occupation</label>
+            {/* Name */}
+            <div>
+              <label className="block text-sm">Father's Name <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="fatherOccupation"
+                name="fatherName"
+                value={formData.fatherName}
+                onChange={handleChange}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.fatherName ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.fatherName && <p className="text-red-500 text-xs">{errors.fatherName}</p>}
+            </div>
+            {/* Occupation */}
+            <div>
+              <label className="block text-sm">Father's Occupation</label>
+              <input
                 name="fatherOccupation"
                 value={formData.fatherOccupation}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="fatherContact" className="block text-sm font-medium text-gray-700">Father's Contact Number <span className="text-red-500">*</span></label>
+            {/* Contact */}
+            <div>
+              <label className="block text-sm">Father's Contact <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="fatherContact"
                 name="fatherContact"
                 value={formData.fatherContact}
                 onChange={handleChange}
-                required
                 placeholder="03XXXXXXXXX"
-                className={`mt-1 block w-full px-3 py-2 border ${errors.fatherContact ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.fatherContact ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.fatherContact && <p className="text-red-500 text-xs mt-1">{errors.fatherContact}</p>}
+              {errors.fatherContact && <p className="text-red-500 text-xs">{errors.fatherContact}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="fatherEmail" className="block text-sm font-medium text-gray-700">Father's Email</label>
+            {/* Email */}
+            <div>
+              <label className="block text-sm">Father's Email</label>
               <input
-                type="email"
-                id="fatherEmail"
                 name="fatherEmail"
                 value={formData.fatherEmail}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="motherName" className="block text-sm font-medium text-gray-700">Mother's Name <span className="text-red-500">*</span></label>
+            {/* Mother */}
+            <div>
+              <label className="block text-sm">Mother's Name <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="motherName"
                 name="motherName"
                 value={formData.motherName}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.motherName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.motherName ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.motherName && <p className="text-red-500 text-xs mt-1">{errors.motherName}</p>}
+              {errors.motherName && <p className="text-red-500 text-xs">{errors.motherName}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="familyIncome" className="block text-sm font-medium text-gray-700">Family Income</label>
+            {/* Income */}
+            <div>
+              <label className="block text-sm">Family Income</label>
               <input
-                type="text"
-                id="familyIncome"
                 name="familyIncome"
                 value={formData.familyIncome}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
           </div>
         </div>
 
-        {/* 4. Previous School Information */}
+        {/* 4. Previous School */}
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Previous School Information</h3>
+          <h3 className="text-xl font-semibold mb-4">Previous School Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label htmlFor="lastSchool" className="block text-sm font-medium text-gray-700">Last School Attended</label>
+            {/* lastSchool, leavingReason, lastClass */}
+            <div>
+              <label className="block text-sm">Last School Attended</label>
               <input
-                type="text"
-                id="lastSchool"
                 name="lastSchool"
                 value={formData.lastSchool}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="leavingReason" className="block text-sm font-medium text-gray-700">Reason for Leaving</label>
+            <div>
+              <label className="block text-sm">Reason for Leaving</label>
               <input
-                type="text"
-                id="leavingReason"
                 name="leavingReason"
                 value={formData.leavingReason}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="lastClass" className="block text-sm font-medium text-gray-700">Last Class Attended</label>
+            <div>
+              <label className="block text-sm">Last Class Attended</label>
               <input
-                type="text"
-                id="lastClass"
                 name="lastClass"
                 value={formData.lastClass}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="reportCard" className="block text-sm font-medium text-gray-700">Report Card Image</label>
+            <div>
+              <label className="block text-sm">Report Card Image</label>
               <input
                 type="file"
-                id="reportCard"
                 name="reportCard"
+                accept="image/*,application/pdf"
                 onChange={handleChange}
-                className="mt-1 block w-full"
+                className="mt-1 w-full"
               />
+              {errors.reportCard && <p className="text-red-500 text-xs">{errors.reportCard}</p>}
             </div>
           </div>
         </div>
 
-        {/* 5. Admission Information */}
+        {/* 5. Admission */}
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Admission Information</h3>
+          <h3 className="text-xl font-semibold mb-4">Admission Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label htmlFor="admissionSchool" className="block text-sm font-medium text-gray-700">School for Admission <span className="text-red-500">*</span></label>
+            {/* admissionSchool */}
+            <div>
+              <label className="block text-sm">School for Admission <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                id="admissionSchool"
                 name="admissionSchool"
                 value={formData.admissionSchool}
+                disabled
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.admissionSchool ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 cursor-not-allowed ${
+                  errors.admissionSchool ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.admissionSchool && <p className="text-red-500 text-xs mt-1">{errors.admissionSchool}</p>}
+              {errors.admissionSchool && <p className="text-red-500 text-xs">{errors.admissionSchool}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="admissionClass" className="block text-sm font-medium text-gray-700">Class for Admission <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                id="admissionClass"
+            {/* admissionClass */}
+            <div>
+              <label className="block text-sm">Class for Admission <span className="text-red-500">*</span></label>
+              <select
                 name="admissionClass"
                 value={formData.admissionClass}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.admissionClass ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-              />
-              {errors.admissionClass && <p className="text-red-500 text-xs mt-1">{errors.admissionClass}</p>}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.admissionClass ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Select Class</option>
+                {classOptions.map(opt => (
+                  <option key={opt.section_id} value={opt.label}>{opt.label}</option>
+                ))}
+              </select>
+              {errors.admissionClass && <p className="text-red-500 text-xs">{errors.admissionClass}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="academicYear" className="block text-sm font-medium text-gray-700">Academic Year</label>
+            {/* academicYear */}
+            <div>
+              <label className="block text-sm">Academic Year</label>
               <input
-                type="text"
-                id="academicYear"
                 name="academicYear"
                 value={formData.academicYear}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="registrationNo" className="block text-sm font-medium text-gray-700">Registration No</label>
+            {/* registrationNo */}
+            <div>
+              <label className="block text-sm">Registration No</label>
               <input
-                type="text"
-                id="registrationNo"
                 name="registrationNo"
                 value={formData.registrationNo}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="admissionDate" className="block text-sm font-medium text-gray-700">Admission Date <span className="text-red-500">*</span></label>
+            {/* admissionDate */}
+            <div>
+              <label className="block text-sm">Admission Date <span className="text-red-500">*</span></label>
               <input
                 type="date"
-                id="admissionDate"
                 name="admissionDate"
                 value={formData.admissionDate}
                 onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-3 py-2 border ${errors.admissionDate ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.admissionDate ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
-              {errors.admissionDate && <p className="text-red-500 text-xs mt-1">{errors.admissionDate}</p>}
+              {errors.admissionDate && <p className="text-red-500 text-xs">{errors.admissionDate}</p>}
             </div>
-            <div className="mb-4">
-              <label htmlFor="secondLanguage" className="block text-sm font-medium text-gray-700">Second Language</label>
+            {/* secondLanguage */}
+            <div>
+              <label className="block text-sm">Second Language</label>
               <input
-                type="text"
-                id="secondLanguage"
                 name="secondLanguage"
                 value={formData.secondLanguage}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               />
             </div>
-            <div className="mb-4">
-              <label htmlFor="sibling" className="block text-sm font-medium text-gray-700">Any Sibling Studying in this School?</label>
+            {/* sibling */}
+            <div>
+              <label className="block text-sm">Any Sibling? </label>
               <select
-                id="sibling"
                 name="sibling"
                 value={formData.sibling}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 w-full border rounded px-3 py-2"
               >
                 <option value="">Select</option>
                 <option value="yes">Yes</option>
@@ -553,259 +734,225 @@ function AddaStudent() {
               </select>
             </div>
             {formData.sibling === 'yes' && (
-              <div className="mb-4">
-                <label htmlFor="siblingName" className="block text-sm font-medium text-gray-700">Sibling's Name</label>
+              <div>
+                <label className="block text-sm">Sibling's Name</label>
                 <input
-                  type="text"
-                  id="siblingName"
                   name="siblingName"
                   value={formData.siblingName}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 w-full border rounded px-3 py-2"
                 />
               </div>
             )}
           </div>
         </div>
 
-       {/* 5. Medical Information */}
+        {/* 6. Medical */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Medical Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-700">Medical Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="mb-4">
-                  <label htmlFor="bloodGroup" className="block text-sm font-medium text-gray-700">Blood Group</label>
-                  <input
-                    type="text"
-                    id="bloodGroup"
-                    name="bloodGroup"
-                    value={formData.bloodGroup}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="majorDisability" className="block text-sm font-medium text-gray-700">Type of Major Disability (if any)</label>
-                  <input
-                    type="text"
-                    id="majorDisability"
-                    name="majorDisability"
-                    value={formData.majorDisability}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="otherDisability" className="block text-sm font-medium text-gray-700">Any Other Disability (if applicable)</label>
-                  <input
-                    type="text"
-                    id="otherDisability"
-                    name="otherDisability"
-                    value={formData.otherDisability}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="disabilityCertNo" className="block text-sm font-medium text-gray-700">Disability Certificate No. (if applicable)</label>
-                  <input
-                    type="text"
-                    id="disabilityCertNo"
-                    name="disabilityCertNo"
-                    value={formData.disabilityCertNo}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="allergies" className="block text-sm font-medium text-gray-700">Any Allergies or Medical Conditions (if any)</label>
-                  <input
-                    type="text"
-                    id="allergies"
-                    name="allergies"
-                    value={formData.allergies}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="emergencyContact" className="block text-sm font-medium text-gray-700">Emergency Contact Name and Number <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    id="emergencyContact"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                    {errors.emergencyContact && <p className="text-red-500 text-xs mt-1">{errors.emergencyContact}</p>}
-                </div>
-              </div>
+              <label className="block text-sm">Blood Group</label>
+              <input
+                name="bloodGroup"
+                value={formData.bloodGroup}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
             </div>
-
-            {/* 6. Documents Checklist (Attach Copies) */}
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-700">Documents Checklist (Attach Copies)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { id: 'birthCert', label: 'Birth Certificate', name: 'birthCert' },
-                  { id: 'bForm', label: 'B-Form/Smart Card (if applicable)', name: 'bForm' },
-                  { id: 'transferCert', label: 'Transfer Certificate (if applicable)', name: 'transferCert' },
-                  { id: 'reportCardDoc', label: 'Previous Academic Report Card', name: 'reportCardDoc' },
-                  { id: 'addressProof', label: 'Address Proof', name: 'addressProof' },
-                  { id: 'photos', label: 'Passport Size Photos (3 copies)', name: 'photos' },
-                  { id: 'identityProof', label: 'Identity Proof of Parent/Guardian', name: 'identityProof' },
-                  { id: 'disabilityCert', label: 'Disability Certificate (if applicable)', name: 'disabilityCert' },
-                ].map((item) => (
-                  <div key={item.id} className="mb-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        id={item.id}
-                        name={item.name}
-                        checked={documents[item.name]}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-indigo-600"
-                      />
-                      <span className="ml-2 text-gray-700">{item.label}</span>
-                    </label>
-                  </div>
-                ))}
-              </div>
+              <label className="block text-sm">Major Disability</label>
+              <input
+                name="majorDisability"
+                value={formData.majorDisability}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
             </div>
-
-            {/* 7. Declaration */}
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-700">Declaration</h3>
-              <div className="mb-4">
+              <label className="block text-sm">Other Disability</label>
+              <input
+                name="otherDisability"
+                value={formData.otherDisability}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm">Disability Cert No.</label>
+              <input
+                name="disabilityCertNo"
+                value={formData.disabilityCertNo}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm">Allergies</label>
+              <input
+                name="allergies"
+                value={formData.allergies}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm">Emergency Contact <span className="text-red-500">*</span></label>
+              <input
+                name="emergencyContact"
+                value={formData.emergencyContact}
+                onChange={handleChange}
+                className={`mt-1 w-full border rounded px-3 py-2 ${
+                  errors.emergencyContact ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.emergencyContact && <p className="text-red-500 text-xs">{errors.emergencyContact}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* 7. Documents */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Documents Checklist (Attach Copies)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { id: 'birthCert', label: 'Birth Certificate', name: 'birthCert' },
+              { id: 'bForm', label: 'B-Form/Smart Card', name: 'bForm' },
+              { id: 'transferCert', label: 'Transfer Certificate', name: 'transferCert' },
+              { id: 'reportCardDoc', label: 'Previous Report Card', name: 'reportCardDoc' },
+              { id: 'addressProof', label: 'Address Proof', name: 'addressProof' },
+              { id: 'photos', label: 'Passport Photos', name: 'photos' },
+              { id: 'identityProof', label: 'ID Proof of Parent', name: 'identityProof' },
+              { id: 'disabilityCert', label: 'Disability Cert', name: 'disabilityCert' },
+            ].map(item => (
+              <div key={item.id}>
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
-                    id="declaration"
-                    name="declaration"
-                    checked={formData.declaration}
+                    name={item.name}
                     onChange={handleChange}
-                    required
-                    className={`h-4 w-4 text-indigo-600 ${errors.declaration ? 'text-red-500' : ''}`}
+                    className="h-4 w-4"
                   />
-                  <span className="ml-2 text-gray-700">I, the undersigned, hereby declare that the information provided above is true and correct to the best of my knowledge. I understand that providing false information may result in the cancellation of admission. <span className="text-red-500">*</span></span>
+                  <span className="ml-2 text-sm">{item.label}</span>
                 </label>
-                {errors.declaration && <p className="text-red-500 text-xs mt-1">{errors.declaration}</p>}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="mb-4">
-                  <label htmlFor="parentSignature" className="block text-sm font-medium text-gray-700">Signature of Parent/Guardian</label>
-                  <input
-                    type="text"
-                    id="parentSignature"
-                    name="parentSignature"
-                    value={formData.parentSignature}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="declarationDate" className="block text-sm font-medium text-gray-700">Date</label>
-                  <input
-                    type="date"
-                    id="declarationDate"
-                    name="declarationDate"
-                    value={formData.declarationDate}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                </div>
-              </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* 8. For Office Use Only */}
-            <div className="mt-8 pt-4 border-t border-gray-200">
-              <h3 className="text-xl font-semibold mb-4 text-gray-700">For Office Use Only</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="mb-4">
-                  <label htmlFor="applicationNumber" className="block text-sm font-medium text-gray-700">Application Number</label>
+        {/* 8. Declaration */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Declaration</h3>
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              name="declaration"
+              checked={formData.declaration}
+              onChange={handleChange}
+              className="h-4 w-4"
+            />
+            <span className="ml-2 text-sm">
+              I, the undersigned, hereby declare that the information provided is true… <span className="text-red-500">*</span>
+            </span>
+          </label>
+          {errors.declaration && <p className="text-red-500 text-xs">{errors.declaration}</p>}
+          <div className="mt-4">
+            <label className="block text-sm">Date</label>
+            <input
+              type="date"
+              name="declarationDate"
+              value={formData.declarationDate}
+              disabled
+              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+        </div>
+
+        {/* 9. Office Use */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4">For Office Use Only</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm">Application Number</label>
+              <input
+                name="applicationNumber"
+                value={formData.applicationNumber}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm">Admission Approved</label>
+              <div className="inline-flex space-x-4">
+                <label className="inline-flex items-center">
                   <input
-                    type="text"
-                    id="applicationNumber"
-                    name="applicationNumber"
-                    value={formData.applicationNumber}
+                    type="radio"
+                    name="admissionApproved"
+                    value="yes"
+                    checked={formData.admissionApproved === 'yes'}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="h-4 w-4"
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Admission Approved</label>
-                  <div className="mt-1 space-x-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="admissionApproved"
-                        value="yes"
-                        checked={formData.admissionApproved === 'yes'}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-indigo-600"
-                      />
-                      <span className="ml-2">Yes</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="admissionApproved"
-                        value="no"
-                        checked={formData.admissionApproved === 'no'}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-indigo-600" />
-                      <span className="ml-2">No</span>
-                    </label>
-                  </div>
-                </div>
-                {formData.admissionApproved === 'no' && (
-                <div className="mb-4 col-span-full md:col-span-2">
-                  <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700">If No, Reason</label>
-                  <textarea
-                    id="rejectionReason"
-                    name="rejectionReason"
-                    value={formData.rejectionReason}
-                    onChange={handleChange}
-                    rows="3"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm resize-y"
-                  ></textarea>
-                </div>
-                )}
-                <div className="mb-4">
-                  <label htmlFor="classAllotted" className="block text-sm font-medium text-gray-700">Class Allotted</label>
+                  <span className="ml-2">Yes</span>
+                </label>
+                <label className="inline-flex items-center">
                   <input
-                    type="text"
-                    id="classAllotted"
-                    name="classAllotted"
-                    value={formData.classAllotted}
+                    type="radio"
+                    name="admissionApproved"
+                    value="no"
+                    checked={formData.admissionApproved === 'no'}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="h-4 w-4"
                   />
-                </div>
-                <div className="mb-4">
-                  <label htmlFor="principalSignature" className="block text-sm font-medium text-gray-700">Signature of Principal/Administrator</label>
-                  <input
-                    type="text"
-                    id="principalSignature"
-                    name="principalSignature"
-                    value={formData.principalSignature}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
+                  <span className="ml-2">No</span>
+                </label>
               </div>
             </div>
+            {formData.admissionApproved === 'no' && (
+              <div className="md:col-span-2">
+                <label className="block text-sm">Reason</label>
+                <textarea
+                  name="rejectionReason"
+                  value={formData.rejectionReason}
+                  onChange={handleChange}
+                  className="mt-1 w-full border rounded px-3 py-2"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm">Class Allotted</label>
+              <input
+                name="classAllotted"
+                value={formData.classAllotted}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm">Principal Name</label>
+              <input
+                name="principalName"
+                value={formData.principalName}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded px-3 py-2"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* submit */}
         <div className="text-center">
-          <button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-            {isSubmitting ? 'Adding...' : 'Submit'}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded"
+          >
+            {isSubmitting ? 'Adding…' : 'Submit'}
           </button>
         </div>
-        {successMessage && <p className="text-green-500 text-center mt-4">{successMessage}</p>}
+        {errors.general && <p className="text-red-600 text-center mt-4">{errors.general}</p>}
+        {successMessage && <p className="text-green-600 text-center mt-4">{successMessage}</p>}
       </form>
     </div>
-  );
-  
+  )
 }
-
-
-
-
-export default AddaStudent;

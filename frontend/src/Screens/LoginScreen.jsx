@@ -13,12 +13,17 @@ import {
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import EmailIcon from '@mui/icons-material/Email';
+import { supabase } from '../supabaseClient'; // Adjust the import based on your project structure
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
+
+  const { data: { session } } = supabase.auth.getSession()
+console.log(JSON.stringify(session))
+
 
   const navigate = useNavigate();
   const location = useLocation(); // Access passed state

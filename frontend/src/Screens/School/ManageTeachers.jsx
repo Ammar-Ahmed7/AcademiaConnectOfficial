@@ -1,41 +1,58 @@
+// ManageTeachers.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './supabaseClient'; // Adjust the path as needed
+import { supabase } from './supabaseClient';
 
-function ManageTeachers() {
-  // State for teachers, now including their assignments via a join query
+export default function ManageTeachers() {
   const [teacherRequests, setTeacherRequests] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen]           = useState(false);
+  const [searchQuery, setSearchQuery]           = useState('');
 
-  // For class/section selection from backend
-  // Each option: { label, section_id, class_id }
-  const [classOptions, setClassOptions] = useState([]);
-  const [classSearch, setClassSearch] = useState('');
-  const [filteredClasses, setFilteredClasses] = useState([]);
-  // This will hold unique class options selected in the modal.
-  const [selectedClasses, setSelectedClasses] = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [classOptions, setClassOptions]         = useState([]);
+  const [classSearch, setClassSearch]           = useState('');
+  const [filteredClasses, setFilteredClasses]   = useState([]);
+  const [selectedClasses, setSelectedClasses]   = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen]     = useState(false);
+
+  const [assignments, setAssignments]           = useState([]);
+  const [subjectsData, setSubjectsData]         = useState([]);
+
   const dropdownRef = useRef(null);
+  const days        = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const [schoolId, setSchoolId] = useState(null);
 
-  // For assignment details per selected class/section.
-  // Each assignment: { selectedClass, subject_id, day_of_week, period, start_time, end_time }
-  const [assignments, setAssignments] = useState([]);
+  //
+  // 1) Fetch logged-in school ID
+  //
+  useEffect(() => {
+    async function fetchSchoolId() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: school, error } = await supabase
+        .from('School')
+        .select('SchoolID')
+        .eq('user_id', session.user.id)
+        .single();
+      if (error) console.error('fetchSchoolId error:', error);
+      else setSchoolId(school.SchoolID);
+    }
+    fetchSchoolId();
+  }, []);
 
-  // All subjects from backend, each subject has: subject_id, subject_name, class_id.
-  const [subjectsData, setSubjectsData] = useState([]);
+  //
+  // 2) Load teachers / sections / subjects once we have schoolId
+  //
+  useEffect(() => {
+    if (!schoolId) return;
+    loadTeachers();
+    loadSections();
+    loadSubjects();
+  }, [schoolId]);
 
-  // Days for scheduling (customize as needed)
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
-  // --------------------- FETCH DATA FROM BACKEND ---------------------
-
-  // Fetch teachers along with their assignments (using a join) 
-  async function fetchTeachersWithAssignments() {
-    // Adjust the join according to your schema. Here we assume:
-    // - Teacher table (with TeacherID, Name, subject, etc.)
-    // - teacher_assignments is joined via a foreign key on TeacherID
-    // - teacher_assignments joins sections which in turn joins classes.
+  //
+  // 3) Load teachers + existing assignments
+  //
+  async function loadTeachers() {
     const { data, error } = await supabase
       .from('Teacher')
       .select(`
@@ -48,105 +65,77 @@ function ManageTeachers() {
           subject_id,
           day_of_week,
           period,
-          start_time,
-          end_time,
           sections (
             section_name,
-            classes (
-              class_id,
-              class_name
-            )
+            classes (class_id, class_name)
           )
         )
-      `);
-    if (error) {
-      console.error('Error fetching teachers with assignments:', error);
-    } else {
-      setTeacherRequests(data);
+      `)
+      .eq('SchoolID', schoolId);
+    if (error) console.error('loadTeachers error:', error);
+    else setTeacherRequests(data);
+  }
+
+  //
+  // 4) Load all sections (shared across schools)
+  //
+  async function loadSections() {
+    const { data, error } = await supabase
+      .from('sections')
+      .select('section_id, section_name, class_id, classes(class_id, class_name)');
+    if (error) console.error('loadSections error:', error);
+    else {
+      const opts = data.map(i => ({
+        section_id: i.section_id,
+        class_id:   i.classes.class_id,
+        label:      `${i.classes.class_name}${i.section_name}`,
+      }));
+      setClassOptions(opts);
+      setFilteredClasses(opts);
     }
   }
 
-  useEffect(() => {
-    fetchTeachersWithAssignments();
-  }, []);
+  //
+  // 5) Load all subjects (shared across schools)
+  //
+  async function loadSubjects() {
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('*');
+    if (error) console.error('loadSubjects error:', error);
+    else setSubjectsData(data);
+  }
 
-  // Fetch class/section options by joining "sections" with "classes"
-  useEffect(() => {
-    async function fetchClassOptions() {
-      const { data, error } = await supabase
-        .from('sections')
-        .select('section_id, section_name, classes (class_id, class_name)');
-      if (error) {
-        console.error('Error fetching class options:', error);
-      } else {
-        // Map each row to an object with a label like "Class 1A"
-        const options = data.map((item) => ({
-          section_id: item.section_id,
-          class_id: item.classes.class_id,
-          label: `${item.classes.class_name}${item.section_name}`,
-        }));
-        setClassOptions(options);
-        setFilteredClasses(options);
-      }
-    }
-    fetchClassOptions();
-  }, []);
-
-  // Fetch subjects data from the "subjects" table.
-  useEffect(() => {
-    async function fetchSubjects() {
-      const { data, error } = await supabase.from('subjects').select('*');
-      if (error) {
-        console.error('Error fetching subjects:', error);
-      } else {
-        setSubjectsData(data);
-      }
-    }
-    fetchSubjects();
-  }, []);
-
-  // --------------------- HANDLERS ---------------------
-
-  // When a teacher is clicked, open the modal.
-  // Pre-load existing assignments (if any) from teacher.teacher_assignments.
-  const openModal = (teacher) => {
+  //
+  // 6) Open modal & initialize assignment state
+  //
+  const openModal = teacher => {
     setSelectedTeacher(teacher);
     setIsModalOpen(true);
     setClassSearch('');
     setFilteredClasses(classOptions);
     setIsDropdownOpen(false);
 
-    // If teacher.teacher_assignments exists, extract unique class assignments.
-    let existingAssignments = teacher.teacher_assignments || [];
-    // Remove duplicates by section_id.
-    const uniqueAssignments = [
-      ...new Map(
-        existingAssignments.map((a) => [
-          a.section_id,
-          {
-            selectedClass: {
-              section_id: a.section_id,
-              class_id: a.sections.classes.class_id,
-              label: `${a.sections.classes.class_name}${a.sections.section_name}`,
-            },
-            subject_id: a.subject_id,
-            day_of_week: a.day_of_week,
-            period: a.period,
-            start_time: a.start_time,
-            end_time: a.end_time,
-          },
-        ])
-      ).values(),
-    ];
-    // Set selectedClasses based on unique assignments.
-    const initSelectedClasses = uniqueAssignments.map(
-      (assignment) => assignment.selectedClass
-    );
-    setSelectedClasses(initSelectedClasses);
-    // Set assignments to the existing ones, or empty array if none.
-    setAssignments(uniqueAssignments);
+    // Build initial assignment rows from existing DB entries
+    const existing = teacher.teacher_assignments || [];
+    const initial = existing.map(a => ({
+      selectedClass: {
+        section_id: a.section_id,
+        class_id:   a.sections.classes.class_id,
+        label:      `${a.sections.classes.class_name}${a.sections.section_name}`,
+      },
+      subject_id:  a.subject_id || '',
+      day_of_week: a.day_of_week || '',
+      period:      a.period || '',
+    }));
+
+    setSelectedClasses(initial.map(i => i.selectedClass));
+    setAssignments(initial);
   };
 
+  //
+  // 7) Close modal & reset local state
+  //
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTeacher(null);
@@ -155,320 +144,252 @@ function ManageTeachers() {
     setIsDropdownOpen(false);
   };
 
-  // Toggle selection of a class option.
-  const handleClassAssignmentChange = (classOption) => {
-    const alreadySelected = selectedClasses.find(
-      (opt) => opt.section_id === classOption.section_id
+  //
+  // 8) When clicking a section in the dropdown, ALWAYS append a new assignment row
+  //
+  const handleClassAssignmentChange = opt => {
+    // Append new row
+    setSelectedClasses(prev => [...prev, opt]);
+    setAssignments(prev => [
+      ...prev,
+      { selectedClass: opt, subject_id:'', day_of_week:'', period:'' }
+    ]);
+  };
+
+  //
+  // 9) Filter dropdown list as user types
+  //
+  const handleClassSearchChange = e => {
+    const v = e.target.value.toLowerCase();
+    setClassSearch(v);
+    setFilteredClasses(
+      classOptions.filter(o => o.label.toLowerCase().includes(v))
     );
-    let updated;
-    if (alreadySelected) {
-      updated = selectedClasses.filter(
-        (opt) => opt.section_id !== classOption.section_id
-      );
-    } else {
-      updated = [...selectedClasses, classOption];
-    }
-    setSelectedClasses(updated);
-    updateAssignmentsFromClasses(updated);
   };
 
-  // Synchronize assignments state with selectedClasses.
-  const updateAssignmentsFromClasses = (newSelectedClasses) => {
-    setAssignments((prev) => {
-      // Preserve assignments already set for selected classes.
-      let updated = prev.filter((a) =>
-        newSelectedClasses.find(
-          (cls) => cls.section_id === a.selectedClass.section_id
-        )
-      );
-      // Add new assignments for any new class selection.
-      newSelectedClasses.forEach((cls) => {
-        if (!updated.find((a) => a.selectedClass.section_id === cls.section_id)) {
-          updated.push({
-            selectedClass: cls,
-            subject_id: '',
-            day_of_week: '',
-            period: '',
-            start_time: '',
-            end_time: '',
-          });
-        }
-      });
-      return updated;
-    });
-  };
-
-  const handleClassSearchChange = (e) => {
-    const searchValue = e.target.value;
-    setClassSearch(searchValue);
-    const filtered = classOptions.filter((opt) =>
-      opt.label.toLowerCase().includes(searchValue.toLowerCase())
-    );
-    setFilteredClasses(filtered);
-  };
-
-  const handleClassSelection = (classOption) => {
-    handleClassAssignmentChange(classOption);
+  const handleClassSelection = opt => {
+    handleClassAssignmentChange(opt);
     setClassSearch('');
     setFilteredClasses(classOptions);
     setIsDropdownOpen(false);
   };
 
-  // Update a field in an assignment record.
-  const updateAssignmentField = (index, field, value) => {
-    setAssignments((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
+  //
+  // 10) Update a field on a given assignment row
+  //
+  const updateAssignmentField = (ix, field, value) => {
+    setAssignments(prev => {
+      const copy = [...prev];
+      copy[ix] = { ...copy[ix], [field]: value };
+      return copy;
     });
   };
 
-  // Toggle the class dropdown visibility.
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  // Save assignments: insert records into teacher_assignments, then re-fetch teacher data.
+  //
+  // 11) Save all rows via upsert, ignoring duplicates
+  //
   const saveAssignedClasses = async () => {
-    if (selectedTeacher) {
-      // Build payload array for assignments.
-      // IMPORTANT: Use exact column names that match your teacher_assignments table.
-      const payload = assignments.map((assignment) => ({
-        // Use "TeacherID" (exact casing as in your table) for teacher reference.
-        TeacherID: selectedTeacher.TeacherID,
-        section_id: assignment.selectedClass.section_id,
-        subject_id: assignment.subject_id ? parseInt(assignment.subject_id) : null,
-        day_of_week: assignment.day_of_week,
-        period: assignment.period ? parseInt(assignment.period) : null,
-        start_time: assignment.start_time || null,
-        end_time: assignment.end_time || null,
-      }));
+    if (!selectedTeacher) return;
 
-      console.log('Payload to insert into teacher_assignments:', payload);
+    const payload = assignments.map(a => ({
+      TeacherID:   selectedTeacher.TeacherID,
+      section_id:  a.selectedClass.section_id,
+      subject_id:  parseInt(a.subject_id) || null,
+      day_of_week: a.day_of_week,
+      period:      parseInt(a.period)    || null,
+    }));
 
-      // Insert payload into teacher_assignments table.
-      const { data, error } = await supabase
-        .from('teacher_assignments')
-        .insert(payload);
-      if (error) {
-        console.error('Error saving assignments:', error);
-      } else {
-        console.log('Assignments saved successfully:', data);
-        // Re-fetch the complete teacher data (with assignments) from backend.
-        await fetchTeachersWithAssignments();
-      }
-      closeModal();
-    }
+    const { error } = await supabase
+      .from('teacher_assignments')
+      .upsert(payload, {
+        onConflict: [
+          'TeacherID',
+          'section_id',
+          'subject_id',
+          'day_of_week',
+          'period'
+        ],
+        ignoreDuplicates: true
+      });
+
+    if (error) console.error('saveAssignedClasses error:', error);
+    else await loadTeachers();
+
+    closeModal();
   };
 
-  // Close dropdown on outside click.
+  //
+  // 12) Close dropdown on outside click
+  //
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handler = e => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Filter teachers using search query.
-  const filteredTeachers = teacherRequests.filter((teacher) =>
-    teacher.Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (teacher.subject && teacher.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (teacher.CNIC && teacher.CNIC.toLowerCase().includes(searchQuery.toLowerCase()))
+  //
+  // 13) Render
+  //
+  const filteredTeachers = teacherRequests.filter(t =>
+    t.Name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.subject || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="form-container bg-white p-4 rounded-lg">
+    <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-4">Manage Teachers</h2>
 
+      {/* Search bar */}
       <input
         type="text"
-        placeholder="Search by name, subject, or CNIC"
+        placeholder="Search by name or subject…"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full p-2 mb-4 border rounded-md"
+        onChange={e => setSearchQuery(e.target.value)}
+        className="w-full p-2 mb-4 border rounded"
       />
 
-      <div className="requests-list">
-        {filteredTeachers.map((teacher) => (
+      {/* Teacher list */}
+      <div>
+        {filteredTeachers.map(teacher => (
           <div
             key={teacher.TeacherID}
-            className="request-item p-4 mb-2 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300"
+            className="p-4 mb-2 border rounded cursor-pointer hover:bg-gray-50"
+            onClick={() => openModal(teacher)}
           >
-            <div onClick={() => openModal(teacher)} className="cursor-pointer">
-              <h3 className="text-lg font-semibold">{teacher.Name}</h3>
-              <p className="text-gray-600">Subject: {teacher.subject}</p>
-              {teacher.teacher_assignments && teacher.teacher_assignments.length > 0 && (
-                <div className="mt-2">
-                  <strong>Assigned Classes: </strong>
-                  <ul className="list-disc list-inside">
-                    {teacher.teacher_assignments.map((ta, idx) => (
-                      <li key={idx}>
-                        {ta.sections.classes.class_name}
-                        {ta.sections.section_name} ({ta.day_of_week}, P{ta.period})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            <h3 className="font-semibold">{teacher.Name}</h3>
+            <p className="text-gray-600">Subject: {teacher.subject}</p>
+            {teacher.teacher_assignments?.length > 0 && (
+              <ul className="list-disc ml-4 mt-2">
+                {teacher.teacher_assignments.map((ta, i) => (
+                  <li key={i}>
+                    {ta.sections.classes.class_name}
+                    {ta.sections.section_name} — {ta.day_of_week}, P{ta.period}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>
 
+      {/* Modal */}
       {isModalOpen && selectedTeacher && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md overflow-y-auto max-h-full">
-            <h2 className="text-xl font-bold mb-4">Teacher Details</h2>
-            <h3 className="text-lg font-semibold">{selectedTeacher.Name}</h3>
-            <p className="text-gray-600 mb-2">Subject: {selectedTeacher.subject}</p>
-            <p className="text-gray-700">{selectedTeacher.details}</p>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg w-full max-w-lg max-h-full overflow-auto">
+            <h2 className="text-xl font-bold mb-2">{selectedTeacher.Name}</h2>
+            <p className="mb-4 text-gray-700">{selectedTeacher.details}</p>
 
-            <h4 className="text-lg font-semibold mt-4 mb-2">Assign to Classes/Sections:</h4>
-            <div className="relative" ref={dropdownRef}>
+            {/* Section dropdown */}
+            <h3 className="font-semibold mb-2">Assign Classes/Sections</h3>
+            <div className="relative mb-4" ref={dropdownRef}>
               <input
                 type="text"
-                placeholder="Search for classes..."
+                placeholder="Search classes…"
                 value={classSearch}
                 onChange={handleClassSearchChange}
-                onClick={toggleDropdown}
-                className="w-full p-2 border rounded-md"
+                onClick={() => setIsDropdownOpen(o => !o)}
+                className="w-full p-2 border rounded"
               />
-              <div
-                className={`absolute w-full bg-white border rounded-md shadow-md mt-1 ${
-                  isDropdownOpen && filteredClasses.length ? 'block' : 'hidden'
-                }`}
-              >
-                {filteredClasses.map((option) => (
-                  <div
-                    key={option.section_id}
-                    className={`p-2 hover:bg-gray-100 cursor-pointer ${
-                      selectedClasses.find((opt) => opt.section_id === option.section_id)
-                        ? 'bg-blue-100'
-                        : ''
-                    }`}
-                    onClick={() => handleClassSelection(option)}
-                  >
-                    {option.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="mt-2">
-              <strong>Assigned Classes:</strong>
-              {selectedClasses.length > 0 ? (
-                <ul className="list-disc list-inside">
-                  {selectedClasses.map((opt) => (
-                    <li key={opt.section_id}>{opt.label}</li>
+              {isDropdownOpen && filteredClasses.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 max-h-40 overflow-auto">
+                  {filteredClasses.map(opt => (
+                    <div
+                      key={opt.section_id}
+                      className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                        selectedClasses.some(c => c.section_id === opt.section_id)
+                          ? 'bg-blue-100'
+                          : ''
+                      }`}
+                      onClick={() => handleClassSelection(opt)}
+                    >
+                      {opt.label}
+                    </div>
                   ))}
-                </ul>
-              ) : (
-                <p>No classes assigned yet.</p>
+                </div>
               )}
             </div>
 
-            {selectedClasses.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-lg font-semibold mb-2">Assignment Details:</h4>
-                {assignments.map((assignment, index) => {
-                  // Filter subjects for this assignment using its class_id
-                  const subjectsForThisClass = subjectsData.filter(
-                    (subj) => subj.class_id === assignment.selectedClass.class_id
-                  );
-                  return (
-                    <div key={assignment.selectedClass.section_id} className="mb-4 border p-2 rounded">
-                      <p>
-                        <strong>{assignment.selectedClass.label}</strong>
-                      </p>
-                      <div className="mt-2">
-                        <label className="block mb-1">Subject:</label>
-                        <select
-                          value={assignment.subject_id}
-                          onChange={(e) =>
-                            updateAssignmentField(index, 'subject_id', e.target.value)
-                          }
-                          className="w-full p-2 border rounded-md"
-                        >
-                          <option value="">Select subject</option>
-                          {subjectsForThisClass.map((subj) => (
-                            <option key={subj.subject_id} value={subj.subject_id}>
-                              {subj.subject_name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="mt-2">
-                        <label className="block mb-1">Day of Week:</label>
-                        <select
-                          value={assignment.day_of_week}
-                          onChange={(e) =>
-                            updateAssignmentField(index, 'day_of_week', e.target.value)
-                          }
-                          className="w-full p-2 border rounded-md"
-                        >
-                          <option value="">Select day</option>
-                          {days.map((day) => (
-                            <option key={day} value={day}>
-                              {day}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="mt-2">
-                        <label className="block mb-1">Period:</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={assignment.period}
-                          onChange={(e) =>
-                            updateAssignmentField(index, 'period', e.target.value)
-                          }
-                          className="w-full p-2 border rounded-md"
-                          placeholder="Enter period number"
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <label className="block mb-1">Start Time:</label>
-                        <input
-                          type="time"
-                          value={assignment.start_time}
-                          onChange={(e) =>
-                            updateAssignmentField(index, 'start_time', e.target.value)
-                          }
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <label className="block mb-1">End Time:</label>
-                        <input
-                          type="time"
-                          value={assignment.end_time}
-                          onChange={(e) =>
-                            updateAssignmentField(index, 'end_time', e.target.value)
-                          }
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
+            {/* Assignment rows */}
+            {assignments.map((assignment, idx) => {
+              const subs = subjectsData.filter(
+                s => s.class_id === assignment.selectedClass.class_id
+              );
+              return (
+                <div
+                  key={`${assignment.selectedClass.section_id}-${idx}`}
+                  className="mb-4 p-3 border rounded"
+                >
+                  <p className="font-medium">{assignment.selectedClass.label}</p>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Subject */}
+                    <div>
+                      <label className="block text-sm">Subject</label>
+                      <select
+                        value={assignment.subject_id}
+                        onChange={e =>
+                          updateAssignmentField(idx, 'subject_id', e.target.value)
+                        }
+                        className="w-full p-2 border rounded"
+                      >
+                        <option value="">Select subject</option>
+                        {subs.map(s => (
+                          <option key={s.subject_id} value={s.subject_id}>
+                            {s.subject_name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  );
-                })}
-              </div>
-            )}
 
-            <div className="flex justify-end mt-4">
+                    {/* Day */}
+                    <div>
+                      <label className="block text-sm">Day of Week</label>
+                      <select
+                        value={assignment.day_of_week}
+                        onChange={e =>
+                          updateAssignmentField(idx, 'day_of_week', e.target.value)
+                        }
+                        className="w-full p-2 border rounded"
+                      >
+                        <option value="">Select day</option>
+                        {days.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Period */}
+                    <div>
+                      <label className="block text-sm">Period</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={assignment.period}
+                        onChange={e =>
+                          updateAssignmentField(idx, 'period', e.target.value)
+                        }
+                        className="w-full p-2 border rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Buttons */}
+            <div className="flex justify-end space-x-2 mt-4">
               <button
                 onClick={saveAssignedClasses}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
               >
                 Save
               </button>
               <button
                 onClick={closeModal}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
               >
                 Close
               </button>
@@ -479,5 +400,3 @@ function ManageTeachers() {
     </div>
   );
 }
-
-export default ManageTeachers;

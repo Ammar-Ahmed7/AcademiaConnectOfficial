@@ -1,26 +1,50 @@
-// eslint-disable-next-line no-unused-vars
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material'; // <- added CircularProgress
 import Sidebar from '../Components/Sidebar';
+import { supabase } from '../../../../supabase-client'; // Import your configured supabase client
 
 const Attendance = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const classInfo = location.state?.classInfo;
+
+  const [students, setStudents] = useState([]);
   const [dateFilter, setDateFilter] = useState('');
+  const [loading, setLoading] = useState(true); // <- added loading state
 
-  // Sample attendance data
-  const attendanceData = [
-    { id: 1, date: '2025-03-15', rollNo: '101', name: 'John Doe' },
-    { id: 2, date: '2025-03-15', rollNo: '102', name: 'Jane Smith' },
-    { id: 3, date: '2025-03-14', rollNo: '103', name: 'Alice Johnson' },
-    { id: 4, date: '2025-03-14', rollNo: '104', name: 'Bob Brown' },
-  ];
+  useEffect(() => {
+    if (classInfo) {
+      console.log('Received Class Info in Attendance:', classInfo);
+      fetchStudents();
+    }
+  }, [classInfo]);
 
-  // Get unique dates for filtering
-  const dates = [...new Set(attendanceData.map(item => item.date))];
+  const fetchStudents = async () => {
+    try {
+      const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`; 
+      console.log('Fetching students for admission_class:', combinedClassSection);
 
-  // Filter data based on selected date
-  const filteredAttendance = attendanceData.filter(record => dateFilter === '' || record.date === dateFilter);
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('admission_class', combinedClassSection);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Fetched students:', data);
+      setStudents(data);
+    } catch (error) {
+      console.error('Error fetching students:', error.message);
+    } finally {
+      setLoading(false); // <- after fetch finishes
+    }
+  };
+
+  const dates = [...new Set(students.map(item => item.date))];
+  const filteredStudents = students.filter(record => dateFilter === '' || record.date === dateFilter);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
@@ -39,65 +63,75 @@ const Attendance = () => {
           Attendance Management
         </Typography>
 
-        {/* Filter by Date */}
-        <FormControl sx={{ minWidth: 200, mb: 3 }}>
-          <InputLabel>Date</InputLabel>
-          <Select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          >
-            <MenuItem value="">All Dates</MenuItem>
-            {dates.map(date => (
-              <MenuItem key={date} value={date}>{date}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {/* Show loading spinner while fetching */}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {/* Filter by Date */}
+            <FormControl sx={{ minWidth: 200, mb: 3 }}>
+              <InputLabel>Date</InputLabel>
+              <Select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              >
+                <MenuItem value="">All Dates</MenuItem>
+                {dates.map((date, index) => (
+                  <MenuItem key={index} value={date}>
+                    {date}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-        {/* Attendance Table */}
-        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell>Roll No</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell align="left">Attendance</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredAttendance.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.rollNo}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell align="right">
-                    <RadioGroup row>
-                      <FormControlLabel value="P" control={<Radio />} label="P" />
-                      <FormControlLabel value="A" control={<Radio />} label="A" />
-                    </RadioGroup>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredAttendance.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} align="center">
-                    <Typography sx={{ py: 2 }}>
-                      No records found for the selected date.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            {/* Attendance Table */}
+            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableCell>Roll No</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell align="left">Attendance</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredStudents.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.roll_number}</TableCell>
+                      <TableCell>{row.full_name}</TableCell>
+                      <TableCell align="right">
+                        <RadioGroup row>
+                          <FormControlLabel value="P" control={<Radio />} label="P" />
+                          <FormControlLabel value="A" control={<Radio />} label="A" />
+                        </RadioGroup>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredStudents.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center">
+                        <Typography sx={{ py: 2 }}>
+                          No records found for the selected date.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-        {/* Back Button */}
-        <Button 
-          
-          variant="contained" 
-          sx={{ mt: 3, background:'#4ade80'}} 
-          onClick={() => navigate(-1)}
-        >
-          Back
-        </Button>
+            {/* Back Button */}
+            <Button 
+              variant="contained" 
+              sx={{ mt: 3, background:'#4ade80' }} 
+              onClick={() => navigate(-1)}
+            >
+              Back
+            </Button>
+          </>
+        )}
       </Box>
     </Box>
   );

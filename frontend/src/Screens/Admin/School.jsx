@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -16,35 +15,78 @@ import {
   Snackbar,
   Alert,
   TablePagination,
+  TextField,
+  InputAdornment,
+  MenuItem,
+  Grid,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
 import supabase from "../../../supabase-client";
 
 const Schools = () => {
   const [schools, setSchools] = useState([]);
+  const [filteredSchools, setFilteredSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterField, setFilterField] = useState("SchoolName"); // default filter by SchoolName
+
+  const filterOptions = [
+    { value: "SchoolID", label: "School ID" },
+    { value: "Email", label: "Email" },
+    { value: "SchoolName", label: "School Name" },
+    { value: "SchoolFor", label: "School For" },
+    { value: "SchoolLevel", label: "School Level" },
+    { value: "Address", label: "Address" },
+    { value: "PhoneNumber", label: "Phone Number" },
+    { value: "Recognizedbyboard", label: "Recognized by Board" },
+  ];
 
   useEffect(() => {
     fetchSchools();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm === "") {
+      setFilteredSchools(schools);
+    } else {
+      const filtered = schools.filter((school) => {
+        const value = school[filterField]?.toString().toLowerCase() || "";
+        return value.includes(searchTerm.toLowerCase());
+      });
+      setFilteredSchools(filtered);
+    }
+    setPage(0); // Reset to first page when filtering
+  }, [searchTerm, filterField, schools]);
+
   const fetchSchools = async () => {
     setLoading(true);
     try {
+
+      console.log("Fetching schools...");
+      const { data: sessionData } = await supabase.auth.getSession();
+      // console.log("Current session before fetch:", sessionData);
+      // console.log("Current session before fetch:.... user", sessionData.user.id);
+      // console.log("Current session before fetch:.... user", sessionData.session.user.id);
+
+
       const { data, error } = await supabase
         .from("School")
         .select("*")
         .order("SchoolID", { ascending: true });
-
-      if (error) throw error;
+        console.log("Supabase response:", { data, error });
+      if (error) {
+        setErrorMessage("An error occurred while fetching schools", error);
+        throw error;
+      }
       setSchools(data);
+      setFilteredSchools(data);
     } catch (error) {
-      setErrorMessage(
-        error.message || "An error occurred while fetching schools"
-      );
+      setErrorMessage("An error occurred while fetching schools", error);
+      console.log("Error fetching schools:", error);
       setOpenSnackbar(true);
     } finally {
       setLoading(false);
@@ -85,6 +127,45 @@ const Schools = () => {
           >
             Schools List
           </Typography>
+
+          {/* Search and Filter Controls */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={8}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder={`Search by ${
+                  filterOptions.find((f) => f.value === filterField)?.label
+                }...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                select
+                fullWidth
+                variant="outlined"
+                label="Filter By"
+                value={filterField}
+                onChange={(e) => setFilterField(e.target.value)}
+              >
+                {filterOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+
           {loading ? (
             <Box
               display="flex"
@@ -145,7 +226,7 @@ const Schools = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {schools
+                    {filteredSchools
                       .slice(
                         page * rowsPerPage,
                         page * rowsPerPage + rowsPerPage
@@ -193,7 +274,7 @@ const Schools = () => {
               <TablePagination
                 rowsPerPageOptions={[10, 25, 50]}
                 component="div"
-                count={schools.length}
+                count={filteredSchools.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

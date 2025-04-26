@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import supabase from '../../../supabase-client.js'
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import supabase from "../../../supabase-client.js";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginAuth() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(true); // Start with loading true for initial session check
   const [resetPassword, setResetPassword] = useState(false);
   const navigate = useNavigate();
@@ -20,9 +20,15 @@ export default function LoginAuth() {
   const checkSession = async () => {
     try {
       // Get current session
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // Add this to your checkSession function
+      console.log("ACTUAL SESSION USER ID......:", session);
+
       if (session) {
+        console.log("User is logged in", session);
         // User is logged in, get user ID
         const userId = session.user.id;
 
@@ -40,14 +46,15 @@ export default function LoginAuth() {
   const checkUserRoleAndRedirect = async (userId) => {
     try {
       // Check in Admins
-      const { data: admin } = await supabase
-        .from('Admin')
-        .select('Role')
-        .eq('user_id', userId)
+      const { data: admin, error } = await supabase
+        .from("Admin")
+        .select("Role")
+        .eq("user_id", userId)
         .single();
+      console.log("Admin", admin);
 
       if (admin) {
-        return navigate('/admin/dashboard');
+        return navigate("/admin");
       }
 
       await supabase.auth.signOut();
@@ -61,8 +68,8 @@ export default function LoginAuth() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setErrorMsg("");
+    setSuccessMsg("");
 
     try {
       // Login using Supabase Auth
@@ -70,6 +77,7 @@ export default function LoginAuth() {
         email,
         password,
       });
+      console.log("Data:", data);
 
       if (error) {
         setErrorMsg(error.message);
@@ -91,8 +99,8 @@ export default function LoginAuth() {
   const handlePasswordReset = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setErrorMsg("");
+    setSuccessMsg("");
 
     if (!email) {
       setErrorMsg("Please enter your email address");
@@ -103,7 +111,7 @@ export default function LoginAuth() {
     try {
       // Send password reset email using Supabase Auth
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/reset-password',
+        redirectTo: window.location.origin + "/reset-password",
       });
 
       if (error) {
@@ -137,10 +145,10 @@ export default function LoginAuth() {
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
         <div>
           <h1 className="text-2xl font-bold text-center text-gray-900">
-            {resetPassword ? 'Reset Password' : 'Login'}
+            {resetPassword ? "Reset Password" : "Login"}
           </h1>
         </div>
-        
+
         {errorMsg && (
           <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">
             {errorMsg}
@@ -152,11 +160,14 @@ export default function LoginAuth() {
             {successMsg}
           </div>
         )}
-        
+
         {resetPassword ? (
           <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
             <div>
-              <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="reset-email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -171,7 +182,8 @@ export default function LoginAuth() {
                 placeholder="Enter your email"
               />
               <p className="mt-2 text-sm text-gray-600">
-                We will send you an email with instructions to reset your password.
+                We will send you an email with instructions to reset your
+                password.
               </p>
             </div>
 
@@ -181,12 +193,12 @@ export default function LoginAuth() {
                 disabled={loading}
                 className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {loading ? 'Sending...' : 'Send Reset Instructions'}
+                {loading ? "Sending..." : "Send Reset Instructions"}
               </button>
             </div>
-            
+
             <div className="text-center">
-              <button 
+              <button
                 type="button"
                 onClick={() => setResetPassword(false)}
                 className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
@@ -199,7 +211,10 @@ export default function LoginAuth() {
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email address
                 </label>
                 <input
@@ -213,9 +228,12 @@ export default function LoginAuth() {
                   className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password
                 </label>
                 <input
@@ -237,10 +255,10 @@ export default function LoginAuth() {
                 disabled={loading}
                 className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? "Logging in..." : "Login"}
               </button>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="text-sm">
                 <button
@@ -251,7 +269,6 @@ export default function LoginAuth() {
                   Forgot your password?
                 </button>
               </div>
-              
             </div>
           </form>
         )}
