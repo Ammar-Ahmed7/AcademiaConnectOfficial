@@ -229,6 +229,7 @@ function DateCalendarWithEvents() {
       const { data, error } = await supabase
         .from("Notice")
         .select("*")
+        .eq("CreatedType", "Admin")
         .order("NoticeID", { ascending: true })
         .abortSignal(controller.signal);
 

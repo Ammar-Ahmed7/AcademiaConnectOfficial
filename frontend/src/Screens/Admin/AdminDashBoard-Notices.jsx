@@ -61,6 +61,7 @@ const AdminDashBoardNotices = () => {
       const { data, error } = await supabase
         .from("Notice")
         .select("*")
+        .eq("CreatedType", "Admin")
         .order("NoticeID", { ascending: true });
 
       if (error) throw error;
