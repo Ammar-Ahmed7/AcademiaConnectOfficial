@@ -99,7 +99,7 @@ const Attendance = () => {
                 <TableBody>
                   {filteredStudents.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell>{row.roll_number}</TableCell>
+                      <TableCell>{row.registration_no}</TableCell>
                       <TableCell>{row.full_name}</TableCell>
                       <TableCell align="right">
                         <RadioGroup row>
