@@ -16,6 +16,7 @@ export default function ResetPassword() {
   useEffect(() => {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession();
+      console.log ("Session Data:", data); // Log session data for debugging
       
       // If no session and no error, the user might not have clicked the link correctly
       if (!data.session && !error) {
@@ -55,10 +56,26 @@ export default function ResetPassword() {
       
       setSuccessMsg("Password updated successfully!");
       
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 3000);
+      // Get user metadata from session and navigate based on role
+      const { data } = await supabase.auth.getSession();
+      const userRole = data?.session?.user?.user_metadata?.role; // Access role from user_metadata
+      console.log("User Role:", userRole); // Log the role for debugging
+      
+      // Redirect based on role
+      if (userRole === 'School') {
+        setTimeout(() => {
+
+        navigate('/school-login');
+        }, 3000); // Redirect after 3 seconds
+      } else if (userRole === 'Teacher') {
+        setTimeout(() => {
+        navigate('/teacher-login');
+        }, 3000); // Redirect after 3 seconds
+      } else if (userRole === 'Admin') {
+        setTimeout(() => {
+        navigate('/admin-login');
+        },3000); // Redirect after 3 seconds
+      } 
       
     } catch (err) {
       setErrorMsg("An error occurred while resetting your password");
