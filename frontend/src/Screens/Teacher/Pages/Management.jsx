@@ -1,6 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, Box, Paper, Typography, IconButton } from '@mui/material';
+// eslint-disable-next-line no-unused-vars
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Box, Paper, Typography,Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PeopleIcon from '@mui/icons-material/People';
 import GradingIcon from '@mui/icons-material/Grading';
@@ -9,6 +10,15 @@ import Sidebar from '../Components/Sidebar';
 
 const Management = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Use this to access passed state
+  const classInfo = location.state?.classInfo; // Access the classInfo object
+
+  // Log the classInfo to verify it's being passed correctly
+  useEffect(() => {
+    if (classInfo) {
+      console.log('Class Info:', classInfo); // Log class info to the console for debugging
+    }
+  }, [classInfo]);
 
   const managementOptions = [
     {
@@ -48,13 +58,13 @@ const Management = () => {
         }}
       >
         <Typography variant="h4" sx={{ mb: 3, color: '#1a1a2e' }}>
-          Class Management
+          Class Management for {classInfo?.sections.classes.class_name} - {classInfo?.sections.section_name}
         </Typography>
 
         {managementOptions.map((option, index) => (
           <Paper
             key={index}
-            onClick={() => navigate(option.path)}
+            onClick={() => navigate(option.path, { state: { classInfo } })} // Pass classInfo on navigating
             sx={{
               p: 3,
               display: 'flex',
@@ -81,30 +91,16 @@ const Management = () => {
                 {option.description}
               </Typography>
             </Box>
-            <IconButton 
-              sx={{ 
-                color: '#4ade80',
-                '&:hover': {
-                  backgroundColor: 'rgba(74, 222, 128, 0.1)'
-                }
-              }}
-            >
-              <ArrowForwardIcon />
-            </IconButton>
+            <ArrowForwardIcon sx={{ color: '#4ade80' }} />
           </Paper>
         ))}
 
         {/* Back Button at the Bottom */}
-        <Box sx={{display:'flex', mt: 'auto', textAlign: 'center', pb: 2 }}>
-          <Button 
-            variant="contained" 
-            sx={{ background: '#4ade80' }} 
-            onClick={() => navigate(-1)}
-          >
+        <Box sx={{ display: 'flex', mt: 'auto', textAlign: 'center', pb: 2 }}>
+          <Button variant="contained" sx={{ background: '#4ade80' }} onClick={() => navigate(-1)}>
             Back
           </Button>
         </Box>
-
       </Box>
     </Box>
   );

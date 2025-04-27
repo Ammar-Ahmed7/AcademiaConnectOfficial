@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
+import React, { useState,useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, TextField, Table, 
   TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -9,21 +10,58 @@ import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Sidebar from '../Components/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useLocation } from 'react-router-dom';
+import { supabase } from '../../../../supabase-client'; // adjust the path if needed
 
 const Grade = () => {
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const location = useLocation();
+const classInfo = location.state?.classInfo;
 
-  const [students, setStudents] = useState([
-    { rollNo: "101", name: "John Doe", marks: "" },
-    { rollNo: "102", name: "Jane Smith", marks: "" },
-    { rollNo: "103", name: "Alex Johnson", marks: "" },
-    { rollNo: "104", name: "Sarah Williams", marks: "" },
-    { rollNo: "105", name: "Robert Brown", marks: "" },
-  ]);
+const [students, setStudents] = useState([]);
+// eslint-disable-next-line no-unused-vars
+const [loading, setLoading] = useState(true);
+
+  
+  useEffect(() => {
+    if (classInfo) {
+      console.log('Received Class Info in Grade:', classInfo);
+      fetchStudents();
+    }
+  }, [classInfo]);
+
+  const fetchStudents = async () => {
+    try {
+      const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`;
+      console.log('Fetching students for admission_class:', combinedClassSection);
+  
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('admission_class', combinedClassSection);
+  
+      if (error) {
+        throw error;
+      }
+  
+      const studentList = data.map((student) => ({
+        id: student.id,
+        registration_no: student.registration_no,
+        full_name: student.full_name,
+        marks: "", // initialize empty marks
+      }));
+  
+      console.log('Fetched students:', studentList);
+      setStudents(studentList);
+    } catch (error) {
+      console.error('Error fetching students:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [formData, setFormData] = useState({ 
     name: "", subject: "", description: "", file: null 
@@ -223,33 +261,33 @@ const Grade = () => {
                   <Typography variant="body2" sx={{ mb: 2 }}>
                     {selectedAssignment.description || 'No description provided'}
                   </Typography>
-                  <TableContainer>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Roll No</TableCell>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Marks</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {students.map((student, idx) => (
-                          <TableRow key={student.rollNo}>
-                            <TableCell>{student.rollNo}</TableCell>
-                            <TableCell>{student.name}</TableCell>
-                            <TableCell>
-                              <TextField
-                                type="number"
-                                value={student.marks}
-                                onChange={(e) => handleMarksChange(idx, e.target.value)}
-                                size="small"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 3 }}>
+  <Table sx={{ minWidth: 650 }}>
+    <TableHead>
+      <TableRow>
+        <TableCell>Roll No</TableCell>
+        <TableCell>Name</TableCell>
+        <TableCell>Marks</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {students.map((student, index) => (
+        <TableRow key={student.id}>
+          <TableCell>{student.registration_no}</TableCell>
+          <TableCell>{student.full_name}</TableCell>
+          <TableCell>
+            <TextField
+              type='number'
+              size="small"
+              value={student.marks}
+              onChange={(e) => handleMarksChange(index, e.target.value)}
+            />
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                     <Button variant="contained" onClick={handleMarksSubmit} sx={{ backgroundColor: '#4ade80' }}>
                       Submit Marks
