@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState,useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, TextField, Table, 
@@ -21,6 +22,7 @@ const Grade = () => {
 const classInfo = location.state?.classInfo;
 
 const [students, setStudents] = useState([]);
+// eslint-disable-next-line no-unused-vars
 const [loading, setLoading] = useState(true);
 
   

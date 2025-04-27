@@ -47,6 +47,7 @@ export default function LoginAuth() {
   const checkUserRoleAndRedirect = async (userId) => {
     try {
       // Check in Admins
+      // eslint-disable-next-line no-unused-vars
       const { data: admin, error } = await supabase
         .from("Admin")
         .select("Role")
