@@ -101,7 +101,7 @@ export default function ResetPassword() {
         {successMsg && (
           <div className="p-4 text-sm text-green-700 bg-green-100 rounded-md">
             {successMsg}
-            <p className="mt-2">Redirecting to login page...</p>
+            <p className="mt-2">Redirecting ...</p>
           </div>
         )}
         
