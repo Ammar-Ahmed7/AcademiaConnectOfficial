@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material'; // <- added CircularProgress
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import Sidebar from '../Components/Sidebar';
-import { supabase } from '../../../../supabase-client'; // Import your configured supabase client
+import { supabase } from '../../../../supabase-client';
 
 const Attendance = () => {
   const navigate = useNavigate();
@@ -11,7 +11,9 @@ const Attendance = () => {
 
   const [students, setStudents] = useState([]);
   const [dateFilter, setDateFilter] = useState('');
-  const [loading, setLoading] = useState(true); // <- added loading state
+  const [loading, setLoading] = useState(true);
+  const [attendanceState, setAttendanceState] = useState({}); // added to track attendance state
+  const [selectAll, setSelectAll] = useState(''); // added to handle Select All P/A
 
   useEffect(() => {
     if (classInfo) {
@@ -22,7 +24,7 @@ const Attendance = () => {
 
   const fetchStudents = async () => {
     try {
-      const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`; 
+      const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`;
       console.log('Fetching students for admission_class:', combinedClassSection);
 
       const { data, error } = await supabase
@@ -36,15 +38,38 @@ const Attendance = () => {
 
       console.log('Fetched students:', data);
       setStudents(data);
+
+      // Initialize attendanceState when students are fetched
+      const initialAttendance = {};
+      data.forEach(student => {
+        initialAttendance[student.id] = '';
+      });
+      setAttendanceState(initialAttendance);
     } catch (error) {
       console.error('Error fetching students:', error.message);
     } finally {
-      setLoading(false); // <- after fetch finishes
+      setLoading(false);
     }
   };
 
   const dates = [...new Set(students.map(item => item.date))];
   const filteredStudents = students.filter(record => dateFilter === '' || record.date === dateFilter);
+
+  const handleAttendanceChange = (studentId, value) => {
+    setAttendanceState(prev => ({
+      ...prev,
+      [studentId]: value,
+    }));
+  };
+
+  const handleSelectAllChange = (value) => {
+    setSelectAll(value);
+    const updatedAttendance = {};
+    filteredStudents.forEach(student => {
+      updatedAttendance[student.id] = value;
+    });
+    setAttendanceState(updatedAttendance);
+  };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
@@ -63,7 +88,6 @@ const Attendance = () => {
           Attendance Management
         </Typography>
 
-        {/* Show loading spinner while fetching */}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
             <CircularProgress />
@@ -86,6 +110,18 @@ const Attendance = () => {
               </Select>
             </FormControl>
 
+            {/* Select All P/A */}
+            <Box sx={{ mb: 2 }}>
+              <RadioGroup
+                row
+                value={selectAll}
+                onChange={(e) => handleSelectAllChange(e.target.value)}
+              >
+                <FormControlLabel value="P" control={<Radio />} label="Mark All P" />
+                <FormControlLabel value="A" control={<Radio />} label="Mark All A" />
+              </RadioGroup>
+            </Box>
+
             {/* Attendance Table */}
             <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
               <Table sx={{ minWidth: 650 }}>
@@ -102,7 +138,11 @@ const Attendance = () => {
                       <TableCell>{row.registration_no}</TableCell>
                       <TableCell>{row.full_name}</TableCell>
                       <TableCell align="right">
-                        <RadioGroup row>
+                        <RadioGroup
+                          row
+                          value={attendanceState[row.id] || ''}
+                          onChange={(e) => handleAttendanceChange(row.id, e.target.value)}
+                        >
                           <FormControlLabel value="P" control={<Radio />} label="P" />
                           <FormControlLabel value="A" control={<Radio />} label="A" />
                         </RadioGroup>
