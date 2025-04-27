@@ -95,23 +95,23 @@ const Sidebar = () => {
         <List>
           {menuItems.map(({ text, icon, value }) => (
             <div key={value}>
-              <ListItem
-                button
-                selected={selected === value}
-                onClick={() => handleItemClick(value)}
-                className='cursor-pointer'
-                sx={{
-                  '&:hover': {
-                    backgroundColor: '#2d2d44',
-                  },
-                  '&.Mui-selected': {
-                    backgroundColor: '#2d2d44',
-                  },
-                  '&.Mui-selected:hover': {
-                    backgroundColor: '#2d2d44',
-                  },
-                }}
-              >
+             <ListItem
+  component="button"
+  selected={selected === value}
+  onClick={() => handleItemClick(value)}
+  className='cursor-pointer'
+  sx={{
+    '&:hover': {
+      backgroundColor: '#2d2d44',
+    },
+    '&.Mui-selected': {
+      backgroundColor: '#2d2d44',
+    },
+    '&.Mui-selected:hover': {
+      backgroundColor: '#2d2d44',
+    },
+  }}
+>
                 <ListItemIcon sx={{ color: '#4ade80' }}>
                   {icon}
                 </ListItemIcon>
@@ -130,16 +130,17 @@ const Sidebar = () => {
         </List>
       </Box>
       <Box>
-        <ListItem
-          button
-          onClick={handleLogout}
-          className='cursor-pointer'
-          sx={{
-            '&:hover': {
-              backgroundColor: '#2d2d44',
-            },
-          } }
-        >
+      <ListItem
+  component="button"
+  onClick={handleLogout}
+  className='cursor-pointer'
+  sx={{
+    '&:hover': {
+      backgroundColor: '#2d2d44',
+    },
+  }}
+>
+
           <ListItemIcon sx={{ color: '#4ade80' }}>
             <LogoutIcon />
           </ListItemIcon>
