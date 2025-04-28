@@ -15,6 +15,8 @@ const Attendance = () => {
   const [loading, setLoading] = useState(true);
   const [attendanceState, setAttendanceState] = useState({}); // added to track attendance state
   const [selectAll, setSelectAll] = useState(''); // added to handle Select All P/A
+  const [attendanceDate, setAttendanceDate] = useState('');
+
 
   useEffect(() => {
     if (classInfo) {
@@ -52,6 +54,42 @@ const Attendance = () => {
       setLoading(false);
     }
   };
+
+  const handleSubmitAttendance = async () => {
+    if (!attendanceDate) {
+      alert('Please select a date to submit attendance.');
+      return;
+    }
+  
+    const attendanceData = filteredStudents.map(student => ({
+      teacher_id: classInfo.TeacherID,
+      class_id: classInfo.sections.class_id,
+      registration_no: student.registration_no,
+      full_name: student.full_name,
+      date: attendanceDate, // <-- Use attendanceDate here
+      attendance_status: attendanceState[student.id] || 'A', // Default Absent
+    }));
+  
+    try {
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert(attendanceData);
+  
+      if (error) {
+        console.error('Error inserting attendance:', error.message);
+        alert('Error submitting attendance: ' + error.message);
+      } else {
+        console.log('Attendance submitted successfully:', data);
+        alert('Attendance submitted successfully!');
+        navigate(-1);
+      }
+    } catch (error) {
+      console.error('Unexpected error submitting attendance:', error.message);
+      alert('Unexpected error submitting attendance.');
+    }
+  };
+  
+  
 
   const dates = [...new Set(students.map(item => item.date))];
   const filteredStudents = students.filter(record => dateFilter === '' || record.date === dateFilter);
@@ -171,6 +209,32 @@ const Attendance = () => {
             >
               Back
             </Button>
+
+            <FormControl sx={{ minWidth: 200, mb: 3, ml: 2 }}>
+  <InputLabel>Attendance Date</InputLabel>
+  <input
+    type="date"
+    value={attendanceDate}
+    onChange={(e) => setAttendanceDate(e.target.value)}
+    style={{
+      padding: '16.5px 14px',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+      fontSize: '16px',
+      marginTop: '8px'
+    }}
+  />
+</FormControl>
+
+
+            <Button 
+  variant="contained" 
+  sx={{ mt: 2, ml: 2, background:'#6366f1' }}
+  onClick={handleSubmitAttendance}
+>
+  Submit Attendance
+</Button>
+
           </>
         )}
       </Box>

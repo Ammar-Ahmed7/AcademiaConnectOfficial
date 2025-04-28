@@ -222,7 +222,7 @@ export default function AddaStudent() {
       'fullName','dob','gender','city','residentialAddress',
       'fatherCnic','fatherName','fatherContact','motherName',
       'admissionSchool','admissionClass','admissionDate',
-      'emergencyContact','studentEmail','studentPassword','declaration'
+      'emergencyContact','studentEmail','studentPassword','declaration','registrationNo'
     ].forEach(f => {
       if (!formData[f]) errs[f] = 'Required'
     })
@@ -687,7 +687,7 @@ export default function AddaStudent() {
             </div>
             {/* registrationNo */}
             <div>
-              <label className="block text-sm">Registration No</label>
+              <label className="block text-sm">Registration No<span className="text-red-500">*</span></label>
               <input
                 name="registrationNo"
                 value={formData.registrationNo}

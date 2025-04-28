@@ -56,7 +56,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
           .from('teacher_assignments') // Use correct table name
           .select(`
             *,
-            sections:section_id(section_name, classes:class_id(class_name)),
+            sections:section_id(section_name, classes:class_id(class_name), class_id),
             subjects:subject_id(subject_name)
           `)
           .eq('TeacherID', teacherData.TeacherID)
@@ -75,6 +75,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
 
           return {
             className: cls.sections.classes.class_name, // Fetch the class_name through sections table
+            classID: cls.sections.class_id, // Fetch the class ID
             section: cls.sections.section_name, // Fetch the section name
             subject: cls.subjects.subject_name, // Fetch the subject name
             day: cls.day_of_week, // Directly use day_of_week from database
