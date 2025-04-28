@@ -1,7 +1,9 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, CircularProgress, Snackbar, Alert, TextField } from '@mui/material';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import Sidebar from '../Components/Sidebar';
 import { supabase } from '../../../../supabase-client';
 
@@ -13,40 +15,34 @@ const Attendance = () => {
   const [students, setStudents] = useState([]);
   const [attendanceState, setAttendanceState] = useState({});
   const [loading, setLoading] = useState(true);
-  const [dates, setDates] = useState([]);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [attendanceDate, setAttendanceDate] = useState('');
-  const [selectAll, setSelectAll] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [isExistingAttendance, setIsExistingAttendance] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false,
+    }));
+  };
 
   useEffect(() => {
     if (classInfo) {
-      fetchDates();
       fetchStudents();
     }
   }, [classInfo]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      fetchAttendance(selectedDate);
-    }
-  }, [selectedDate]);
-
-  const fetchDates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('date')
-        .eq('teacher_id', classInfo.TeacherID)
-        .eq('class_id', classInfo.sections.class_id);
-
-      if (error) throw error;
-
-      const uniqueDates = [...new Set(data.map(item => item.date))];
-      setDates(uniqueDates);
-    } catch (error) {
-      console.error('Error fetching dates:', error.message);
-    }
-  };
 
   const fetchStudents = async () => {
     try {
@@ -63,7 +59,7 @@ const Attendance = () => {
 
       const initialAttendance = {};
       data.forEach(student => {
-        initialAttendance[student.id] = '';
+        initialAttendance[student.registration_no] = '';
       });
       setAttendanceState(initialAttendance);
     } catch (error) {
@@ -73,7 +69,17 @@ const Attendance = () => {
     }
   };
 
-  const fetchAttendance = async (date) => {
+  const handleDateChange = async (date) => {
+    if (!date) {
+      setSelectedDate(null);
+      setIsExistingAttendance(false);
+      return;
+    }
+  
+    setSelectedDate(date);
+  
+    const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+  
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -81,23 +87,45 @@ const Attendance = () => {
         .select('*')
         .eq('teacher_id', classInfo.TeacherID)
         .eq('class_id', classInfo.sections.class_id)
-        .eq('date', date);
-
+        .eq('date', formattedDate);
+  
       if (error) throw error;
-
-      setStudents(data);
-
-      const loadedAttendance = {};
-      data.forEach(record => {
-        loadedAttendance[record.id] = record.attendance_status;
-      });
-      setAttendanceState(loadedAttendance);
+  
+      if (data.length > 0) {
+        setIsExistingAttendance(true);
+  
+        const loadedAttendance = {};
+        data.forEach(record => {
+          loadedAttendance[record.registration_no] = record.attendance_status;
+        });
+        setAttendanceState(prev => {
+          const newState = { ...prev };
+          Object.keys(newState).forEach(regNo => {
+            newState[regNo] = loadedAttendance[regNo] || '';
+          });
+          return newState;
+        });
+  
+        showSnackbar('Existing attendance loaded for update.', 'info');
+      } else {
+        setIsExistingAttendance(false);
+  
+        const resetAttendance = {};
+        students.forEach(student => {
+          resetAttendance[student.registration_no] = '';
+        });
+        setAttendanceState(resetAttendance);
+  
+        showSnackbar('No attendance found. Ready to submit.', 'info');
+      }
     } catch (error) {
-      console.error('Error fetching attendance:', error.message);
+      console.error('Error checking attendance:', error.message);
+      showSnackbar('Error checking attendance.', 'error');
     } finally {
       setLoading(false);
     }
   };
+  
 
   const handleAttendanceChange = (studentId, value) => {
     setAttendanceState(prev => ({
@@ -107,57 +135,59 @@ const Attendance = () => {
   };
 
   const handleSelectAllChange = (value) => {
-    setSelectAll(value);
     const updatedAttendance = {};
     students.forEach(student => {
-      updatedAttendance[student.id] = value;
+      updatedAttendance[student.registration_no] = value;
     });
     setAttendanceState(updatedAttendance);
   };
 
   const handleSubmitAttendance = async () => {
-    const finalDate = selectedDate || attendanceDate;
-  
-    if (!finalDate) {
-      alert('Please select a date.');
+    if (!selectedDate) {
+      showSnackbar('Please select a date.', 'error');
       return;
     }
-  
-    const attendanceData = students.map(student => ({
-      teacher_id: classInfo.TeacherID,
-      class_id: classInfo.sections.class_id,
-      registration_no: student.registration_no,
-      full_name: student.full_name,
-      date: finalDate,
-      attendance_status: attendanceState[student.id] || 'A',
-    }));
-  
+
+    const formattedDate = `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`;
+
+
     try {
-      // Delete previous records for that date
-      await supabase
-        .from('attendance')
-        .delete()
-        .eq('teacher_id', classInfo.TeacherID)
-        .eq('class_id', classInfo.sections.class_id)
-        .eq('date', finalDate);
-  
-      // Insert new attendance
-      const { error } = await supabase
+      setLoading(true);
+
+      if (isExistingAttendance) {
+        // Delete old records
+        await supabase
+          .from('attendance')
+          .delete()
+          .eq('teacher_id', classInfo.TeacherID)
+          .eq('class_id', classInfo.sections.class_id)
+          .eq('date', formattedDate);
+      }
+
+      const attendanceData = students.map(student => ({
+        teacher_id: classInfo.TeacherID,
+        class_id: classInfo.sections.class_id,
+        registration_no: student.registration_no,
+        full_name: student.full_name,
+        date: formattedDate,
+        attendance_status: attendanceState[student.registration_no] || 'A',
+      }));
+
+      const { error: insertError } = await supabase
         .from('attendance')
         .insert(attendanceData);
-  
-      if (error) throw error;
-  
-      alert('Attendance saved successfully!');
-      fetchDates(); // refresh dropdown dates
-      setSelectedDate(finalDate); // reload the record just saved
-      setAttendanceDate(''); // clear manual date input
+
+      if (insertError) throw insertError;
+
+      showSnackbar(isExistingAttendance ? 'Attendance updated successfully!' : 'Attendance submitted successfully!', 'success');
+      setIsExistingAttendance(true);
     } catch (error) {
       console.error('Error saving attendance:', error.message);
-      alert('Error saving attendance.');
+      showSnackbar('Error saving attendance.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
-  
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
@@ -174,51 +204,24 @@ const Attendance = () => {
         ) : (
           <>
             <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
-              {/* Date Selector for Viewing Records */}
-              <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel>Select Record Date</InputLabel>
-                <Select
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  label="Select Attendance Date"
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                >
-                  <MenuItem value="">-- No Date Selected --</MenuItem>
-                  {dates.map((date, index) => (
-                    <MenuItem key={index} value={date}>
-                      {date}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* Attendance Date Picker for New Submission */}
-              <FormControl sx={{minWidth: 200 }}>
-                <InputLabel>Attendance Date</InputLabel>
-                <input
-  type="date"
-  value={attendanceDate}
-  onChange={(e) => setAttendanceDate(e.target.value)}
-  max={new Date().toISOString().split('T')[0]} // <--- ADD THIS LINE
-  style={{
-    padding: '16.5px 14px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-    fontSize: '16px',
-    
-  }}
-/>
-
-              </FormControl>
+                  onChange={handleDateChange}
+                  disableFuture
+                  renderInput={(params) => <TextField {...params} />}
+                />
+              </LocalizationProvider>
             </Box>
 
-            {/* Select All Present/Absent */}
             <Box sx={{ mb: 2 }}>
-              <RadioGroup row value={selectAll} onChange={(e) => handleSelectAllChange(e.target.value)}>
+              <RadioGroup row onChange={(e) => handleSelectAllChange(e.target.value)}>
                 <FormControlLabel value="P" control={<Radio />} label="Mark All Present" />
                 <FormControlLabel value="A" control={<Radio />} label="Mark All Absent" />
               </RadioGroup>
             </Box>
 
-            {/* Attendance Table */}
             <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
               <Table>
                 <TableHead>
@@ -237,8 +240,8 @@ const Attendance = () => {
                         <TableCell align="center">
                           <RadioGroup
                             row
-                            value={attendanceState[student.id] || ''}
-                            onChange={(e) => handleAttendanceChange(student.id, e.target.value)}
+                            value={attendanceState[student.registration_no] || ''}
+                            onChange={(e) => handleAttendanceChange(student.registration_no, e.target.value)}
                           >
                             <FormControlLabel value="P" control={<Radio />} label="P" />
                             <FormControlLabel value="A" control={<Radio />} label="A" />
@@ -257,18 +260,28 @@ const Attendance = () => {
               </Table>
             </TableContainer>
 
-            {/* Buttons */}
             <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
               <Button variant="contained" sx={{ backgroundColor: '#4ade80' }} onClick={() => navigate(-1)}>
                 Back
               </Button>
               <Button variant="contained" sx={{ backgroundColor: '#6366f1' }} onClick={handleSubmitAttendance}>
-                {selectedDate ? 'Update Attendance' : 'Submit Attendance'}
+                {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
               </Button>
             </Box>
           </>
         )}
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
