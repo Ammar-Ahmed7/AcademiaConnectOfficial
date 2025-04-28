@@ -41,6 +41,7 @@ const Attendance = () => {
   useEffect(() => {
     if (classInfo) {
       fetchStudents();
+      console.log('Class Info:', classInfo); // Log class info to the
     }
   }, [classInfo]);
 
@@ -156,6 +157,7 @@ const Attendance = () => {
       const attendanceData = students.map(student => ({
         teacher_id: classInfo.TeacherID,
         class_id: classInfo.sections.class_id,
+        section_id: classInfo.section_id,
         registration_no: student.registration_no,
         full_name: student.full_name,
         date: formattedDate,
