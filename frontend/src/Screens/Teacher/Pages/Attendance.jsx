@@ -147,23 +147,12 @@ const Attendance = () => {
       showSnackbar('Please select a date.', 'error');
       return;
     }
-
+  
     const formattedDate = `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`;
-
-
+  
     try {
       setLoading(true);
-
-      if (isExistingAttendance) {
-        // Delete old records
-        await supabase
-          .from('attendance')
-          .delete()
-          .eq('teacher_id', classInfo.TeacherID)
-          .eq('class_id', classInfo.sections.class_id)
-          .eq('date', formattedDate);
-      }
-
+  
       const attendanceData = students.map(student => ({
         teacher_id: classInfo.TeacherID,
         class_id: classInfo.sections.class_id,
@@ -172,13 +161,14 @@ const Attendance = () => {
         date: formattedDate,
         attendance_status: attendanceState[student.registration_no] || 'A',
       }));
-
-      const { error: insertError } = await supabase
+  
+      // Use upsert instead of delete+insert
+      const { error } = await supabase
         .from('attendance')
-        .insert(attendanceData);
-
-      if (insertError) throw insertError;
-
+        .upsert(attendanceData, { onConflict: ['registration_no', 'date'] });
+  
+      if (error) throw error;
+  
       showSnackbar(isExistingAttendance ? 'Attendance updated successfully!' : 'Attendance submitted successfully!', 'success');
       setIsExistingAttendance(true);
     } catch (error) {
@@ -188,6 +178,7 @@ const Attendance = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
