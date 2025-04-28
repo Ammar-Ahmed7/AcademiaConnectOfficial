@@ -116,20 +116,22 @@ const Attendance = () => {
   };
 
   const handleSubmitAttendance = async () => {
-    if (!attendanceDate) {
+    const finalDate = selectedDate || attendanceDate;
+  
+    if (!finalDate) {
       alert('Please select a date.');
       return;
     }
-
+  
     const attendanceData = students.map(student => ({
       teacher_id: classInfo.TeacherID,
       class_id: classInfo.sections.class_id,
       registration_no: student.registration_no,
       full_name: student.full_name,
-      date: attendanceDate,
+      date: finalDate,
       attendance_status: attendanceState[student.id] || 'A',
     }));
-
+  
     try {
       // Delete previous records for that date
       await supabase
@@ -137,23 +139,25 @@ const Attendance = () => {
         .delete()
         .eq('teacher_id', classInfo.TeacherID)
         .eq('class_id', classInfo.sections.class_id)
-        .eq('date', attendanceDate);
-
+        .eq('date', finalDate);
+  
       // Insert new attendance
       const { error } = await supabase
         .from('attendance')
         .insert(attendanceData);
-
+  
       if (error) throw error;
-
+  
       alert('Attendance saved successfully!');
-      fetchDates(); // refresh dates dropdown
-      setSelectedDate(attendanceDate); // auto-load after saving
+      fetchDates(); // refresh dropdown dates
+      setSelectedDate(finalDate); // reload the record just saved
+      setAttendanceDate(''); // clear manual date input
     } catch (error) {
       console.error('Error saving attendance:', error.message);
       alert('Error saving attendance.');
     }
   };
+  
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
@@ -187,20 +191,22 @@ const Attendance = () => {
               </FormControl>
 
               {/* Attendance Date Picker for New Submission */}
-              <FormControl sx={{ minWidth: 200 }}>
+              <FormControl sx={{minWidth: 200 }}>
                 <InputLabel>Attendance Date</InputLabel>
                 <input
-                  type="date"
-                  value={attendanceDate}
-                  onChange={(e) => setAttendanceDate(e.target.value)}
-                  style={{
-                    padding: '16.5px 14px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc',
-                    fontSize: '16px',
-                    marginTop: '8px',
-                  }}
-                />
+  type="date"
+  value={attendanceDate}
+  onChange={(e) => setAttendanceDate(e.target.value)}
+  max={new Date().toISOString().split('T')[0]} // <--- ADD THIS LINE
+  style={{
+    padding: '16.5px 14px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    fontSize: '16px',
+    
+  }}
+/>
+
               </FormControl>
             </Box>
 
