@@ -27,6 +27,9 @@ const [students, setStudents] = useState([]);
 // eslint-disable-next-line no-unused-vars
 const [loading, setLoading] = useState(true);
 
+const [loadingAssignments, setLoadingAssignments] = useState(true);
+const [uploadingAssignment, setUploadingAssignment] = useState(false);
+
   
   useEffect(() => {
     if (classInfo) {
@@ -91,6 +94,7 @@ const [loading, setLoading] = useState(true);
 
   // Fetch Assignments
 const fetchAssignments = async () => {
+  setLoadingAssignments(true);
   try {
     const { data, error } = await supabase
     .from('assignments_quizzes')
@@ -119,18 +123,27 @@ const fetchAssignments = async () => {
       id: assignment.id,
       name: assignment.name,
       description: assignment.description,
-      file: assignment.file_url ? { name: assignment.file_url.split('/').pop(), url: assignment.file_url } : null,
+      file: assignment.file_url
+  ? {
+      name: decodeURIComponent(assignment.file_url.split('/').pop().replace(/^\d+-\d+-/, '')),
+      url: assignment.file_url,
+    }
+  : null,
+
       subject_name: assignment.subjects?.subject_name || "Subject not found",
     }));
     
     setAssignments(assignmentsData);
   } catch (error) {
     console.error('Error fetching assignments:', error.message);
+  }  finally {
+    setLoadingAssignments(false);
   }
 };
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  setUploadingAssignment(true);
 
   let fileUrl = null;
 
@@ -140,19 +153,22 @@ const handleSubmit = async (e) => {
     // Generate a unique filename using timestamp + random number
     const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const uniqueFileName = `${uniqueSuffix}-${file.name}`;
-    const filePath = `/upload/${uniqueFileName}`;
+    const filePath = `upload/${uniqueFileName}`;
 
     try {
       const { error: uploadError } = await supabase
         .storage
         .from('assessments')
-        .upload(filePath, file); // no upsert needed now
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      fileUrl = supabase.storage.from('assessments').getPublicUrl(filePath).publicURL;
+      // Fix: Get the correct public URL format
+      const { data } = supabase.storage.from('assessments').getPublicUrl(filePath);
+      fileUrl = data.publicUrl; // Use data.publicUrl instead of .publicURL
     } catch (error) {
       console.error('Error uploading file:', error.message);
+      setUploadingAssignment(false);
       return;
     }
   }
@@ -179,6 +195,8 @@ const handleSubmit = async (e) => {
 
   } catch (error) {
     console.error('Error inserting assignment:', error.message);
+  } finally {
+    setUploadingAssignment(false);
   }
 };
 
@@ -204,19 +222,16 @@ const handleSubmit = async (e) => {
   };
 
   const handleDownload = (file) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 0);
+    if (file && file.url) {
+      const link = document.createElement('a');
+      link.href = file.url;
+      link.setAttribute('download', file.name); // optional: lets browser name the file
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
+  
 
   const modalStyle = {
     position: 'absolute', top: '50%', left: '50%',
@@ -249,13 +264,15 @@ const handleSubmit = async (e) => {
                     Assignment & Grade Management
                   </Typography>
                   <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenModal}
-                    sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
-                  >
-                    Create Assignment
-                  </Button>
+  variant="contained"
+  startIcon={<AddIcon />}
+  onClick={handleOpenModal}
+  sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+  disabled={uploadingAssignment} // ✅ Disable on upload
+>
+  {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
+</Button>
+
                 </Paper>
               </Grid>
               <Grid item xs={12}>
@@ -263,7 +280,9 @@ const handleSubmit = async (e) => {
                   <Typography variant="h6" gutterBottom color="primary">
                     Assignments & Quizzes
                   </Typography>
-                  {assignments.length === 0 ? (
+                  {loadingAssignments ? (
+  <Typography>Loading assignments...</Typography>
+) : assignments.length === 0 ? (
   <Typography>No assignments created yet.</Typography>
 ) : (
   assignments.map((assignment) => (
@@ -285,10 +304,13 @@ const handleSubmit = async (e) => {
 
         <Typography variant="body2" color="text.secondary">
           {assignment.subject_name ? assignment.subject_name : "Subject not found"} 
-          {assignment.file && `• ${assignment.file.name}`}
-        </Typography>
+          </Typography>
+         
         <Typography variant="body2" color="text.secondary">
           {assignment.description || "No description provided"}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem'}}> 
+          {assignment.file &&  `${assignment.file.name}`}
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', gap: 1 }}>
@@ -444,9 +466,15 @@ const handleSubmit = async (e) => {
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                 <Button onClick={handleCloseModal}>Cancel</Button>
-                <Button type="submit" variant="contained" sx={{ backgroundColor: '#4ade80' }}>
-                  Create
-                </Button>
+                <Button 
+  type="submit" 
+  variant="contained" 
+  disabled={uploadingAssignment}
+  sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+>
+  {uploadingAssignment ? 'Uploading...' : 'Create'}
+</Button>
+
               </Box>
             </form>
           </Box>
