@@ -12,6 +12,8 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Sidebar from '../Components/Sidebar';
 import { useNavigate,useLocation } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client'; // adjust the path if needed
+import { MenuItem, FormControl, InputLabel, Select } from '@mui/material';
+
 
 const Grade = () => {
   const navigate = useNavigate();
@@ -30,9 +32,12 @@ const [loading, setLoading] = useState(true);
     if (classInfo) {
       console.log('Received Class Info in Grade:', classInfo);
       fetchStudents();
+      fetchAssignments();
     }
   }, [classInfo]);
 
+
+  
   const fetchStudents = async () => {
     try {
       const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`;
@@ -64,8 +69,12 @@ const [loading, setLoading] = useState(true);
   };
 
   const [formData, setFormData] = useState({ 
-    name: "", subject: "", description: "", file: null 
+    name: "", 
+    subject: classInfo?.subjects?.subject_name || "", 
+    description: "", 
+    file: null 
   });
+  
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -79,13 +88,102 @@ const [loading, setLoading] = useState(true);
     setFormData({ ...formData, file: e.target.files[0] });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setAssignments([...assignments, { ...formData, id: assignments.length + 1 }]);
+
+  // Fetch Assignments
+const fetchAssignments = async () => {
+  try {
+    const { data, error } = await supabase
+    .from('assignments_quizzes')
+    .select(`
+      id,
+      name,
+      description,
+      file_url,
+      subject_id,
+      subjects (
+        subject_name
+      )
+    `)
+    .eq('class_id', classInfo.sections.class_id)
+    .eq('section_id', classInfo.section_id)
+    .eq('subject_id', classInfo.subject_id); // ✅ subject filter added
+  
+    if (error) {
+      throw error;
+    }
+
+    console.log('Fetched assignments:', data);
+
+    // Map assignments into the correct format for rendering
+    const assignmentsData = data.map((assignment) => ({
+      id: assignment.id,
+      name: assignment.name,
+      description: assignment.description,
+      file: assignment.file_url ? { name: assignment.file_url.split('/').pop(), url: assignment.file_url } : null,
+      subject_name: assignment.subjects?.subject_name || "Subject not found",
+    }));
+    
+    setAssignments(assignmentsData);
+  } catch (error) {
+    console.error('Error fetching assignments:', error.message);
+  }
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  let fileUrl = null;
+
+  if (formData.file) {
+    const file = formData.file;
+
+    // Generate a unique filename using timestamp + random number
+    const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const uniqueFileName = `${uniqueSuffix}-${file.name}`;
+    const filePath = `/upload/${uniqueFileName}`;
+
+    try {
+      const { error: uploadError } = await supabase
+        .storage
+        .from('assessments')
+        .upload(filePath, file); // no upsert needed now
+
+      if (uploadError) throw uploadError;
+
+      fileUrl = supabase.storage.from('assessments').getPublicUrl(filePath).publicURL;
+    } catch (error) {
+      console.error('Error uploading file:', error.message);
+      return;
+    }
+  }
+
+  try {
+    const { error } = await supabase
+      .from('assignments_quizzes')
+      .insert([{
+        name: formData.name,
+        subject_id: classInfo.subject_id,
+        description: formData.description || null,
+        file_url: fileUrl || null,
+        teacher_id: classInfo.TeacherID,
+        class_id: classInfo.sections.class_id,
+        section_id: classInfo.section_id,
+      }]);
+
+    if (error) throw error;
+
+    await fetchAssignments();
+
     setFormData({ name: "", subject: "", description: "", file: null });
     handleCloseModal();
-  };
 
+  } catch (error) {
+    console.error('Error inserting assignment:', error.message);
+  }
+};
+
+
+  
   const handleAssignmentClick = (assignment) => {
     setSelectedAssignment(assignment);
   };
@@ -166,58 +264,63 @@ const [loading, setLoading] = useState(true);
                     Assignments & Quizzes
                   </Typography>
                   {assignments.length === 0 ? (
-                    <Typography>No assignments created yet.</Typography>
-                  ) : (
-                    assignments.map((assignment) => (
-                      <Box
-                        key={assignment.id}
-                        sx={{
-                          p: 2,
-                          borderBottom: '1px solid #eee',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          cursor: 'pointer',
-                          '&:hover': { backgroundColor: '#f8fafc' }
-                        }}
-                        onClick={() => handleAssignmentClick(assignment)}
-                      >
-                        <Box>
-                          <Typography variant="subtitle1">{assignment.name}</Typography>
+  <Typography>No assignments created yet.</Typography>
+) : (
+  assignments.map((assignment) => (
+    <Box
+      key={assignment.id}
+      sx={{
+        p: 2,
+        borderBottom: '1px solid #eee',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        cursor: 'pointer',
+        '&:hover': { backgroundColor: '#f8fafc' }
+      }}
+      onClick={() => handleAssignmentClick(assignment)}
+    >
+      <Box>
+        <Typography variant="subtitle1">{assignment.name}</Typography>
 
-                          <Typography variant="body2" color="text.secondary">
-  {assignment.subject} {assignment.file && `• ${assignment.file.name}`}
-</Typography>
-                          
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          {assignment.file && (
-                            <Tooltip title="Download File">
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownload(assignment.file);
-                                }}
-                              >
-                                <DownloadIcon />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Button
-                            variant="contained"
-                            size="small"
-                            sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAssignmentClick(assignment);
-                            }}
-                          >
-                            Grade
-                          </Button>
-                        </Box>
-                      </Box>
-                    ))
-                  )}
+        <Typography variant="body2" color="text.secondary">
+          {assignment.subject_name ? assignment.subject_name : "Subject not found"} 
+          {assignment.file && `• ${assignment.file.name}`}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {assignment.description || "No description provided"}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        {assignment.file && (
+          <Tooltip title="Download File">
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload(assignment.file);
+              }}
+            >
+              <DownloadIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        <Button
+          variant="contained"
+          size="small"
+          sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAssignmentClick(assignment);
+          }}
+        >
+          Grade
+        </Button>
+      </Box>
+    </Box>
+  ))
+)}
+
+
                 </Paper>
               </Grid>
             </Grid>
@@ -317,7 +420,23 @@ const [loading, setLoading] = useState(true);
             </Box>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <TextField label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
-              <TextField label="Subject" name="subject" value={formData.subject} onChange={handleInputChange} required />
+              <FormControl fullWidth margin="normal">
+  <InputLabel id="subject-select-label">Subject</InputLabel>
+  <Select
+    labelId="subject-select-label"
+    name="subject"
+    value={formData.subject}
+    onChange={handleInputChange}
+    label="Subject"
+  >
+    {classInfo && classInfo.subjects && (
+      <MenuItem value={classInfo.subjects.subject_name}>
+        {classInfo.subjects.subject_name}
+      </MenuItem>
+    )}
+  </Select>
+</FormControl>
+
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
               <Box>
                 <Typography variant="body2">Attach File</Typography>
