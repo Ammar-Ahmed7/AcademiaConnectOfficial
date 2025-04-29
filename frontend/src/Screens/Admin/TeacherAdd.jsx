@@ -918,7 +918,7 @@ const TeacherAdd = () => {
       SchoolId: "",
       employeetype: "Teacher",
       employmentStatus: "Working",
-      employmentType: "Permanent",
+      employmentType: "Regular",
       address: "",
     },
     validationSchema,
@@ -1334,7 +1334,7 @@ const TeacherAdd = () => {
                  
                 >
                   <MenuItem value="Principal">Principal</MenuItem>
-                  <MenuItem value="Head-Teacher">Head-Teacher</MenuItem>
+                  <MenuItem value="Vice Principal">Vice Principal</MenuItem>
                   <MenuItem value="Teacher">Teacher</MenuItem>
                 </Select>
                 {formik.touched.employeetype && formik.errors.employeetype && (
@@ -1378,9 +1378,9 @@ const TeacherAdd = () => {
                     Boolean(formik.errors.employmentType)
                   }
                 >
-                  <MenuItem value="Permanent">Permanent</MenuItem>
+                  <MenuItem value="Regular">Regular</MenuItem>
                   <MenuItem value="Contract">Contract</MenuItem>
-                  <MenuItem value="Part-Time">Part-Time</MenuItem>
+                  <MenuItem value="Deputation">Deputation</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
