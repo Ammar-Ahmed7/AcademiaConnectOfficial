@@ -202,9 +202,32 @@ const handleSubmit = async (e) => {
 
 
   
-  const handleAssignmentClick = (assignment) => {
-    setSelectedAssignment(assignment);
-  };
+const handleAssignmentClick = async (assignment) => {
+  setSelectedAssignment(assignment);
+
+  try {
+    const { data: gradesData, error } = await supabase
+      .from('grades')
+      .select('registration_no, marks')
+      .eq('assignment_quiz_id', assignment.id);
+
+    if (error) throw error;
+
+    // Merge marks into student list
+    const updatedStudents = students.map(student => {
+      const gradeEntry = gradesData.find(g => g.registration_no === student.registration_no);
+      return {
+        ...student,
+        marks: gradeEntry ? gradeEntry.marks : "",
+      };
+    });
+
+    setStudents(updatedStudents);
+  } catch (error) {
+    console.error("Error fetching existing grades:", error.message);
+  }
+};
+
 
   const handleMarksChange = (index, value) => {
     const updated = [...students];
@@ -212,10 +235,38 @@ const handleSubmit = async (e) => {
     setStudents(updated);
   };
 
-  const handleMarksSubmit = () => {
-    alert("Marks saved successfully!");
-    setSelectedAssignment(null);
+  const handleMarksSubmit = async () => {
+    if (!selectedAssignment || !students.length) return;
+  
+    try {
+      const gradeData = students
+        .filter((student) => student.marks !== "")
+        .map((student) => ({
+          assignment_quiz_id: selectedAssignment.id,
+          teacher_id: classInfo.TeacherID,
+          class_id: classInfo.sections.class_id,
+          section_id: classInfo.section_id,
+          registration_no: student.registration_no,
+          full_name: student.full_name,
+          marks: parseFloat(student.marks),
+        }));
+  
+      const { error } = await supabase
+        .from('grades')
+        .upsert(gradeData, {
+          onConflict: ['assignment_quiz_id', 'registration_no'], // ensure unique per assignment & student
+        });
+  
+      if (error) throw error;
+  
+      alert("Marks saved successfully!");
+      setSelectedAssignment(null);
+    } catch (error) {
+      console.error("Error saving marks:", error.message);
+      alert("Failed to save marks.");
+    }
   };
+  
 
   const handleBack = () => {
     setSelectedAssignment(null);
@@ -414,9 +465,14 @@ const handleSubmit = async (e) => {
   </Table>
 </TableContainer>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    <Button variant="contained" onClick={handleMarksSubmit} sx={{ backgroundColor: '#4ade80' }}>
-                      Submit Marks
-                    </Button>
+                  <Button
+  variant="contained"
+  color="primary"
+  onClick={handleMarksSubmit}
+>
+  {students.some(student => student.marks !== "") ? "Update Marks" : "Insert Marks"}
+</Button>
+
                   </Box>
                 </Paper>
               </Grid>
