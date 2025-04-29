@@ -3,7 +3,7 @@ import React, { useState,useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, TextField, Table, 
   TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Modal, IconButton, Tooltip 
+  Modal, IconButton, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -29,6 +29,30 @@ const [loading, setLoading] = useState(true);
 
 const [loadingAssignments, setLoadingAssignments] = useState(true);
 const [uploadingAssignment, setUploadingAssignment] = useState(false);
+
+// Added Snackbar state from Attendance.jsx
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  severity: 'success',
+});
+
+// Added showSnackbar function from Attendance.jsx
+const showSnackbar = (message, severity = 'success') => {
+  setSnackbar({
+    open: true,
+    message,
+    severity,
+  });
+};
+
+// Added handleCloseSnackbar function from Attendance.jsx
+const handleCloseSnackbar = () => {
+  setSnackbar(prev => ({
+    ...prev,
+    open: false,
+  }));
+};
 
   
   useEffect(() => {
@@ -66,6 +90,8 @@ const [uploadingAssignment, setUploadingAssignment] = useState(false);
       setStudents(studentList);
     } catch (error) {
       console.error('Error fetching students:', error.message);
+      // Added snackbar for errors
+      showSnackbar('Error fetching students.', 'error');
     } finally {
       setLoading(false);
     }
@@ -136,6 +162,8 @@ const fetchAssignments = async () => {
     setAssignments(assignmentsData);
   } catch (error) {
     console.error('Error fetching assignments:', error.message);
+    // Added snackbar for errors
+    showSnackbar('Error fetching assignments.', 'error');
   }  finally {
     setLoadingAssignments(false);
   }
@@ -168,6 +196,7 @@ const handleSubmit = async (e) => {
       fileUrl = data.publicUrl; // Use data.publicUrl instead of .publicURL
     } catch (error) {
       console.error('Error uploading file:', error.message);
+      showSnackbar('Error uploading file.', 'error'); // Added snackbar
       setUploadingAssignment(false);
       return;
     }
@@ -189,12 +218,14 @@ const handleSubmit = async (e) => {
     if (error) throw error;
 
     await fetchAssignments();
+    showSnackbar('Assignment created successfully!', 'success'); // Added snackbar
 
     setFormData({ name: "", subject: "", description: "", file: null });
     handleCloseModal();
 
   } catch (error) {
     console.error('Error inserting assignment:', error.message);
+    showSnackbar('Error creating assignment.', 'error'); // Added snackbar
   } finally {
     setUploadingAssignment(false);
   }
@@ -223,8 +254,15 @@ const handleAssignmentClick = async (assignment) => {
     });
 
     setStudents(updatedStudents);
+    // Added check to show appropriate message
+    if (gradesData.length > 0) {
+      showSnackbar('Existing grades loaded for update.', 'info');
+    } else {
+      showSnackbar('No grades found. Ready to submit.', 'info');
+    }
   } catch (error) {
     console.error("Error fetching existing grades:", error.message);
+    showSnackbar('Error fetching grades.', 'error');
   }
 };
 
@@ -259,18 +297,29 @@ const handleAssignmentClick = async (assignment) => {
   
       if (error) throw error;
   
-      alert("Marks saved successfully!");
+      // Changed alert to snackbar
+      showSnackbar('Marks saved successfully!', 'success');
       setSelectedAssignment(null);
     } catch (error) {
       console.error("Error saving marks:", error.message);
-      alert("Failed to save marks.");
+      // Changed alert to snackbar
+      showSnackbar('Failed to save marks.', 'error');
     }
   };
   
 
   const handleBack = () => {
-    setSelectedAssignment(null);
-  };
+  setSelectedAssignment(null);
+
+  // Reset the marks of all students when going back to the assignments view
+  const resetStudentsMarks = students.map((student) => ({
+    ...student,
+    marks: "", // Reset marks to an empty string
+  }));
+  
+  setStudents(resetStudentsMarks); // Update the state with the reset marks
+};
+
 
   const handleDownload = (file) => {
     if (file && file.url) {
@@ -280,6 +329,7 @@ const handleAssignmentClick = async (assignment) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      showSnackbar(`Downloading ${file.name}...`, 'info');
     }
   };
   
@@ -535,6 +585,18 @@ const handleAssignmentClick = async (assignment) => {
             </form>
           </Box>
         </Modal>
+
+        {/* Added Snackbar component from Attendance.jsx */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );
