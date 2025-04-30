@@ -13,13 +13,60 @@ const Dashboard = () => {
   const [assignedClasses, setAssignedClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotices, setLoadingNotices] = useState(true);
+
 
 const [calendarValue, setCalendarValue] = useState(new Date());
-  const notifications = [
-    'Staff meeting scheduled for tomorrow at 9 AM',
-    'Submit quarterly assessment reports by Friday',
-    'Parent-teacher meeting next week',
-  ];
+useEffect(() => {
+  const fetchDashboardData = async () => {
+    setLoadingNotices(true); // Start loader
+    try {
+      setLoading(true);
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) return navigate('/');
+
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('Teacher')
+        .select('TeacherID, SchoolID')
+        .eq('user_id', user.id)
+        .single();
+      if (teacherError) throw teacherError;
+
+      // Fetch assigned classes
+      // ... existing fetchAssignedClasses logic ...      // Fetch relevant notices
+      const { data: adminNotices, error: adminError } = await supabase
+        .from('Notice')
+        .select('*')
+        .eq('AudienceTeacher', true)
+        .eq('CreatedType', 'Admin');
+
+      const { data: schoolNotices, error: schoolError } = await supabase
+        .from('Notice')
+        .select('*')
+        .eq('AudienceTeacher', true)
+        .eq('CreatedType', 'School')
+        .eq('CreatedBy', teacherData.SchoolID);
+
+      if (adminError || schoolError) throw adminError || schoolError;
+
+      const allNotices = [...(adminNotices || []), ...(schoolNotices || [])];
+      const sorted = allNotices.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setNotifications(sorted);
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      setError('Failed to load dashboard data.');
+    } finally {
+      setLoadingNotices(false); // Stop loader
+    }
+  };
+
+  fetchDashboardData();
+}, [navigate]);
 
   useEffect(() => {
     const fetchAssignedClasses = async () => {
@@ -223,25 +270,58 @@ const [calendarValue, setCalendarValue] = useState(new Date());
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
-              <Typography variant="h6" gutterBottom color="primary">
-                Notifications & Announcements
+  <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+  <Typography variant="h6" gutterBottom color="primary">
+                Notifications and Announcements
               </Typography>
-              <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                {notifications.map((notification, index) => (
-                  <Box 
-                    key={index} 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: 1,
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <NotificationsIcon sx={{ mr: 2, color: '#4ade80' }} />
-                    <Typography>{notification}</Typography>
-                  </Box>
-                ))}
-              </Box>
+  {loadingNotices ? (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+     <CircularProgress size={30} sx={{ color: '#4ade80' }} />
+    </Box>
+  ) : notifications.length === 0 ? (
+    <Typography sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
+      No notifications found.
+    </Typography>
+  ) : (
+    notifications.map((notification, index) => (
+      <Paper
+        key={index}
+        elevation={3}
+        sx={{
+          backgroundColor:
+            notification.CreatedType === 'Admin' ? '#fff9c4' : '#e6f4ea',
+          borderLeft: `6px solid ${
+            notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
+          }`,
+          mb: 2,
+          p: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <NotificationsIcon
+            sx={{
+              mr: 2,
+              color: notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80',
+            }}
+          />
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold">
+              {notification.Title}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
+              {notification.Message}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              From: {notification.CreatedType}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+    ))
+  )}
+</Box>
+
+
             </Paper>
           </Grid>
 
