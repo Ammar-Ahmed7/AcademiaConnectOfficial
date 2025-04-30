@@ -37,6 +37,9 @@ const Grade = () => {
   
   // Track assignments with grades
   const [assignmentsWithGrades, setAssignmentsWithGrades] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false); // Track the deletion progress
+  const [isSubmittingMarks, setIsSubmittingMarks] = useState(false); // Track marks submission progress
+
 
   // Added Snackbar state from Attendance.jsx
   const [snackbar, setSnackbar] = useState({
@@ -204,7 +207,7 @@ const Grade = () => {
 
   const handleDeleteAssignment = async () => {
     if (!assignmentToDelete) return;
-  
+    setIsDeleting(true); // Set deleting state to true when starting the deletion process
     try {
       // First, get the assignment details to obtain the file URL
       const { data: assignmentData, error: fetchError } = await supabase
@@ -301,6 +304,7 @@ const Grade = () => {
       showSnackbar(`Failed to delete assignment: ${error.message}`, 'error');
     } finally {
       closeDeleteDialog();
+      setIsDeleting(false); // Set deleting state to false after deletion
     }
   };
 
@@ -420,6 +424,8 @@ const Grade = () => {
   const handleMarksSubmit = async () => {
     if (!selectedAssignment || !students.length) return;
   
+    setIsSubmittingMarks(true); // Set submitting state to true when marks are being submitted
+
     try {
       const gradeData = students
         .filter((student) => student.marks !== "")
@@ -460,6 +466,8 @@ const Grade = () => {
       console.error("Error saving marks:", error.message);
       // Changed alert to snackbar
       showSnackbar('Failed to save marks.', 'error');
+    } finally{
+      setIsSubmittingMarks(false); // Set submitting state to false after marks submission
     }
   };
   
@@ -683,13 +691,15 @@ const Grade = () => {
                     </Table>
                   </TableContainer>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleMarksSubmit}
-                    >
-                      {students.some(student => student.marks !== "") ? "Update Marks" : "Insert Marks"}
-                    </Button>
+                  <Button
+  variant="contained"
+  color="primary"
+  onClick={handleMarksSubmit}
+  disabled={isSubmittingMarks} // Disable the button while submitting
+>
+  {isSubmittingMarks ? 'Submitting...' : (students.some(student => student.marks !== "") ? "Update Marks" : "Insert Marks")}
+</Button>
+
                   </Box>
                 </Paper>
               </Grid>
@@ -776,7 +786,13 @@ const Grade = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDeleteDialog}>Cancel</Button>
-          <Button onClick={handleDeleteAssignment} color="error">Delete</Button>
+          <Button
+    onClick={handleDeleteAssignment}
+    color="error"
+    disabled={isDeleting} // Disable button while deleting
+  >
+    {isDeleting ? 'Deleting...' : 'Delete'} {/* Show "Deleting..." while in progress */}
+  </Button>
         </DialogActions>
       </Dialog>
     </Box>
