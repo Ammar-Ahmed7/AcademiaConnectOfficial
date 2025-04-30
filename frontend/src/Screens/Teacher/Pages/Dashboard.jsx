@@ -163,6 +163,16 @@ useEffect(() => {
     navigate('/teacher/class-management', { state: { classInfo } });
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
@@ -312,6 +322,10 @@ useEffect(() => {
             <Typography variant="subtitle1" fontWeight="bold">
               {notification.Title}
             </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+  {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
+</Typography>
+
             <Typography variant="body2" sx={{ mt: 0.5 }}>
               {notification.Message}
             </Typography>
@@ -321,6 +335,7 @@ useEffect(() => {
           </Box>
         </Box>
       </Paper>
+    
     ))
   )}
 </Box>
