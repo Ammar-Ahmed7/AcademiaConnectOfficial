@@ -48,10 +48,13 @@ const StudyMaterial = () => {
 
   const getFileIcon = (url) => {
     const ext = url?.split('.').pop()?.toLowerCase();
-    if (ext === 'pdf') return <PictureAsPdfIcon sx={{ color: '#f44336' }} />;
-    if (['jpg', 'jpeg', 'png'].includes(ext)) return <ImageIcon sx={{ color: '#2196f3' }} />;
-    if (['doc', 'docx', 'ppt', 'pptx'].includes(ext)) return <ArticleIcon sx={{ color: '#ff9800' }} />;
-    if (['mp4', 'mov', 'avi'].includes(ext)) return <VideoFileIcon sx={{ color: '#4caf50' }} />;
+    if (ext === 'xlsx') return <ArticleIcon sx={{ color: '#00a717' }} />;
+    if (ext === 'txt') return <ArticleIcon sx={{ color: '#646969' }} />;
+    if (ext === 'pdf') return <PictureAsPdfIcon sx={{ color: '#ff2323' }} />;
+    if (['jpg', 'jpeg', 'png','gif'].includes(ext)) return <ImageIcon sx={{ color: '#2196f3' }} />;
+    if (['doc', 'docx'].includes(ext)) return <ArticleIcon sx={{ color: '#003291' }} />;
+    if (['ppt', 'pptx'].includes(ext)) return <ArticleIcon sx={{ color: '#ff4b16' }} />;
+    if (['mp4', 'mov', 'avi','mkv'].includes(ext)) return <VideoFileIcon sx={{ color: '#ff7400' }} />;
     return <ArticleIcon sx={{ color: '#9e9e9e' }} />;
   };
 
@@ -84,8 +87,10 @@ const StudyMaterial = () => {
   }, [classInfo]);
 
   const filteredMaterials = resources.filter(material =>
-    material.name.toLowerCase().includes(searchQuery.toLowerCase())
+    material.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (material.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,6 +135,7 @@ const StudyMaterial = () => {
       setFormData({ name: '', description: '', file: null });
       setOpenModal(false);
       fetchResources();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setSnackbar({ open: true, message: 'Error uploading resource.', severity: 'error' });
     } finally {
@@ -144,6 +150,7 @@ const StudyMaterial = () => {
       if (error) throw error;
       setSnackbar({ open: true, message: 'Resource deleted successfully.', severity: 'success' });
       fetchResources();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setSnackbar({ open: true, message: 'Error deleting resource.', severity: 'error' });
     } finally {
@@ -177,6 +184,23 @@ const StudyMaterial = () => {
           </IconButton>
         </Box>
 
+         {/* ── SEARCH BAR ── */}
+        <Paper
+          component="form"
+          sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', mb: 3, width: '100%' }}
+          onSubmit={e => e.preventDefault()}
+        >
+          <InputBase
+            sx={{ ml: 1, flex: 1 }}
+            placeholder="Search study materials by name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+            <SearchIcon />
+          </IconButton>
+        </Paper>
+
         {loadingResources ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
         ) : (
@@ -193,7 +217,7 @@ const StudyMaterial = () => {
                     <Chip label={classInfo.subjects.subject_name} size="small" sx={{ mr: 6 }} />
                     <ListItemSecondaryAction>
                       <IconButton edge="end" aria-label="download" onClick={() => window.open(material.file_url, '_blank')}>
-                        <DownloadIcon />
+                        <DownloadIcon sx={{color:'#05a5d4'}} />
                       </IconButton>
                       <IconButton edge="end" aria-label="delete" color="error" onClick={() => openDeleteDialog(material)}>
                         <DeleteIcon />
