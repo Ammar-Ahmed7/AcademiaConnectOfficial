@@ -144,7 +144,8 @@ const Grade = () => {
       `)
       .eq('class_id', classInfo.sections.class_id)
       .eq('section_id', classInfo.section_id)
-      .eq('subject_id', classInfo.subject_id);
+      .eq('subject_id', classInfo.subject_id)
+      .order('created_at', { ascending: false });  // Newest first
     
       if (error) {
         throw error;
@@ -454,7 +455,7 @@ const Grade = () => {
   
       // Changed alert to snackbar
       showSnackbar('Marks saved successfully!', 'success');
-      setSelectedAssignment(null);
+      // setSelectedAssignment(null);
     } catch (error) {
       console.error("Error saving marks:", error.message);
       // Changed alert to snackbar
