@@ -19,7 +19,7 @@ const Dashboard = () => {
 
 const [calendarValue, setCalendarValue] = useState(new Date());
 useEffect(() => {
-  const fetchDashboardData = async () => {
+  const fetchNotificationData = async () => {
     setLoadingNotices(true); // Start loader
     try {
       setLoading(true);
@@ -35,8 +35,7 @@ useEffect(() => {
         .single();
       if (teacherError) throw teacherError;
 
-      // Fetch assigned classes
-      // ... existing fetchAssignedClasses logic ...      // Fetch relevant notices
+      // Fetch relevant notices
       const { data: adminNotices, error: adminError } = await supabase
         .from('Notice')
         .select('*')
@@ -65,7 +64,7 @@ useEffect(() => {
     }
   };
 
-  fetchDashboardData();
+  fetchNotificationData();
 }, [navigate]);
 
   useEffect(() => {
