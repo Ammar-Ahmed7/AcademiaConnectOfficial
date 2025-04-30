@@ -18,6 +18,7 @@ const Dashboard = () => {
 
 
 const [calendarValue, setCalendarValue] = useState(new Date());
+
 useEffect(() => {
   const fetchNotificationData = async () => {
     setLoadingNotices(true); // Start loader
@@ -35,19 +36,23 @@ useEffect(() => {
         .single();
       if (teacherError) throw teacherError;
 
+      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
       // Fetch relevant notices
       const { data: adminNotices, error: adminError } = await supabase
         .from('Notice')
         .select('*')
         .eq('AudienceTeacher', true)
-        .eq('CreatedType', 'Admin');
+        .eq('CreatedType', 'Admin')
+        .gte('EndDate', today);  // ✅ only include future or current notices
 
       const { data: schoolNotices, error: schoolError } = await supabase
         .from('Notice')
         .select('*')
         .eq('AudienceTeacher', true)
         .eq('CreatedType', 'School')
-        .eq('CreatedBy', teacherData.SchoolID);
+        .eq('CreatedBy', teacherData.SchoolID)
+        .gte('EndDate', today); // ✅ only include future or current notices
 
       if (adminError || schoolError) throw adminError || schoolError;
 
