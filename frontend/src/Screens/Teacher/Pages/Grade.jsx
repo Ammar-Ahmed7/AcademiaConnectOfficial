@@ -536,20 +536,29 @@ const Grade = () => {
           {!selectedAssignment ? (
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
-                <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="h6" color="primary">
-                    Assignment & Grade Management
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenModal}
-                    sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
-                    disabled={uploadingAssignment} // ✅ Disable on upload
-                  >
-                    {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
-                  </Button>
-                </Paper>
+              <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <Typography variant="h6" color="primary">
+    Assignment & Grade Management
+  </Typography>
+  <Box sx={{ display: 'flex', gap: 1 }}>
+    <Button
+      variant="outlined"
+      onClick={() => navigate(-1)}
+    >
+      Back
+    </Button>
+    <Button
+      variant="contained"
+      startIcon={<AddIcon />}
+      onClick={handleOpenModal}
+      sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+      disabled={uploadingAssignment}
+    >
+      {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
+    </Button>
+  </Box>
+</Paper>
+
               </Grid>
               <Grid item xs={12}>
                 <Paper sx={{ p: 2, minHeight: 400 }}>
@@ -690,12 +699,17 @@ const Grade = () => {
                             <TableCell>{student.registration_no}</TableCell>
                             <TableCell>{student.full_name}</TableCell>
                             <TableCell>
-                              <TextField
-                                type='number'
-                                size="small"
-                                value={student.marks}
-                                onChange={(e) => handleMarksChange(index, e.target.value)}
-                              />
+                            <TextField
+  type="number"
+  size="small"
+  value={student.marks}
+  onChange={(e) => {
+    const value = parseFloat(e.target.value);
+    handleMarksChange(index, value < 0 ? '' : value);
+  }}
+  inputProps={{ min: 0 }}
+/>
+
                             </TableCell>
                           </TableRow>
                         ))}
@@ -724,14 +738,7 @@ const Grade = () => {
           )}
         </Box>
 
-        {/* Bottom Back Button only in list view */}
-        {!selectedAssignment && (
-          <Box sx={{ textAlign: 'left', pt: 2 }}>
-            <Button variant="contained" onClick={() => navigate(-1)} sx={{ backgroundColor: '#4ade80' }}>
-              Back
-            </Button>
-          </Box>
-        )}
+       
 
         {/* Modal */}
         <Modal open={openModal} onClose={handleCloseModal}>
