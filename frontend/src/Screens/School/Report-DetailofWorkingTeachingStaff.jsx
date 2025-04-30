@@ -20,58 +20,232 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
-  const fetchDisabledTeachersAndStaff = async () => {
+  // const fetchTeachingStaff = async () => {
+  //   setLoading(true);
+  //   try {
+  //     // Fetch Teachers
+  //     const { data: teachers, error: teacherError } = await supabase
+  //       .from("Teacher")
+  //       .select("*")
+  //       .order("TeacherID", { ascending: true });
+
+  //     if (teacherError) throw teacherError;
+
+  //     // Initialize data structure for posts
+  //     const posts = [
+  //       "Subject Specialist",
+  //       "S.S.T/SSE/Acting Principal",
+  //       "S.S.T(I.T)",
+  //       "Arabic Teacher",
+  //       "E.S.T/E.S.E",
+  //       "P.T.I",
+  //     ];
+
+  //     const staffByPost = posts.reduce((acc, post) => {
+  //       acc[post] = {
+  //         maleRegular: 0,
+  //         maleContract: 0,
+  //         maleDeputation: 0,
+  //         femaleRegular: 0,
+  //         femaleContract: 0,
+  //         femaleDeputation: 0,
+  //         total: 0,
+  //       };
+  //       return acc;
+  //     }, {});
+
+  //     // Process teachers
+  //     teachers.forEach((teacher) => {
+  //       const post = teacher.EmployeeType || "Other";
+  //       const gender =
+  //         teacher.Gender?.toLowerCase() === "female" ? "female" : "male";
+  //       const employmentType =
+  //         teacher.EmployementType?.toLowerCase() || "regular";
+
+  //       if (staffByPost[post]) {
+  //         if (employmentType.includes("contract")) {
+  //           staffByPost[post][`${gender}Contract`] += 1;
+  //         } else if (employmentType.includes("deputation")) {
+  //           staffByPost[post][`${gender}Deputation`] += 1;
+  //         } else {
+  //           staffByPost[post][`${gender}Regular`] += 1;
+  //         }
+  //         staffByPost[post].total += 1;
+  //       }
+  //     });
+
+  //     // Format for table display
+  //     const formattedData = posts.map((post, index) => ({
+  //       srNo: index + 1,
+  //       nameOfPost: post,
+  //       maleRegular: staffByPost[post].maleRegular,
+  //       maleContract: staffByPost[post].maleContract,
+  //       maleDeputation: staffByPost[post].maleDeputation,
+  //       femaleRegular: staffByPost[post].femaleRegular,
+  //       femaleContract: staffByPost[post].femaleContract,
+  //       femaleDeputation: staffByPost[post].femaleDeputation,
+  //       total: staffByPost[post].total,
+  //     }));
+
+  //     // Add total row
+  //     const totals = formattedData.reduce(
+  //       (acc, row) => {
+  //         acc.maleRegular += row.maleRegular;
+  //         acc.maleContract += row.maleContract;
+  //         acc.maleDeputation += row.maleDeputation;
+  //         acc.femaleRegular += row.femaleRegular;
+  //         acc.femaleContract += row.femaleContract;
+  //         acc.femaleDeputation += row.femaleDeputation;
+  //         acc.total += row.total;
+  //         return acc;
+  //       },
+  //       {
+  //         maleRegular: 0,
+  //         maleContract: 0,
+  //         maleDeputation: 0,
+  //         femaleRegular: 0,
+  //         femaleContract: 0,
+  //         femaleDeputation: 0,
+  //         total: 0,
+  //       }
+  //     );
+
+  //     formattedData.push({
+  //       srNo: "",
+  //       nameOfPost: "Total",
+  //       maleRegular: totals.maleRegular,
+  //       maleContract: totals.maleContract,
+  //       maleDeputation: totals.maleDeputation,
+  //       femaleRegular: totals.femaleRegular,
+  //       femaleContract: totals.femaleContract,
+  //       femaleDeputation: totals.femaleDeputation,
+  //       total: totals.total,
+  //     });
+
+  //     setReportData(formattedData);
+  //   } catch (err) {
+  //     console.error("Error fetching teaching staff:", err);
+  //     showAlert("Failed to fetch data: " + err.message, "error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchTeachingStaff = async () => {
     setLoading(true);
     try {
       // Fetch Teachers
       const { data: teachers, error: teacherError } = await supabase
         .from("Teacher")
         .select("*")
-        .eq("Disability", "Yes")
+        .eq("EmployeeType", "Teacher")
         .order("TeacherID", { ascending: true });
-
+  
       if (teacherError) throw teacherError;
-
-      // Fetch Staff
-      const { data: staff, error: staffError } = await supabase
-        .from("staff")
-        .select("*")
-        .eq("disability", "Yes")
-        .order("id", { ascending: true });
-
-      if (staffError) throw staffError;
-
-      // Format Teachers
-      const formattedTeachers = teachers.map((teacher, index) => ({
+  
+      // Define post groupings
+      const postGroups = {
+        "Subject Specialist": ["Subject Specialist"],
+        "S.S.T/SSE/Acting Principal": ["S.S.T", "S.S.E", "Acting Principal"],
+        "S.S.T(I.T)": ["S.S.T(I.T)"],
+        "Arabic Teacher": ["Arabic Teacher"],
+        "E.S.T/E.S.E": ["E.S.T", "E.S.E"],
+        "P.T.I": ["P.T.I"]
+      };
+  
+      // Initialize data structure
+      const staffByPost = Object.keys(postGroups).reduce((acc, groupName) => {
+        acc[groupName] = {
+          maleRegular: 0,
+          maleContract: 0,
+          maleDeputation: 0,
+          femaleRegular: 0,
+          femaleContract: 0,
+          femaleDeputation: 0,
+          total: 0,
+        };
+        return acc;
+      }, {});
+  
+      // Process teachers
+      teachers.forEach((teacher) => {
+        const post = teacher.Post;
+        const gender = teacher.Gender?.toLowerCase() === "female" ? "female" : "male";
+        const employmentType = teacher.EmployementType?.toLowerCase() || "regular";
+  
+        // Find which group this post belongs to
+        let groupName = "Other";
+        for (const [group, posts] of Object.entries(postGroups)) {
+          if (posts.includes(post)) {
+            groupName = group;
+            break;
+          }
+        }
+  
+        // Skip if not in any group (or add to "Other" if you want)
+        if (!staffByPost[groupName]) return;
+  
+        if (employmentType.includes("contract")) {
+          staffByPost[groupName][`${gender}Contract`] += 1;
+        } else if (employmentType.includes("deputation")) {
+          staffByPost[groupName][`${gender}Deputation`] += 1;
+        } else {
+          staffByPost[groupName][`${gender}Regular`] += 1;
+        }
+        staffByPost[groupName].total += 1;
+      });
+  
+      // Format for table display
+      const formattedData = Object.keys(postGroups).map((groupName, index) => ({
         srNo: index + 1,
-        name: `${teacher.Name} ${
-          teacher.FatherName ? `(${teacher.FatherName})` : ""
-        }`,
-        designation: teacher.EmployeeType || "N/A",
-        bps: teacher.BPS || "N/A",
-        joiningDate: teacher.HireDate || "N/A",
-        status: teacher.EmployementType || "N/A",
-        mode: teacher.Disability === "Yes" ? "Disable Quota" : "Open Merit",
+        nameOfPost: groupName,
+        maleRegular: staffByPost[groupName].maleRegular,
+        maleContract: staffByPost[groupName].maleContract,
+        maleDeputation: staffByPost[groupName].maleDeputation,
+        femaleRegular: staffByPost[groupName].femaleRegular,
+        femaleContract: staffByPost[groupName].femaleContract,
+        femaleDeputation: staffByPost[groupName].femaleDeputation,
+        total: staffByPost[groupName].total,
       }));
-
-      // Format Staff
-      const formattedStaff = staff.map((staffMember, index) => ({
-        srNo: formattedTeachers.length + index + 1,
-        name: `${staffMember.full_name} ${
-          staffMember.father_name ? `(${staffMember.father_name})` : ""
-        }`,
-        designation: staffMember.designation || "N/A",
-        bps: staffMember.BPS || "N/A",
-        joiningDate: staffMember.date_of_join_in_department || "N/A",
-        status: staffMember.employment_type || "N/A",
-        mode: staffMember.disability === "Yes" ? "Disable Quota" : "Open Merit",
-      }));
-
-      // Combine teachers + staff
-      const combinedData = [...formattedTeachers, ...formattedStaff];
-      setReportData(combinedData);
+  
+      // Add total row
+      const totals = formattedData.reduce(
+        (acc, row) => {
+          acc.maleRegular += row.maleRegular;
+          acc.maleContract += row.maleContract;
+          acc.maleDeputation += row.maleDeputation;
+          acc.femaleRegular += row.femaleRegular;
+          acc.femaleContract += row.femaleContract;
+          acc.femaleDeputation += row.femaleDeputation;
+          acc.total += row.total;
+          return acc;
+        },
+        {
+          maleRegular: 0,
+          maleContract: 0,
+          maleDeputation: 0,
+          femaleRegular: 0,
+          femaleContract: 0,
+          femaleDeputation: 0,
+          total: 0,
+        }
+      );
+  
+      formattedData.push({
+        srNo: "",
+        nameOfPost: "Total",
+        maleRegular: totals.maleRegular,
+        maleContract: totals.maleContract,
+        maleDeputation: totals.maleDeputation,
+        femaleRegular: totals.femaleRegular,
+        femaleContract: totals.femaleContract,
+        femaleDeputation: totals.femaleDeputation,
+        total: totals.total,
+      });
+  
+      setReportData(formattedData);
     } catch (err) {
-      console.error("Error fetching disabled teachers/staff:", err);
+      console.error("Error fetching teaching staff:", err);
       showAlert("Failed to fetch data: " + err.message, "error");
     } finally {
       setLoading(false);
@@ -79,7 +253,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
   };
 
   useEffect(() => {
-    fetchDisabledTeachersAndStaff();
+    fetchTeachingStaff();
   }, []);
 
   const generatePDFDocument = async () => {
@@ -94,22 +268,29 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       });
 
       pdf.setFontSize(16);
-      //   pdf.text(
-      //     "Details of Working Disabled Teachers",
-      //     pdf.internal.pageSize.getWidth() / 2,
-      //     15,
-      //     { align: "center" }
-      //   );
-
       pdf.text(
-        `Disabled Staff Report - ${new Date(year, month).toLocaleString(
-          "default",
-          { month: "long" }
-        )} ${year}`,
+        "WORKERS WELFARE HIGHER SECONDARY SCHOOL FOR BOYS LAHORE",
         pdf.internal.pageSize.getWidth() / 2,
-        15,
+        10,
         { align: "center" }
       );
+
+      pdf.text(
+        "(DETAIL OF WORKING TEACHING STAFF MALE/FEMALE,REGULAR/CONTRACT)",
+        pdf.internal.pageSize.getWidth() / 2,
+        17,
+        { align: "center" }
+      );
+
+      pdf.text(
+        `${new Date(year, month - 1).toLocaleString("default", {
+          month: "short",
+        })}-${year.toString().slice(-2)}`,
+        pdf.internal.pageSize.getWidth() / 2,
+        24,
+        { align: "center" }
+      );
+
       const currentDate = new Date().toLocaleDateString();
       pdf.setFontSize(10);
       pdf.text(
@@ -120,32 +301,46 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       );
 
       const columns = [
-        { header: "Sr.No", dataKey: "srNo" },
-        { header: "Name with parentage", dataKey: "name" },
-        { header: "Designation", dataKey: "designation" },
-        { header: "BPS", dataKey: "bps" },
-        { header: "Date of joining", dataKey: "joiningDate" },
-        { header: "Status", dataKey: "status" },
-        { header: "Mode", dataKey: "mode" },
+        { header: "Name of Post", dataKey: "nameOfPost" },
+        { header: "Male Teacher", dataKey: "maleRegular" },
+        { header: "", dataKey: "maleContract" },
+        { header: "", dataKey: "maleDeputation" },
+        { header: "Female Teacher", dataKey: "femaleRegular" },
+        { header: "", dataKey: "femaleContract" },
+        { header: "", dataKey: "femaleDeputation" },
+        { header: "Total", dataKey: "total" },
       ];
 
-      const rows = reportData.map((teacher) => ({
-        srNo: teacher.srNo,
-        name: teacher.name,
-        designation: teacher.designation,
-        bps: teacher.bps,
-        joiningDate:
-          teacher.joiningDate && teacher.joiningDate !== "N/A"
-            ? new Date(teacher.joiningDate).toLocaleDateString()
-            : "N/A",
-        status: teacher.status,
-        mode: teacher.mode,
-      }));
-
       autoTable(pdf, {
-        head: [columns.map((col) => col.header)],
-        body: rows.map((row) => columns.map((col) => row[col.dataKey])),
-        startY: 25,
+        head: [
+          [
+            "Name of Post",
+            { content: "Male Teacher", colSpan: 3 },
+            { content: "Female Teacher", colSpan: 3 },
+            "Total",
+          ],
+          [
+            "",
+            "Regular",
+            "Contract",
+            "Deputation",
+            "Regular",
+            "Contract",
+            "Deputation",
+            "",
+          ],
+        ],
+        body: reportData.map((row) => [
+          row.nameOfPost,
+          row.maleRegular || "-",
+          row.maleContract || "-",
+          row.maleDeputation || "-",
+          row.femaleRegular || "-",
+          row.femaleContract || "-",
+          row.femaleDeputation || "-",
+          row.total || "-",
+        ]),
+        startY: 30,
         theme: "grid",
         headStyles: {
           fillColor: [52, 152, 219],
@@ -155,16 +350,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         alternateRowStyles: {
           fillColor: [240, 240, 240],
         },
-        columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: "auto" },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 15 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 25 },
-          6: { cellWidth: 30 },
-        },
-        margin: { top: 25 },
+        margin: { top: 30 },
         didDrawPage: (data) => {
           pdf.setFontSize(8);
           pdf.text(
@@ -189,7 +375,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
 
     try {
       const { pdf } = await generatePDFDocument();
-      pdf.save("disabled_teachers_report.pdf");
+      pdf.save("teaching_staff_report.pdf");
       showAlert("PDF generated successfully!", "success");
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -207,7 +393,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       const { data: existingReport, error: fetchError } = await supabase
         .from("SavedReports")
         .select("*")
-        .eq("ReportName", "Disabled Working Staff Report")
+        .eq("ReportName", "Teaching Staff Report")
         .eq("Month", month)
         .eq("Year", year)
         .maybeSingle();
@@ -219,7 +405,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       const { pdf, currentDate } = await generatePDFDocument();
       const pdfBlob = pdf.output("blob");
       const timestamp = new Date().getTime();
-      const fileName = `disabled_staff_${month}_${year}.pdf`;
+      const fileName = `teaching_staff_${month}_${year}.pdf`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("reports")
         .upload(fileName, pdfBlob);
@@ -233,13 +419,13 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       const publicUrl = urlData?.publicUrl || "";
 
       const { error: dbError } = await supabase.from("SavedReports").insert({
-        Month: month.toString(), // Match your text column type
-        Year: parseInt(year), // Match your int8 column type
-        ReportName: "Disabled Working Staff Report",
+        Month: month.toString(),
+        Year: parseInt(year),
+        ReportName: "Teaching Staff Report",
         FileName: fileName,
         created_at: new Date().toISOString(),
         FilePath: publicUrl,
-        ReportType: "disability",
+        ReportType: "teaching_staff",
         RecordCount: reportData.length,
       });
 
@@ -265,10 +451,21 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-5 m-5 font-sans">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 pb-3 border-b border-gray-200">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-3 md:mb-0">
-          Details of Working Disabled Staff
-        </h1>
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">
+            WORKERS WELFARE HIGHER SECONDARY SCHOOL FOR BOYS LAHORE
+          </h1>
+          <h2 className="text-xl font-medium text-gray-700 mt-1">
+            (DETAIL OF WORKING TEACHING STAFF MALE/FEMALE,REGULAR/CONTRACT)
+          </h2>
+          <h3 className="text-lg text-gray-600 mt-1">
+            {new Date(year, month - 1).toLocaleString("default", {
+              month: "long",
+            })}{" "}
+            {year}
+          </h3>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
           <button
             onClick={savePDFToDatabase}
             className={`px-4 py-2 rounded text-white font-medium ${
@@ -300,54 +497,83 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-blue-500">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Sr.No
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Name of Post
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Name with parentage
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border"
+                    colSpan="3"
+                  >
+                    Male Teacher
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Designation
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border"
+                    colSpan="3"
+                  >
+                    Female Teacher
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    BPS
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Total
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Date of joining
+                </tr>
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border"></th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Regular
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Status
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Contract
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Mode
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Deputation
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Regular
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Contract
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Deputation
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border">
+                    Total
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {reportData.map((teacher) => (
-                  <tr key={teacher.srNo} className="hover:bg-gray-50">
+                {reportData.map((row, index) => (
+                  <tr
+                    key={index}
+                    className={
+                      row.nameOfPost === "Total"
+                        ? "font-bold bg-gray-100"
+                        : "hover:bg-gray-50"
+                    }
+                  >
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.srNo}
+                      {row.nameOfPost}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.name}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.maleRegular || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.designation}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.maleContract || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.bps}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.maleDeputation || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.joiningDate && teacher.joiningDate !== "N/A"
-                        ? new Date(teacher.joiningDate).toLocaleDateString()
-                        : "N/A"}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.femaleRegular || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.status}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.femaleContract || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
-                      {teacher.mode}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.femaleDeputation || "-"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border text-center">
+                      {row.total || "-"}
                     </td>
                   </tr>
                 ))}
@@ -356,7 +582,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
           </div>
         ) : (
           <div className="text-center p-5 text-gray-600">
-            No disabled teacher records found.
+            No teaching staff records found.
           </div>
         )}
       </div>
