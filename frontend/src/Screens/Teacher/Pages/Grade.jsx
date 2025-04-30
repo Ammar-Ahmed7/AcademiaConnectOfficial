@@ -15,6 +15,9 @@ import { supabase } from '../../../../supabase-client'; // adjust the path if ne
 import { MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import InputBase from '@mui/material/InputBase';
+import SearchIcon from '@mui/icons-material/Search';
+
 
 
 const Grade = () => {
@@ -41,6 +44,7 @@ const Grade = () => {
   const [isSubmittingMarks, setIsSubmittingMarks] = useState(false); // Track marks submission progress
   const [hasExistingGrades, setHasExistingGrades] = useState(false); // add at the top with other state
   const [loadingGrades, setLoadingGrades] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
 
   // Added Snackbar state from Attendance.jsx
@@ -521,6 +525,12 @@ const Grade = () => {
     boxShadow: 24, p: 4,
   };
 
+  const filteredAssignments = assignments.filter(
+    (assignment) =>
+      assignment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assignment.description && assignment.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
@@ -560,10 +570,28 @@ const Grade = () => {
     >
       {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
     </Button>
+   
   </Box>
+  
 </Paper>
 
               </Grid>
+              <Grid item xs={12}>
+  <Paper
+    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', mb: 2 }}
+  >
+    <InputBase
+      sx={{ ml: 1, flex: 1 }}
+      placeholder="Search assignments by name or description"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+    <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+      <SearchIcon />
+    </IconButton>
+  </Paper>
+</Grid>
+
               <Grid item xs={12}>
                 <Paper sx={{ p: 2, minHeight: 400 }}>
                   <Typography variant="h6" gutterBottom color="primary">
@@ -574,7 +602,7 @@ const Grade = () => {
                   ) : assignments.length === 0 ? (
                     <Typography>No assignments created yet.</Typography>
                   ) : (
-                    assignments.map((assignment) => (
+                    filteredAssignments.map((assignment) => (
                       <Box
                         key={assignment.id}
                         sx={{
