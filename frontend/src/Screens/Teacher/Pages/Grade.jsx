@@ -607,7 +607,7 @@ const Grade = () => {
                                   handleDownload(assignment.file);
                                 }}
                               >
-                                <DownloadIcon />
+                                <DownloadIcon sx={{ color:'#05a5d4'}} />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -622,7 +622,7 @@ const Grade = () => {
                                   openDeleteDialog(assignment);
                                 }}
                               >
-                                <DeleteIcon />
+                                <DeleteIcon/>
                               </IconButton>
                             </Tooltip>
                           )}
@@ -668,6 +668,7 @@ const Grade = () => {
                         startIcon={<DownloadIcon />}
                         onClick={() => handleDownload(selectedAssignment.file)}
                         size="small"
+                        sx={{ backgroundColor: '#05a5d4', color:'white'}}
                       >
                         Download
                       </Button>
@@ -805,7 +806,7 @@ const Grade = () => {
         <DialogTitle>Delete Assignment</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this assignment? This will also remove all associated grades.
+            Are you sure you want to delete this assignment? 
           </DialogContentText>
         </DialogContent>
         <DialogActions>
