@@ -423,6 +423,14 @@ const Grade = () => {
 
   const handleMarksSubmit = async () => {
     if (!selectedAssignment || !students.length) return;
+
+    // Check for any empty marks
+  const hasEmptyMarks = students.some(student => student.marks === "" || student.marks === null);
+
+  if (hasEmptyMarks) {
+    showSnackbar("Please fill in all marks before submitting.", "warning");
+    return;
+  }
   
     setIsSubmittingMarks(true); // Set submitting state to true when marks are being submitted
 
