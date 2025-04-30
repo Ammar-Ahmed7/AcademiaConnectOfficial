@@ -1,31 +1,4 @@
-// import React from "react";
-// import ReportWorkingDisabilities from "./Report-WorkingDisabilities";
-// import ReportStudentStrength from "./Report-StudentStrength";
-// import ReportVacanncy from "./Report-Vacanncy";
-// import ReportDetailofWorkingNonTeachingStaff from "./Report-DetailofWorkingNonTeachingStaff";
-// import ReportDetailofWorkingTeachingStaff from "./Report-DetailofWorkingTeachingStaff";
-// import ReportEmployeeResignAbsentcase from "./Report-Employee(Resign-Absent)case";
-// import ReportMonthlyProfile from "./Report-MonthlyProfile";
-// import ReportStaffInformation from "./Report-StaffInformation";
-// import ReportStudentAvailTransport from "./Report-StudentAvailTransport";
-// function Reports() {
-//   return (
-//     <div>
-//       <ReportStudentAvailTransport month={6} year={2025} />
-//       <ReportStaffInformation month={6} year={2025} />;
-//       <ReportMonthlyProfile month={6} year={2025} />
-//       <ReportEmployeeResignAbsentcase month={6} year={2025} />;
-//       <ReportDetailofWorkingTeachingStaff month={6} year={2025} />
-//       <ReportDetailofWorkingNonTeachingStaff month={6} year={2025} />;
-//       <ReportVacanncy month={6} year={2025} />
-//       <ReportWorkingDisabilities month={6} year={2025} />;
-//       <ReportStudentStrength month={6} year={2025} />
-//     </div>
-//   );
-// }
-
-// export default Reports;
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReportWorkingDisabilities from "./Report-WorkingDisabilities";
 import ReportStudentStrength from "./Report-StudentStrength";
 import ReportVacanncy from "./Report-Vacanncy";
@@ -35,12 +8,48 @@ import ReportEmployeeResignAbsentcase from "./Report-Employee(Resign-Absent)case
 import ReportMonthlyProfile from "./Report-MonthlyProfile";
 import ReportStaffInformation from "./Report-StaffInformation";
 import ReportStudentAvailTransport from "./Report-StudentAvailTransport";
+import CreatedReports from "./CreatedReports";
+import { supabase } from "../../../supabase-client";
 
 function Reports() {
   const [activeTab, setActiveTab] = useState("createNew");
   const [selectedProfile, setSelectedProfile] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+
+  const [user, setUser] = useState(null);
+  const [schoolInfo, setSchoolInfo] = useState({
+    schoolId: "",
+    schoolName: "",
+  });
+
+  useEffect(() => {
+    const fetchUserAndSchool = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        const { data, error } = await supabase
+          .from("School") // replace with your actual table name
+          .select("SchoolID, SchoolName")
+          .eq("user_id", user.id) // or whatever foreign key relates user to school
+          .single();
+
+        if (data) {
+          setSchoolInfo({
+            schoolId: data.SchoolID,
+            schoolName: data.SchoolName,
+          });
+        } else {
+          console.error("Failed to load school info", error);
+        }
+      }
+    };
+
+    fetchUserAndSchool();
+  }, []);
 
   const profiles = [
     {
@@ -159,6 +168,13 @@ function Reports() {
             ))}
           </select>
         </div>
+
+        <div className="mb-4">
+          <p className="text-gray-600 text-sm">
+            <strong>School ID:</strong> {schoolInfo.schoolId} &nbsp;|&nbsp;
+            <strong>School Name:</strong> {schoolInfo.schoolName}
+          </p>
+        </div>
       </div>
 
       {selectedMonth && selectedYear && (
@@ -188,7 +204,9 @@ function Reports() {
       {selectedProfile && selectedMonth && selectedYear && (
         <div className="mt-6 p-4 bg-white rounded-lg shadow-md">
           {(() => {
-            const monthIndex = months.indexOf(selectedMonth) + 1;
+            // const monthIndex = months.indexOf(selectedMonth) + 1;
+            const monthIndex = months.indexOf(selectedMonth);
+
             const selectedProfileObj = profiles.find(
               (p) => p.name === selectedProfile
             );
@@ -198,6 +216,8 @@ function Reports() {
               <ReportComponent
                 month={monthIndex}
                 year={parseInt(selectedYear)}
+                SchoolID={schoolInfo.schoolId}
+                SchoolName={schoolInfo.schoolName}
               />
             );
           })()}
@@ -207,60 +227,6 @@ function Reports() {
   );
 
   // Rest of the component remains the same...
-  const renderCreatedReports = () => (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-4">Created Reports</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-auto border-collapse border border-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border border-gray-200 px-4 py-2">Report Name</th>
-              <th className="border border-gray-200 px-4 py-2">Month</th>
-              <th className="border border-gray-200 px-4 py-2">Year</th>
-              <th className="border border-gray-200 px-4 py-2">Status</th>
-              <th className="border border-gray-200 px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-gray-200 px-4 py-2">
-                Staff Information
-              </td>
-              <td className="border border-gray-200 px-4 py-2">January</td>
-              <td className="border border-gray-200 px-4 py-2">2023</td>
-              <td className="border border-gray-200 px-4 py-2">Draft</td>
-              <td className="border border-gray-200 px-4 py-2">
-                <button className="text-blue-500 hover:text-blue-700 mr-2">
-                  Edit
-                </button>
-                <button className="text-green-500 hover:text-green-700">
-                  Send
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td className="border border-gray-200 px-4 py-2">
-                Student Strength
-              </td>
-              <td className="border border-gray-200 px-4 py-2">December</td>
-              <td className="border border-gray-200 px-4 py-2">2022</td>
-              <td className="border border-gray-200 px-4 py-2">
-                Ready to Send
-              </td>
-              <td className="border border-gray-200 px-4 py-2">
-                <button className="text-blue-500 hover:text-blue-700 mr-2">
-                  Edit
-                </button>
-                <button className="text-green-500 hover:text-green-700">
-                  Send
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 
   const renderSendReports = () => (
     <div className="p-4 bg-white rounded-lg shadow-md">
@@ -434,7 +400,7 @@ function Reports() {
       </div>
 
       {activeTab === "createNew" && renderCreateNewReport()}
-      {activeTab === "created" && renderCreatedReports()}
+      {activeTab === "created" && <CreatedReports />}
       {activeTab === "send" && renderSendReports()}
       {activeTab === "sent" && renderSentReports()}
     </div>
