@@ -3,7 +3,7 @@ import { supabase } from "../../../supabase-client";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
-const ReportStudentStrength = ({ month, year }) => {
+const ReportStudentStrength = ({ month, year, SchoolID, SchoolName }) => {
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingPDF, setGeneratingPDF] = useState(false);
@@ -19,308 +19,6 @@ const ReportStudentStrength = ({ month, year }) => {
   };
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
-
-  // const fetchStudentStrengthData = async () => {
-  //   setLoading(true);
-  //   try {
-  //     // In a real app, you would fetch this data from your database
-  //     // For now, we'll use the data from your image as mock data
-  //     const mockData = [
-  //       {
-  //         srNo: 1,
-  //         className: "I",
-  //         sections: 3,
-  //         workers: 100,
-  //         private: 0,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 100,
-  //       },
-  //       {
-  //         srNo: 2,
-  //         className: "II",
-  //         sections: 3,
-  //         workers: 117,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 118,
-  //       },
-  //       {
-  //         srNo: 3,
-  //         className: "III",
-  //         sections: 2,
-  //         workers: 87,
-  //         private: 0,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 87,
-  //       },
-  //       {
-  //         srNo: 4,
-  //         className: "IV",
-  //         sections: 2,
-  //         workers: 112,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 113,
-  //       },
-  //       {
-  //         srNo: 5,
-  //         className: "V",
-  //         sections: 2,
-  //         workers: 89,
-  //         private: 0,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 89,
-  //       },
-  //       {
-  //         srNo: 6,
-  //         className: "VI",
-  //         sections: 5,
-  //         workers: 205,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 206,
-  //       },
-  //       {
-  //         srNo: 7,
-  //         className: "VII",
-  //         sections: 4,
-  //         workers: 219,
-  //         private: 0,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 219,
-  //       },
-  //       {
-  //         srNo: 8,
-  //         className: "VIII",
-  //         sections: 6,
-  //         workers: 265,
-  //         private: 2,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 267,
-  //       },
-  //       {
-  //         srNo: 9,
-  //         className: "IX",
-  //         sections: 4,
-  //         workers: 156,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: 157,
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 157,
-  //       },
-  //       {
-  //         srNo: 10,
-  //         className: "X",
-  //         sections: 3,
-  //         workers: 147,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: 111,
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 148,
-  //       },
-  //       {
-  //         srNo: 11,
-  //         className: "XI",
-  //         sections: 1,
-  //         workers: 30,
-  //         private: 6,
-  //         mtech: "-",
-  //         science: 0,
-  //         arts: 0,
-  //         preMedical: 0,
-  //         preEngg: 0,
-  //         iCom: 0,
-  //         ics: 0,
-  //         total: 36,
-  //       },
-  //       {
-  //         srNo: 12,
-  //         className: "XII",
-  //         sections: 2,
-  //         workers: 54,
-  //         private: 1,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 55,
-  //       },
-  //       {
-  //         srNo: 13,
-  //         className: "Total",
-  //         sections: 37, // Updated from 34 to 37 (3 new sections from Class I)
-  //         workers: 1581, // Updated from 1481 (100 new workers from Class I)
-  //         private: 14,
-  //         mtech: "-",
-  //         science: "-",
-  //         arts: "-",
-  //         preMedical: "-",
-  //         preEngg: "-",
-  //         iCom: "-",
-  //         ics: "-",
-  //         total: 1595, // Updated from 1495 (100 new total from Class I)
-  //       },
-  //     ];
-
-  //     setReportData(mockData);
-  //   } catch (err) {
-  //     console.error("Error fetching student strength data:", err);
-  //     showAlert("Failed to fetch data: " + err.message, "error");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const fetchStudentStrengthData = async () => {
-  //   setLoading(true);
-  //   try {
-  //     // Fetch all students data
-  //     const { data: students, error: studentsError } = await supabase
-  //       .from("students")
-  //       .select("admission_class, quota, elective_group")
-  //       .not("admission_class", "is", null);
-
-  //     if (studentsError) throw studentsError;
-
-  //     // Initialize data structure
-  //     const classData = {};
-
-  //     // Process all students
-  //     students.forEach((student) => {
-  //       const classMatch = student.admission_class.match(/^Class (\d+)/i);
-  //       if (!classMatch) return;
-
-  //       const className = classMatch[1]; // Gets "1" from "Class 1A"
-  //       if (!classData[className]) {
-  //         classData[className] = {
-  //           sections: new Set(),
-  //           workers: 0,
-  //           private: 0,
-  //           mtech: 0,
-  //           science: 0,
-  //           arts: 0,
-  //           preMedical: 0,
-  //           preEngg: 0,
-  //           iCom: 0,
-  //           ics: 0,
-  //         };
-  //       }
-
-  //       // Count sections
-  //       classData[className].sections.add(student.admission_class);
-
-  //       // Count quota types (workers/private)
-  //       if (student.quota?.toLowerCase() === "private") {
-  //         classData[className].private++;
-  //       } else {
-  //         classData[className].workers++;
-  //       }
-
-  //       // Count elective groups
-  //       const electiveGroup = student.elective_group?.toLowerCase() || "";
-  //       if (electiveGroup.includes("mtech")) {
-  //         classData[className].mtech++;
-  //       } else if (electiveGroup.includes("science")) {
-  //         classData[className].science++;
-  //       } else if (electiveGroup.includes("arts")) {
-  //         classData[className].arts++;
-  //       } else if (electiveGroup.includes("pre-medical")) {
-  //         classData[className].preMedical++;
-  //       } else if (electiveGroup.includes("pre-engg")) {
-  //         classData[className].preEngg++;
-  //       } else if (electiveGroup.includes("icom")) {
-  //         classData[className].iCom++;
-  //       } else if (electiveGroup.includes("ics")) {
-  //         classData[className].ics++;
-  //       }
-  //     });
-
-  //     // Prepare report data
-  //     const reportData = [
-  //       createClassRow(1, classData["1"]),
-  //       createClassRow(2, classData["2"]),
-  //       createClassRow(3, classData["3"]),
-  //       createClassRow(4, classData["4"]),
-  //       createClassRow(5, classData["5"]),
-  //       createClassRow(6, classData["6"]),
-  //       createClassRow(7, classData["7"]),
-  //       createClassRow(8, classData["8"]),
-  //       createClassRow(9, classData["9"]),
-  //       createClassRow(10, classData["10"]),
-  //       createClassRow(11, classData["11"]),
-  //       createClassRow(12, classData["12"]),
-  //       createTotalRow(classData),
-  //     ].filter((row) => row !== null);
-
-  //     setReportData(reportData);
-  //   } catch (err) {
-  //     console.error("Error fetching student strength data:", err);
-  //     showAlert("Failed to fetch data: " + err.message, "error");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const fetchStudentStrengthData = async () => {
     setLoading(true);
@@ -376,9 +74,9 @@ const ReportStudentStrength = ({ month, year }) => {
           classData[classNum].science++;
         } else if (electiveGroup.includes("arts group")) {
           classData[classNum].arts++;
-        } else if (electiveGroup.includes("premedical")) {
+        } else if (electiveGroup.includes("pre-medical")) {
           classData[classNum].preMedical++;
-        } else if (electiveGroup.includes("preengineering")) {
+        } else if (electiveGroup.includes("pre-engg")) {
           classData[classNum].preEngg++;
         } else if (electiveGroup.includes("i.com")) {
           classData[classNum].iCom++;
@@ -424,25 +122,6 @@ const ReportStudentStrength = ({ month, year }) => {
     return romanNumerals[num] || num.toString();
   };
 
-  // Helper function to create a class row
-  // const createClassRow = (classNum, data) => {
-  //   return {
-  //     srNo: classNum,
-  //     className: toRoman(classNum),
-  //     sections: data.sections.size,
-  //     workers: data.workers,
-  //     private: data.private,
-  //     mtech: data.mtech || "-",
-  //     science: data.science || "-",
-  //     arts: data.arts || "-",
-  //     preMedical: data.preMedical || "-",
-  //     preEngg: data.preEngg || "-",
-  //     iCom: data.iCom || "-",
-  //     ics: data.ics || "-",
-  //     total: data.workers + data.private,
-  //   };
-  // };
-
   const generatePDFDocument = async () => {
     try {
       const jsPDF = (await import("jspdf")).default;
@@ -456,14 +135,22 @@ const ReportStudentStrength = ({ month, year }) => {
 
       pdf.setFontSize(16);
       pdf.text(
-        `Student Strength Report - ${new Date(year, month - 1).toLocaleString(
-          "default",
-          { month: "long" }
-        )} ${year}`,
+        `Student Strength Report`,
         pdf.internal.pageSize.getWidth() / 2,
         15,
         { align: "center" }
       );
+
+      pdf.setFontSize(12);
+      pdf.text(
+        `${SchoolName} - ${new Date(year, month).toLocaleString("default", {
+          month: "long",
+        })} ${year}`,
+        pdf.internal.pageSize.getWidth() / 2,
+        23,
+        { align: "center" }
+      );
+
       const currentDate = new Date().toLocaleDateString();
       pdf.setFontSize(10);
       pdf.text(
@@ -632,173 +319,9 @@ const ReportStudentStrength = ({ month, year }) => {
     };
   };
 
-  // Helper function to create a class row
-  // const createClassRow = (srNo, data) => {
-  //   if (!data) return null;
-
-  //   return {
-  //     srNo,
-  //     className: srNo === 11 ? "XI" : srNo === 12 ? "XII" : srNo.toString(),
-  //     sections: data.sections.size,
-  //     workers: data.workers,
-  //     private: data.private,
-  //     mtech: data.mtech || "-",
-  //     science: data.science || "-",
-  //     arts: data.arts || "-",
-  //     preMedical: data.preMedical || "-",
-  //     preEngg: data.preEngg || "-",
-  //     iCom: data.iCom || "-",
-  //     ics: data.ics || "-",
-  //     total: data.workers + data.private,
-  //   };
-  // };
-
-  // // Helper function to create the total row
-  // const createTotalRow = (classData) => {
-  //   const totals = {
-  //     sections: 0,
-  //     workers: 0,
-  //     private: 0,
-  //     mtech: 0,
-  //     science: 0,
-  //     arts: 0,
-  //     preMedical: 0,
-  //     preEngg: 0,
-  //     iCom: 0,
-  //     ics: 0,
-  //   };
-
-  //   Object.values(classData).forEach((data) => {
-  //     totals.sections += data.sections.size;
-  //     totals.workers += data.workers;
-  //     totals.private += data.private;
-  //     totals.mtech += data.mtech;
-  //     totals.science += data.science;
-  //     totals.arts += data.arts;
-  //     totals.preMedical += data.preMedical;
-  //     totals.preEngg += data.preEngg;
-  //     totals.iCom += data.iCom;
-  //     totals.ics += data.ics;
-  //   });
-
-  //   return {
-  //     srNo: "",
-  //     className: "Total",
-  //     sections: totals.sections,
-  //     workers: totals.workers,
-  //     private: totals.private,
-  //     mtech: totals.mtech || "-",
-  //     science: totals.science || "-",
-  //     arts: totals.arts || "-",
-  //     preMedical: totals.preMedical || "-",
-  //     preEngg: totals.preEngg || "-",
-  //     iCom: totals.iCom || "-",
-  //     ics: totals.ics || "-",
-  //     total: totals.workers + totals.private,
-  //   };
-  // };
   useEffect(() => {
     fetchStudentStrengthData();
   }, []);
-
-  // const generatePDFDocument = async () => {
-  //   try {
-  //     const jsPDF = (await import("jspdf")).default;
-  //     const autoTable = (await import("jspdf-autotable")).default;
-
-  //     const pdf = new jsPDF({
-  //       orientation: "landscape",
-  //       unit: "mm",
-  //       format: "a4",
-  //     });
-
-  //     pdf.setFontSize(16);
-  //     pdf.text(
-  //       `Student Strength Report - ${new Date(year, month - 1).toLocaleString(
-  //         "default",
-  //         { month: "long" }
-  //       )} ${year}`,
-  //       pdf.internal.pageSize.getWidth() / 2,
-  //       15,
-  //       { align: "center" }
-  //     );
-  //     const currentDate = new Date().toLocaleDateString();
-  //     pdf.setFontSize(10);
-  //     pdf.text(
-  //       `Generated on: ${currentDate}`,
-  //       pdf.internal.pageSize.getWidth() - 15,
-  //       10,
-  //       { align: "right" }
-  //     );
-
-  //     const columns = [
-  //       { header: "Sr. NO", dataKey: "srNo" },
-  //       { header: "Name of class", dataKey: "className" },
-  //       { header: "No of section", dataKey: "sections" },
-  //       { header: "Workers", dataKey: "workers" },
-  //       { header: "Private", dataKey: "private" },
-  //       { header: "M.Tech. Group", dataKey: "mtech" },
-  //       { header: "Sci Group", dataKey: "science" },
-  //       { header: "Arts Group", dataKey: "arts" },
-  //       { header: "Pre Medical", dataKey: "preMedical" },
-  //       { header: "Pre-Engg", dataKey: "preEngg" },
-  //       { header: "I.Com", dataKey: "iCom" },
-  //       { header: "I.C.S", dataKey: "ics" },
-  //       { header: "Total", dataKey: "total" },
-  //     ];
-
-  //     const rows = reportData.map((row) => ({
-  //       ...row,
-  //       className:
-  //         row.srNo === 12 ? <strong>{row.className}</strong> : row.className,
-  //     }));
-
-  //     autoTable(pdf, {
-  //       head: [columns.map((col) => col.header)],
-  //       body: rows.map((row) => columns.map((col) => row[col.dataKey])),
-  //       startY: 25,
-  //       theme: "grid",
-  //       headStyles: {
-  //         fillColor: [52, 152, 219],
-  //         textColor: 255,
-  //         fontStyle: "bold",
-  //       },
-  //       alternateRowStyles: {
-  //         fillColor: [240, 240, 240],
-  //       },
-  //       columnStyles: {
-  //         0: { cellWidth: 15 },
-  //         1: { cellWidth: 25 },
-  //         2: { cellWidth: 20 },
-  //         3: { cellWidth: 15 },
-  //         4: { cellWidth: 15 },
-  //         5: { cellWidth: 20 },
-  //         6: { cellWidth: 15 },
-  //         7: { cellWidth: 15 },
-  //         8: { cellWidth: 20 },
-  //         9: { cellWidth: 20 },
-  //         10: { cellWidth: 15 },
-  //         11: { cellWidth: 15 },
-  //         12: { cellWidth: 15 },
-  //       },
-  //       margin: { top: 25 },
-  //       didDrawPage: (data) => {
-  //         pdf.setFontSize(8);
-  //         pdf.text(
-  //           `Page ${pdf.internal.getNumberOfPages()}`,
-  //           pdf.internal.pageSize.getWidth() / 2,
-  //           pdf.internal.pageSize.getHeight() - 10,
-  //           { align: "center" }
-  //         );
-  //       },
-  //     });
-
-  //     return { pdf, currentDate };
-  //   } catch (err) {
-  //     console.error("Error generating PDF:", err);
-  //     throw err;
-  //   }
-  // };
 
   const generatePDF = async () => {
     if (!window || !document) return;
@@ -806,7 +329,8 @@ const ReportStudentStrength = ({ month, year }) => {
 
     try {
       const { pdf } = await generatePDFDocument();
-      pdf.save("student_strength_report.pdf");
+      const fileName = `Student Strength Report- ${SchoolID} -${month}- ${year}.pdf`;
+      pdf.save(fileName);
       showAlert("PDF generated successfully!", "success");
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -827,6 +351,8 @@ const ReportStudentStrength = ({ month, year }) => {
         .eq("ReportName", "Student Strength Report")
         .eq("Month", month)
         .eq("Year", year)
+        .eq("SchoolId", SchoolID)
+
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -836,7 +362,7 @@ const ReportStudentStrength = ({ month, year }) => {
       const { pdf, currentDate } = await generatePDFDocument();
       const pdfBlob = pdf.output("blob");
       const timestamp = new Date().getTime();
-      const fileName = `student_strength_${month}_${year}.pdf`;
+      const fileName = `Student_Strength_${SchoolID}_${month}_${year}.pdf`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("reports")
         .upload(fileName, pdfBlob);
@@ -858,6 +384,7 @@ const ReportStudentStrength = ({ month, year }) => {
         FilePath: publicUrl,
         ReportType: "student_strength",
         RecordCount: reportData.length,
+        SchoolId: SchoolID,
       });
 
       if (dbError) throw dbError;
@@ -882,9 +409,18 @@ const ReportStudentStrength = ({ month, year }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-5 m-5 font-sans">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 pb-3 border-b border-gray-200">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-3 md:mb-0">
-          Details of Student Strength - Jun 2024
-        </h1>
+        <div className="mb-3">
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Student Strength Report
+          </h1>
+          <p className="text-gray-600 text-sm">
+            {SchoolName} |{" "}
+            {new Date(year, month).toLocaleString("default", {
+              month: "long",
+            })}{" "}
+            {year}
+          </p>
+        </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <button
             onClick={savePDFToDatabase}
@@ -963,7 +499,7 @@ const ReportStudentStrength = ({ month, year }) => {
                   <tr
                     key={row.srNo}
                     className={`hover:bg-gray-50 ${
-                      row.srNo === 12 ? "font-bold bg-gray-100" : ""
+                      row.srNo === 12 ? " bg-gray-100" : ""
                     }`}
                   >
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 border">
