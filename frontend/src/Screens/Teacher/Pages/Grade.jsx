@@ -39,6 +39,7 @@ const Grade = () => {
   const [assignmentsWithGrades, setAssignmentsWithGrades] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false); // Track the deletion progress
   const [isSubmittingMarks, setIsSubmittingMarks] = useState(false); // Track marks submission progress
+  const [hasExistingGrades, setHasExistingGrades] = useState(false); // add at the top with other state
 
 
   // Added Snackbar state from Attendance.jsx
@@ -385,12 +386,15 @@ const Grade = () => {
 
       if (error) throw error;
 
+      setHasExistingGrades(gradesData.length > 0); // set flag
+
       // Update assignment's hasGrades status
       if (gradesData && gradesData.length > 0) {
         setAssignmentsWithGrades(prev => 
           prev.includes(assignment.id) ? prev : [...prev, assignment.id]
         );
       }
+
 
       // Merge marks into student list
       const updatedStudents = students.map(student => {
@@ -703,10 +707,15 @@ const Grade = () => {
   variant="contained"
   color="primary"
   onClick={handleMarksSubmit}
-  disabled={isSubmittingMarks} // Disable the button while submitting
+  disabled={isSubmittingMarks}
 >
-  {isSubmittingMarks ? 'Submitting...' : (students.some(student => student.marks !== "") ? "Update Marks" : "Insert Marks")}
+  {isSubmittingMarks
+    ? "Submitting..."
+    : hasExistingGrades
+    ? "Update Marks"
+    : "Insert Marks"}
 </Button>
+
 
                   </Box>
                 </Paper>
