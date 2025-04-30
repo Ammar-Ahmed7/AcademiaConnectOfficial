@@ -751,7 +751,7 @@ const Grade = () => {
               </FormControl>
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
               <Box>
-                <Typography variant="body2">Attach File</Typography>
+                <Typography variant="body2">Attach File (optional)</Typography>
                 <input type="file" onChange={handleFileChange} />
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
