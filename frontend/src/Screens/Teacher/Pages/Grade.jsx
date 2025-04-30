@@ -13,7 +13,7 @@ import Sidebar from '../Components/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client'; // adjust the path if needed
 import { MenuItem, FormControl, InputLabel, Select } from '@mui/material';
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 
@@ -40,6 +40,7 @@ const Grade = () => {
   const [isDeleting, setIsDeleting] = useState(false); // Track the deletion progress
   const [isSubmittingMarks, setIsSubmittingMarks] = useState(false); // Track marks submission progress
   const [hasExistingGrades, setHasExistingGrades] = useState(false); // add at the top with other state
+  const [loadingGrades, setLoadingGrades] = useState(false);
 
 
   // Added Snackbar state from Attendance.jsx
@@ -377,6 +378,7 @@ const Grade = () => {
     
   const handleAssignmentClick = async (assignment) => {
     setSelectedAssignment(assignment);
+    setLoadingGrades(true); // Start loading
 
     try {
       const { data: gradesData, error } = await supabase
@@ -415,6 +417,8 @@ const Grade = () => {
     } catch (error) {
       console.error("Error fetching existing grades:", error.message);
       showSnackbar('Error fetching grades.', 'error');
+    } finally {
+      setLoadingGrades(false); // Stop loading
     }
   };
 
@@ -685,38 +689,41 @@ const Grade = () => {
                   <Typography variant="body2" sx={{ mb: 2 }}>
                     {selectedAssignment.description || 'No description provided'}
                   </Typography>
-                  <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 3 }}>
-                    <Table sx={{ minWidth: 650 }}>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Roll No</TableCell>
-                          <TableCell>Name</TableCell>
-                          <TableCell>Marks</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {students.map((student, index) => (
-                          <TableRow key={student.id}>
-                            <TableCell>{student.registration_no}</TableCell>
-                            <TableCell>{student.full_name}</TableCell>
-                            <TableCell>
-                            <TextField
-  type="number"
-  size="small"
-  value={student.marks}
-  onChange={(e) => {
-    const value = parseFloat(e.target.value);
-    handleMarksChange(index, value < 0 ? '' : value);
-  }}
-  inputProps={{ min: 0 }}
-/>
+                  {loadingGrades ? (
+  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+    <CircularProgress />
+  </Box>
+) : (
+  <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 3 }}>
+    <Table sx={{ minWidth: 650 }}>
+      <TableHead>
+        <TableRow>
+          <TableCell>Roll No</TableCell>
+          <TableCell>Name</TableCell>
+          <TableCell>Marks</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {students.map((student, index) => (
+          <TableRow key={student.id}>
+            <TableCell>{student.registration_no}</TableCell>
+            <TableCell>{student.full_name}</TableCell>
+            <TableCell>
+              <TextField
+                type="number"
+                size="small"
+                value={student.marks}
+                onChange={(e) => handleMarksChange(index, e.target.value)}
+                inputProps={{ min: 0 }}
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+)}
 
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                   <Button
   variant="contained"
