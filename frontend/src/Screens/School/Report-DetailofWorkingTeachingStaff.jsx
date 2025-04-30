@@ -3,7 +3,12 @@ import { supabase } from "../../../supabase-client";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
-const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
+const ReportDetailofWorkingTeachingStaff = ({
+  month,
+  year,
+  SchoolID,
+  SchoolName,
+}) => {
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingPDF, setGeneratingPDF] = useState(false);
@@ -140,9 +145,9 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         .select("*")
         .eq("EmployeeType", "Teacher")
         .order("TeacherID", { ascending: true });
-  
+
       if (teacherError) throw teacherError;
-  
+
       // Define post groupings
       const postGroups = {
         "Subject Specialist": ["Subject Specialist"],
@@ -150,9 +155,9 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         "S.S.T(I.T)": ["S.S.T(I.T)"],
         "Arabic Teacher": ["Arabic Teacher"],
         "E.S.T/E.S.E": ["E.S.T", "E.S.E"],
-        "P.T.I": ["P.T.I"]
+        "P.T.I": ["P.T.I"],
       };
-  
+
       // Initialize data structure
       const staffByPost = Object.keys(postGroups).reduce((acc, groupName) => {
         acc[groupName] = {
@@ -166,13 +171,15 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         };
         return acc;
       }, {});
-  
+
       // Process teachers
       teachers.forEach((teacher) => {
         const post = teacher.Post;
-        const gender = teacher.Gender?.toLowerCase() === "female" ? "female" : "male";
-        const employmentType = teacher.EmployementType?.toLowerCase() || "regular";
-  
+        const gender =
+          teacher.Gender?.toLowerCase() === "female" ? "female" : "male";
+        const employmentType =
+          teacher.EmployementType?.toLowerCase() || "regular";
+
         // Find which group this post belongs to
         let groupName = "Other";
         for (const [group, posts] of Object.entries(postGroups)) {
@@ -181,10 +188,10 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
             break;
           }
         }
-  
+
         // Skip if not in any group (or add to "Other" if you want)
         if (!staffByPost[groupName]) return;
-  
+
         if (employmentType.includes("contract")) {
           staffByPost[groupName][`${gender}Contract`] += 1;
         } else if (employmentType.includes("deputation")) {
@@ -194,7 +201,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         }
         staffByPost[groupName].total += 1;
       });
-  
+
       // Format for table display
       const formattedData = Object.keys(postGroups).map((groupName, index) => ({
         srNo: index + 1,
@@ -207,7 +214,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         femaleDeputation: staffByPost[groupName].femaleDeputation,
         total: staffByPost[groupName].total,
       }));
-  
+
       // Add total row
       const totals = formattedData.reduce(
         (acc, row) => {
@@ -230,7 +237,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
           total: 0,
         }
       );
-  
+
       formattedData.push({
         srNo: "",
         nameOfPost: "Total",
@@ -242,7 +249,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         femaleDeputation: totals.femaleDeputation,
         total: totals.total,
       });
-  
+
       setReportData(formattedData);
     } catch (err) {
       console.error("Error fetching teaching staff:", err);
@@ -269,28 +276,21 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
 
       pdf.setFontSize(16);
       pdf.text(
-        "WORKERS WELFARE HIGHER SECONDARY SCHOOL FOR BOYS LAHORE",
+        `Detail of Working  Teaching Staff Male/Female,Regular/Contract`,
         pdf.internal.pageSize.getWidth() / 2,
-        10,
+        15,
         { align: "center" }
       );
 
+      pdf.setFontSize(12);
       pdf.text(
-        "(DETAIL OF WORKING TEACHING STAFF MALE/FEMALE,REGULAR/CONTRACT)",
+        `${SchoolName} - ${new Date(year, month).toLocaleString("default", {
+          month: "long",
+        })} ${year}`,
         pdf.internal.pageSize.getWidth() / 2,
-        17,
+        23,
         { align: "center" }
       );
-
-      pdf.text(
-        `${new Date(year, month - 1).toLocaleString("default", {
-          month: "short",
-        })}-${year.toString().slice(-2)}`,
-        pdf.internal.pageSize.getWidth() / 2,
-        24,
-        { align: "center" }
-      );
-
       const currentDate = new Date().toLocaleDateString();
       pdf.setFontSize(10);
       pdf.text(
@@ -375,7 +375,9 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
 
     try {
       const { pdf } = await generatePDFDocument();
-      pdf.save("teaching_staff_report.pdf");
+      const fileName = `Detail of Working Teaching Staff Male/Female,Regular/Contract
+      - ${SchoolID} -${month}- ${year}.pdf`;
+      pdf.save(fileName);
       showAlert("PDF generated successfully!", "success");
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -396,6 +398,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         .eq("ReportName", "Teaching Staff Report")
         .eq("Month", month)
         .eq("Year", year)
+        .eq("SchoolId", SchoolID)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -405,7 +408,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
       const { pdf, currentDate } = await generatePDFDocument();
       const pdfBlob = pdf.output("blob");
       const timestamp = new Date().getTime();
-      const fileName = `teaching_staff_${month}_${year}.pdf`;
+      const fileName = `teaching_staff_${SchoolID}_${month}_${year}.pdf`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("reports")
         .upload(fileName, pdfBlob);
@@ -427,6 +430,7 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
         FilePath: publicUrl,
         ReportType: "teaching_staff",
         RecordCount: reportData.length,
+        SchoolId: SchoolID,
       });
 
       if (dbError) throw dbError;
@@ -451,19 +455,17 @@ const ReportDetailofWorkingTeachingStaff = ({ month, year }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-5 m-5 font-sans">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 pb-3 border-b border-gray-200">
-        <div>
+        <div className="mb-3">
           <h1 className="text-2xl font-semibold text-gray-800">
-            WORKERS WELFARE HIGHER SECONDARY SCHOOL FOR BOYS LAHORE
+            Detail of Working Teaching Staff Male/Female,Regular/Contract Report
           </h1>
-          <h2 className="text-xl font-medium text-gray-700 mt-1">
-            (DETAIL OF WORKING TEACHING STAFF MALE/FEMALE,REGULAR/CONTRACT)
-          </h2>
-          <h3 className="text-lg text-gray-600 mt-1">
-            {new Date(year, month - 1).toLocaleString("default", {
+          <p className="text-gray-600 text-sm">
+            {SchoolName} |{" "}
+            {new Date(year, month).toLocaleString("default", {
               month: "long",
             })}{" "}
             {year}
-          </h3>
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
           <button
