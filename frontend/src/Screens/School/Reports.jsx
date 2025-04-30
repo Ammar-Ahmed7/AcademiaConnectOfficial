@@ -60,10 +60,10 @@ function Reports() {
       name: "Staff information",
       component: ReportStaffInformation,
     },
-    {
-      name: "Employee resignation/absent case",
-      component: ReportEmployeeResignAbsentcase,
-    },
+    // {
+    //   name: "Employee resignation/absent case",
+    //   component: ReportEmployeeResignAbsentcase,
+    // },
     {
       name: "Vacancy position",
       component: ReportVacanncy,
