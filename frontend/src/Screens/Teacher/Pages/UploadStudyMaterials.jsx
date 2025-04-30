@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, InputBase, IconButton, Divider, List,
   ListItem, ListItemText, ListItemIcon, ListItemSecondaryAction, Chip,
-  Modal, TextField, Snackbar, Alert, CircularProgress
+  Modal, TextField, Snackbar, Alert, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -23,12 +23,15 @@ const StudyMaterial = () => {
   const [formData, setFormData] = useState({ name: '', description: '', file: null });
   const [uploading, setUploading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [resources, setResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(true);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [resourceToDelete, setResourceToDelete] = useState(null);
+
   const navigate = useNavigate();
   const location = useLocation();
   const classInfo = location.state?.classInfo;
-
-  const [resources, setResources] = useState([]);
-const [loadingResources, setLoadingResources] = useState(true);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -63,7 +66,7 @@ const [loadingResources, setLoadingResources] = useState(true);
         .eq('section_id', classInfo.section_id)
         .eq('subject_id', classInfo.subject_id)
         .order('created_at', { ascending: false });
-  
+
       if (error) throw error;
       setResources(data);
     } catch (err) {
@@ -73,13 +76,13 @@ const [loadingResources, setLoadingResources] = useState(true);
       setLoadingResources(false);
     }
   };
-  
+
   useEffect(() => {
     if (classInfo) {
       fetchResources();
     }
   }, [classInfo]);
-  
+
   const filteredMaterials = resources.filter(material =>
     material.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -126,11 +129,33 @@ const [loadingResources, setLoadingResources] = useState(true);
       setSnackbar({ open: true, message: 'Resource uploaded successfully!', severity: 'success' });
       setFormData({ name: '', description: '', file: null });
       setOpenModal(false);
+      fetchResources();
     } catch (err) {
       setSnackbar({ open: true, message: 'Error uploading resource.', severity: 'error' });
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('resource').delete().eq('id', resourceToDelete.id);
+      if (error) throw error;
+      setSnackbar({ open: true, message: 'Resource deleted successfully.', severity: 'success' });
+      fetchResources();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Error deleting resource.', severity: 'error' });
+    } finally {
+      setDeleting(false);
+      setDeleteDialog(false);
+      setResourceToDelete(null);
+    }
+  };
+
+  const openDeleteDialog = (resource) => {
+    setResourceToDelete(resource);
+    setDeleteDialog(true);
   };
 
   const modalStyle = {
@@ -153,37 +178,39 @@ const [loadingResources, setLoadingResources] = useState(true);
         </Box>
 
         {loadingResources ? (
-  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
-) : (
-  <Paper sx={{ width: '100%', borderRadius: 2 }}>
-    <List>
-      {filteredMaterials.map((material, index) => (
-        <React.Fragment key={material.id}>
-          <ListItem>
-            <ListItemIcon>{getFileIcon(material.file_url)}</ListItemIcon>
-            <ListItemText
-              primary={material.name}
-              secondary={material.description || 'No description'}
-            />
-            <Chip label={classInfo.subjects.subject_name} size="small" sx={{ mr: 6 }} />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" aria-label="download" onClick={() => window.open(material.file_url, '_blank')}>
-                <DownloadIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
-          {index < filteredMaterials.length - 1 && <Divider />}
-        </React.Fragment>
-      ))}
-      {filteredMaterials.length === 0 && (
-        <ListItem><ListItemText primary="No study materials found." /></ListItem>
-      )}
-    </List>
-  </Paper>
-)}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
+        ) : (
+          <Paper sx={{ width: '100%', borderRadius: 2 }}>
+            <List>
+              {filteredMaterials.map((material, index) => (
+                <React.Fragment key={material.id}>
+                  <ListItem>
+                    <ListItemIcon>{getFileIcon(material.file_url)}</ListItemIcon>
+                    <ListItemText
+                      primary={material.name}
+                      secondary={material.description || 'No description'}
+                    />
+                    <Chip label={classInfo.subjects.subject_name} size="small" sx={{ mr: 6 }} />
+                    <ListItemSecondaryAction>
+                      <IconButton edge="end" aria-label="download" onClick={() => window.open(material.file_url, '_blank')}>
+                        <DownloadIcon />
+                      </IconButton>
+                      <IconButton edge="end" aria-label="delete" color="error" onClick={() => openDeleteDialog(material)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                  {index < filteredMaterials.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+              {filteredMaterials.length === 0 && (
+                <ListItem><ListItemText primary="No study materials found." /></ListItem>
+              )}
+            </List>
+          </Paper>
+        )}
 
-
-        {/* Modal */}
+        {/* Upload Modal */}
         <Modal open={openModal} onClose={() => setOpenModal(false)}>
           <Box sx={modalStyle}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -207,6 +234,22 @@ const [loadingResources, setLoadingResources] = useState(true);
           </Box>
         </Modal>
 
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete this resource? This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog(false)}>Cancel</Button>
+            <Button onClick={handleDelete} color="error" disabled={deleting}>
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}
@@ -218,7 +261,6 @@ const [loadingResources, setLoadingResources] = useState(true);
           </Alert>
         </Snackbar>
 
-        {/* Existing materials can be rendered here */}
         <Button variant="contained" sx={{ mt: 3, background: '#4ade80' }} onClick={() => navigate(-1)}>Back</Button>
       </Box>
     </Box>
