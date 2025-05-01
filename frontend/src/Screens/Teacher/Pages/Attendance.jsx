@@ -208,65 +208,70 @@ const Attendance = () => {
               </LocalizationProvider>
             </Box>
 
-            {selectedDate && (
-  <>
-    <Box sx={{ mb: 2 }}>
-      <RadioGroup row onChange={(e) => handleSelectAllChange(e.target.value)}>
-        <FormControlLabel value="P" control={<Radio />} label="Mark All Present" />
-        <FormControlLabel value="A" control={<Radio />} label="Mark All Absent" />
-      </RadioGroup>
-    </Box>
+            <Box
+  sx={{
+    pointerEvents: selectedDate ? 'auto' : 'none',
+    opacity: selectedDate ? 1 : 0.5,
+    transition: 'opacity 0.3s ease',
+  }}
+>
+  <Box sx={{ mb: 2 }}>
+    <RadioGroup row onChange={(e) => handleSelectAllChange(e.target.value)}>
+      <FormControlLabel value="P" control={<Radio />} label="Mark All Present" />
+      <FormControlLabel value="A" control={<Radio />} label="Mark All Absent" />
+    </RadioGroup>
+  </Box>
 
-    <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Roll No</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell align="center">Attendance</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {students.length > 0 ? (
-            students.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell>{student.registration_no}</TableCell>
-                <TableCell>{student.full_name}</TableCell>
-                <TableCell align="center">
-                  <RadioGroup
-                    row
-                    value={attendanceState[student.registration_no] || ''}
-                    onChange={(e) => handleAttendanceChange(student.registration_no, e.target.value)}
-                  >
-                    <FormControlLabel value="P" control={<Radio />} label="P" />
-                    <FormControlLabel value="A" control={<Radio />} label="A" />
-                  </RadioGroup>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} align="center">
-                No students found.
+  <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Roll No</TableCell>
+          <TableCell>Name</TableCell>
+          <TableCell align="center">Attendance</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {students.length > 0 ? (
+          students.map((student) => (
+            <TableRow key={student.id}>
+              <TableCell>{student.registration_no}</TableCell>
+              <TableCell>{student.full_name}</TableCell>
+              <TableCell align="center">
+                <RadioGroup
+                  row
+                  value={attendanceState[student.registration_no] || ''}
+                  onChange={(e) => handleAttendanceChange(student.registration_no, e.target.value)}
+                >
+                  <FormControlLabel value="P" control={<Radio />} label="P" />
+                  <FormControlLabel value="A" control={<Radio />} label="A" />
+                </RadioGroup>
               </TableCell>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={3} align="center">
+              No students found.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </TableContainer>
 
-    <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-      <Button variant="contained" sx={{ backgroundColor: '#4ade80' }} onClick={() => navigate(-1)}>
-        Back
+  <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+    <Button variant="contained" sx={{ backgroundColor: '#4ade80' }} onClick={() => navigate(-1)}>
+      Back
+    </Button>
+    {students.length > 0 && (
+      <Button variant="contained" sx={{ backgroundColor: '#6366f1' }} onClick={handleSubmitAttendance}>
+        {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
       </Button>
-      {students.length > 0 && (
-        <Button variant="contained" sx={{ backgroundColor: '#6366f1' }} onClick={handleSubmitAttendance}>
-          {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
-        </Button>
-      )}
-    </Box>
-  </>
-)}
+    )}
+  </Box>
+</Box>
+
           </>
         )}
       </Box>
