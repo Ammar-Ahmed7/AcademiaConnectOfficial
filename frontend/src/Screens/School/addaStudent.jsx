@@ -1,11 +1,40 @@
+// src/screens/School/AddaStudent.jsx
+
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { v4 as uuidv4 } from 'uuid'
+// at the top, alongside your other MUI imports:
+import Snackbar from '@mui/material/Snackbar'
+import Alert    from '@mui/material/Alert'
+
+/** Material-UI Imports **/
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  IconButton,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  FormControlLabel,
+  Checkbox,
+  Button,
+  CircularProgress,
+} from '@mui/material'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import SchoolIcon from '@mui/icons-material/School'
+import HomeIcon from '@mui/icons-material/Home'
+import PersonIcon from '@mui/icons-material/Person'
 
 export default function AddaStudent() {
   // today’s date for declaration
   const today = new Date().toISOString().slice(0, 10)
 
+  // 1. INITIAL FORM DATA
   const initialFormData = {
     fullName: '',
     dob: '',
@@ -14,12 +43,12 @@ export default function AddaStudent() {
     bFormNo: '',
     studentEmail: '',
     studentPassword: '',
-  
+
     city: '',
     residentialAddress: '',
     postalCode: '',
     postalAddress: '',
-  
+
     fatherCnic: '',
     fatherName: '',
     fatherOccupation: '',
@@ -27,13 +56,14 @@ export default function AddaStudent() {
     fatherEmail: '',
     motherName: '',
     familyIncome: '',
-  
+
     lastSchool: '',
     leavingReason: '',
     lastClass: '',
     reportCard: null,
-  
+
     admissionSchool: '',
+    school_id: '',
     admissionClass: '',
     academicYear: '',
     registrationNo: '',
@@ -41,14 +71,17 @@ export default function AddaStudent() {
     secondLanguage: '',
     sibling: '',
     siblingName: '',
-  
+    quota: '',
+    electiveGroup: '',
+
     bloodGroup: '',
     majorDisability: '',
     otherDisability: '',
     disabilityCertNo: '',
     allergies: '',
     emergencyContact: '',
-  
+
+    // DOCUMENTS
     documents: {
       birthCert: false,
       bForm: false,
@@ -59,28 +92,135 @@ export default function AddaStudent() {
       identityProof: false,
       disabilityCert: false,
     },
-  
+
     declaration: false,
-    declarationDate: new Date().toISOString().slice(0,10),
-  
+    declarationDate: today,
+
     applicationNumber: '',
     admissionApproved: '',
     rejectionReason: '',
-    classAllotted: '',
-    principalName: '',
-  }
-  
-  // form state
-  const [formData, setFormData] = useState(initialFormData)
 
+    // NEW: transport + route
+    transport: false,
+    route: '',
+  }
+
+  /**
+ * B-Form and CNIC share the same 5-7-1 pattern.
+ */
+const BFORM_CNIC_REGEX = /^\d{5}-\d{7}-\d$/;
+
+/** 
+ * Emergency contact must be 4-7 digits: e.g. 0324-4408741 
+ * => first 4 digits, dash, 7 digits
+ */
+const EMERGENCY_REGEX = /^\d{4}-\d{7}$/;
+
+/**
+ * Generate the next student registration no.
+ * e.g. STU-<schoolIdNoDash>-<year>-<NN>
+ */
+async function generateStudentRegNo(schoolId) {
+  if (!schoolId) return '';
+  const cleanSchool = schoolId.replace(/-/g, '');
+  const year = new Date().getFullYear().toString().slice(-2); // e.g. "25"
+  const prefix = `STU-${cleanSchool}-${year}-`;
+
+  // Pull existing registration_nos that start with our prefix
+  const { data, error } = await supabase
+    .from('students')
+    .select('registration_no')
+    .like('registration_no', `${prefix}%`);
+
+  if (error) {
+    console.error('Error fetching existing reg nos', error);
+    return '';
+  }
+
+  const existing = data.map(d => {
+    const parts = d.registration_no.split('-');
+    return parseInt(parts.pop(), 10) || 0;
+  });
+
+  const next = (Math.max(0, ...existing) + 1).toString().padStart(3, '0');
+  return prefix + next;   // e.g. STU-ABC123-25-001
+}
+
+/**
+ * Generate a quick application number:
+ * APP-<YYYYMMDD>-<random4>
+ */
+function generateApplicationNumber() {
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    ('' + (now.getMonth() + 1)).padStart(2, '0'),
+    ('' + now.getDate()).padStart(2, '0'),
+  ].join('');
+  const rand4 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `APP-${date}-${rand4}`;
+}
+
+
+  // 2. STATE HOOKS
+  const [formData, setFormData] = useState(initialFormData)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
-
-  // dropdown data
+  const [quota, setQuota] = useState('')
+  const [electiveGroup, setElectiveGroup] = useState('')
   const [cities, setCities] = useState([])
   const [classOptions, setClassOptions] = useState([])
+  // alongside your other useState hooks:
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',  // or "error"
+  })
 
+
+  // EXTRACT CLASS NUMBER
+  function getClassNumber(label) {
+    const match = label.match(/Class\s*([0-9]+)/i)
+    return match ? parseInt(match[1], 10) : null
+  }
+
+  async function checkBFormExists(bFormNo) {
+    // only run if format is valid
+    if (!/^\d{5}-\d{7}-\d$/.test(bFormNo)) return
+  
+    const { data } = await supabase
+      .from('students')
+      .select('id')
+      .eq('b_form_no', bFormNo)
+      .limit(1)
+      .single()
+  
+    if (data) {
+      setErrors(err => ({
+        ...err,
+        bFormNo: 'A student with this B-Form already exists'
+      }))
+    }
+  }
+  
+
+  // On mount, generate regNo & appNo
+  useEffect(() => {
+    async function initIDs() {
+      if (formData.school_id) {
+        const reg = await generateStudentRegNo(formData.school_id);
+        setFormData(f => ({ ...f, registrationNo: reg }));
+      }
+      setFormData(f => ({
+        ...f,
+        applicationNumber: generateApplicationNumber()
+      }));
+    }
+    initIDs();
+  }, [formData.school_id]);
+
+  // FETCH LOGGED-IN SCHOOL
   useEffect(() => {
     async function fetchSchool() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -89,23 +229,38 @@ export default function AddaStudent() {
 
       const { data, error } = await supabase
         .from('School')
-        .select('SchoolName')
+        .select('SchoolID, SchoolName')
         .eq('user_id', userId)
         .single()
 
-      if (error) {
-        console.error('Error fetching school:', error)
-      } else if (data?.SchoolName) {
+      if (!error && data) {
         setFormData(f => ({
           ...f,
-          admissionSchool: data.SchoolName
+          school_id: data.SchoolID,
+          admissionSchool: data.SchoolName,
         }))
       }
     }
     fetchSchool()
   }, [])
 
-  // CNIC formatter: XXXXX-XXXXXXX-X
+  // keep digits only & add the 5-7-1 mask
+  function formatBFormInput(raw) {
+    const digits = raw.replace(/\D/g, '').slice(0, 13);  // only up to 13 digits
+    let result = digits.slice(0, 5);
+    if (digits.length > 5) result += '-' + digits.slice(5, 12);
+    if (digits.length > 12) result += '-' + digits.slice(12);
+    return result;
+}
+
+  function formatEmergencyInput(raw) {
+    const digits = raw.replace(/\D/g, '').slice(0, 11);    // 4 + 7 = 11 digits
+    let result = digits.slice(0, 4);
+    if (digits.length > 4) result += '-' + digits.slice(4, 11);
+    return result;
+  }
+
+  // FORMAT CNIC
   const formatCnic = raw => {
     const digits = raw.replace(/\D/g, '').slice(0, 13)
     let out = digits.slice(0, 5)
@@ -114,7 +269,7 @@ export default function AddaStudent() {
     return out
   }
 
-  // 1) Auto-fill parent if CNIC valid
+  // AUTO-FILL PARENT ON CNIC
   useEffect(() => {
     async function checkParent() {
       if (/^\d{5}-\d{7}-\d$/.test(formData.fatherCnic)) {
@@ -126,13 +281,13 @@ export default function AddaStudent() {
         if (!error && data) {
           setFormData(f => ({
             ...f,
-            fatherName:       data.name          ?? f.fatherName,
-            fatherOccupation: data.occupation    ?? f.fatherOccupation,
-            fatherContact:    data.contact       ?? f.fatherContact,
-            fatherEmail:      data.email         ?? f.fatherEmail,
-            motherName:       data.mother_name   ?? f.motherName,
-            familyIncome:     data.family_income ?? f.familyIncome,
-            sibling:          'yes',
+            fatherName: data.name ?? f.fatherName,
+            fatherOccupation: data.occupation ?? f.fatherOccupation,
+            fatherContact: data.contact ?? f.fatherContact,
+            fatherEmail: data.email ?? f.fatherEmail,
+            motherName: data.mother_name ?? f.motherName,
+            familyIncome: data.family_income ?? f.familyIncome,
+            sibling: 'yes',
           }))
         }
       }
@@ -140,7 +295,7 @@ export default function AddaStudent() {
     checkParent()
   }, [formData.fatherCnic])
 
-  // 2) Load Punjab cities
+  // LOAD PUNJAB CITIES
   useEffect(() => {
     async function loadCities() {
       const { data: prov } = await supabase
@@ -160,7 +315,7 @@ export default function AddaStudent() {
     loadCities()
   }, [])
 
-  // 3) Load class/section options
+  // LOAD CLASSES + SECTIONS
   useEffect(() => {
     async function loadClasses() {
       const { data } = await supabase
@@ -169,32 +324,77 @@ export default function AddaStudent() {
       setClassOptions(
         (data || []).map(i => ({
           section_id: i.section_id,
-          class_id:   i.classes.class_id,
-          label:      `${i.classes.class_name}${i.section_name}`,
+          class_id: i.classes.class_id,
+          label: `${i.classes.class_name}${i.section_name}`,
         }))
       )
     }
     loadClasses()
   }, [])
 
-  // unified onChange
+  // Validate a single field by name+value
+const handleBlur = (e) => {
+  const { name, value } = e.target;
+  let err = '';
+
+  switch(name) {
+    case 'bFormNo':
+      if (value && !BFORM_CNIC_REGEX.test(value)) {
+        err = 'Format: 12345-1234567-1';
+      }
+      break;
+
+    case 'emergencyContact':
+      if (value && !EMERGENCY_REGEX.test(value)) {
+        err = 'Format: 0123-4567890';
+      }
+      break;
+
+    // you can extend blur logic for other fields here
+  }
+
+  setErrors(curr => ({ ...curr, [name]: err }));
+};
+
+  // UNIFIED HANDLE CHANGE
   const handleChange = e => {
     const { name, type, checked, value, files } = e.target
 
+
+
+    // B-Form No field
+    if (name === 'bFormNo') {
+      const formatted = formatBFormInput(value);
+      setFormData(f => ({ ...f, bFormNo: formatted }));
+      // clear any previous error
+      setErrors(err => ({ ...err, bFormNo: '' }));
+      return;
+    }
+
+    if (name === 'emergencyContact') {
+      const formatted = formatEmergencyInput(value);
+      setFormData(f => ({ ...f, emergencyContact: formatted }));
+      setErrors(err => ({ ...err, emergencyContact: '' }));
+      return;
+    }
+
     // CNIC
     if (name === 'fatherCnic') {
-      setFormData(f => ({ ...f, fatherCnic: formatCnic(value) }))
+      setFormData(f => ({
+        ...f,
+        fatherCnic: formatCnic(value),
+      }))
       setErrors(err => ({ ...err, fatherCnic: '' }))
       return
     }
 
-    // report card file
+    // REPORT CARD FILE
     if (name === 'reportCard') {
       setFormData(f => ({ ...f, reportCard: files }))
       return
     }
 
-    // documents checklist
+    // DOCUMENT CHECKBOXES
     if (type === 'checkbox' && formData.documents[name] !== undefined) {
       setFormData(f => ({
         ...f,
@@ -203,7 +403,18 @@ export default function AddaStudent() {
       return
     }
 
-    // generic
+    // QUOTA / ELECTIVE_GROUP / TRANSPORT
+    if (name === 'quota') {
+      setQuota(value)
+    }
+    if (name === 'electiveGroup') {
+      setElectiveGroup(value)
+    }
+    if (name === 'transport') {
+      setFormData(f => ({ ...f, transport: checked }))
+    }
+
+    // GENERIC
     setFormData(f => ({
       ...f,
       [name]: type === 'checkbox' ? checked : value,
@@ -211,25 +422,41 @@ export default function AddaStudent() {
     setErrors(err => ({ ...err, [name]: '' }))
   }
 
-  // onSubmit
+  // SUBMIT HANDLER
   const handleSubmit = async e => {
     e.preventDefault()
     setIsSubmitting(true)
     const errs = {}
 
-    // required
+    // REQUIRED FIELDS
     ;[
       'fullName','dob','gender','city','residentialAddress',
       'fatherCnic','fatherName','fatherContact','motherName',
       'admissionSchool','admissionClass','admissionDate',
-      'emergencyContact','studentEmail','studentPassword','declaration'
+      'emergencyContact','studentEmail','studentPassword',
+      'declaration','quota'
     ].forEach(f => {
       if (!formData[f]) errs[f] = 'Required'
     })
 
-    // CNIC
+    // Required checks…
+    // B-Form format:
+    if (!BFORM_CNIC_REGEX.test(formData.bFormNo)) {
+      errs.bFormNo = 'Invalid format (#####-#######-#)';
+    }
+    // Emergency contact:
+    if (!EMERGENCY_REGEX.test(formData.emergencyContact)) {
+      errs.emergencyContact = 'Invalid (XXXX-XXXXXXX)';
+    }
+
+    // CNIC FORMAT VALIDATION
     if (formData.fatherCnic && !/^\d{5}-\d{7}-\d$/.test(formData.fatherCnic)) {
       errs.fatherCnic = 'Invalid format'
+    }
+
+    // TRANSPORT → ROUTE
+    if (formData.transport && !formData.route) {
+      errs.route = 'Please pick a route'
     }
 
     if (Object.keys(errs).length) {
@@ -238,9 +465,9 @@ export default function AddaStudent() {
       return
     }
 
-    // 1) signUp
+    // 1) Supabase Auth Sign Up
     const { error: authErr } = await supabase.auth.signUp({
-      email:    formData.studentEmail,
+      email: formData.studentEmail,
       password: formData.studentPassword,
     })
     if (authErr) {
@@ -249,11 +476,11 @@ export default function AddaStudent() {
       return
     }
 
-    // 2) upload report card
+    // 2) Upload Report Card if present
     let reportCardUrl = null
     if (formData.reportCard?.length > 0) {
-      const file     = formData.reportCard[0]
-      const ext      = file.name.split('.').pop()
+      const file = formData.reportCard[0]
+      const ext = file.name.split('.').pop()
       const filename = `${uuidv4()}.${ext}`
       const { error: upErr } = await supabase
         .storage
@@ -276,683 +503,898 @@ export default function AddaStudent() {
       reportCardUrl = publicURL
     }
 
-    // 3) insert student
+    // 3) Insert into students table
     const payload = {
-      full_name:           formData.fullName,
-      dob:                 formData.dob,
-      gender:              formData.gender,
-      religion:            formData.religion,
-      b_form_no:           formData.bFormNo,
-      city:                formData.city,
+      full_name: formData.fullName,
+      dob: formData.dob,
+      gender: formData.gender,
+      religion: formData.religion,
+      b_form_no: formData.bFormNo,
+      city: formData.city,
       residential_address: formData.residentialAddress,
-      postal_code:         formData.postalCode,
-      postal_address:      formData.postalAddress,
-      father_cnic:         formData.fatherCnic,
-      father_name:         formData.fatherName,
-      father_occupation:   formData.fatherOccupation,
-      father_contact:      formData.fatherContact,
-      father_email:        formData.fatherEmail,
-      mother_name:         formData.motherName,
-      family_income:       formData.familyIncome,
-      last_school:         formData.lastSchool,
-      leaving_reason:      formData.leavingReason,
-      last_class:          formData.lastClass,
-      report_card_url:     reportCardUrl,
-      admission_school:    formData.admissionSchool,
-      admission_class:     formData.admissionClass,
-      academic_year:       formData.academicYear,
-      registration_no:     formData.registrationNo,
-      admission_date:      formData.admissionDate,
-      second_language:     formData.secondLanguage,
-      sibling:             formData.sibling,
-      sibling_name:        formData.siblingName,
-      blood_group:         formData.bloodGroup,
-      major_disability:    formData.majorDisability,
-      other_disability:    formData.otherDisability,
-      disability_cert_no:  formData.disabilityCertNo,
-      allergies:           formData.allergies,
-      emergency_contact:   formData.emergencyContact,
-      documents:           formData.documents,
-      declaration:         formData.declaration,
-      declaration_date:    formData.declarationDate,
-      application_number:  formData.applicationNumber,
-      admission_approved:  formData.admissionApproved,
-      rejection_reason:    formData.rejectionReason,
-      class_allotted:      formData.classAllotted,
-      principal_name:      formData.principalName,
-      student_email:       formData.studentEmail,
-      student_password:    formData.studentPassword,
-      role:                'student',
+      postal_code: formData.postalCode,
+      postal_address: formData.postalAddress,
+      father_cnic: formData.fatherCnic,
+      father_name: formData.fatherName,
+      father_occupation: formData.fatherOccupation,
+      father_contact: formData.fatherContact,
+      father_email: formData.fatherEmail,
+      mother_name: formData.motherName,
+      family_income: formData.familyIncome,
+      last_school: formData.lastSchool,
+      leaving_reason: formData.leavingReason,
+      last_class: formData.lastClass,
+      report_card_url: reportCardUrl,
+      admission_school: formData.admissionSchool,
+      admission_class: formData.admissionClass,
+      academic_year: formData.academicYear,
+      registration_no: formData.registrationNo,
+      admission_date: formData.admissionDate,
+      second_language: formData.secondLanguage,
+      sibling: formData.sibling,
+      sibling_name: formData.siblingName,
+      blood_group: formData.bloodGroup,
+      major_disability: formData.majorDisability,
+      other_disability: formData.otherDisability,
+      disability_cert_no: formData.disabilityCertNo,
+      allergies: formData.allergies,
+      emergency_contact: formData.emergencyContact,
+      documents: formData.documents,
+      declaration: formData.declaration,
+      declaration_date: formData.declarationDate,
+      application_number: formData.applicationNumber,
+      admission_approved: formData.admissionApproved,
+      rejection_reason: formData.rejectionReason,
+      student_email: formData.studentEmail,
+      student_password: formData.studentPassword,
+      role: 'student',
+      elective_group: electiveGroup,
+      quota: formData.quota,
+      school_id: formData.school_id,
+      transport: formData.transport,
+      route: formData.transport ? formData.route : null,
     }
 
-    const { error: dbErr } = await supabase
-      .from('students')
-      .insert([payload])
+        const { error: dbErr } = await supabase
+        .from('students')
+        .insert([payload])
 
-    if (dbErr) {
-      setErrors({ general: dbErr.message })
-    } else {
-      setSuccessMessage('Student added successfully!')
-      setFormData(initialFormData) // reset form data
-      // optionally reset formData here
+      // **Immediately** turn off loading
+      setIsSubmitting(false)
+
+      // Then show a Snackbar
+      if (dbErr) {
+        setSnackbar({
+          open: true,
+          message: dbErr.message || 'Error adding student',
+          severity: 'error',
+        })
+        return // <— important: exit so you don’t fall through
+      }
+
+      setSnackbar({
+        open: true,
+        message: 'Student added successfully!',
+        severity: 'success',
+      })
+      // reset form
+      setFormData(initialFormData)
     }
-
-    setIsSubmitting(false)
-  }
-
+  // ===================================================================
+  // RENDER
+  // ===================================================================
   return (
-    <div className="bg-white p-6 rounded-lg shadow mb-4">
-      <h2 className="text-2xl font-bold text-center mb-6">Add Student</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 1. Student Info */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Student Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm">Full Name <span className="text-red-500">*</span></label>
-              <input
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.fullName ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.fullName && <p className="text-red-500 text-xs">{errors.fullName}</p>}
-            </div>
-            {/* DOB */}
-            <div>
-              <label className="block text-sm">Date of Birth <span className="text-red-500">*</span></label>
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.dob ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.dob && <p className="text-red-500 text-xs">{errors.dob}</p>}
-            </div>
-            {/* Gender */}
-            <div>
-              <label className="block text-sm">Gender <span className="text-red-500">*</span></label>
-              <select
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* BACK BUTTON & TITLE */}
+      <Box display="flex" alignItems="center" mb={3}>
+        <IconButton onClick={() => window.history.back()}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h4" component="h1" ml={1}>
+          <SchoolIcon fontSize="inherit" /> Add Student
+        </Typography>
+      </Box>
+
+      {/* SUCCESS MESSAGE */}
+      {successMessage && (
+        <Box mb={2}>
+          <Typography color="success.main">{successMessage}</Typography>
+        </Box>
+      )}
+
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Grid container spacing={2}>
+          {/* 1. Student Information */}
+          <Grid item xs={12}>
+            <Box display="flex" alignItems="center">
+              <PersonIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Student Information</Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Full Name *"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              error={!!errors.fullName}
+              helperText={errors.fullName}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Date of Birth *"
+              name="dob"
+              value={formData.dob}
+              onChange={handleChange}
+              error={!!errors.dob}
+              helperText={errors.dob}
+              variant="outlined"
+              margin="dense"
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl
+              fullWidth
+              margin="dense"
+              error={!!errors.gender}
+            >
+              <InputLabel>Gender *</InputLabel>
+              <Select
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.gender ? 'border-red-500' : 'border-gray-300'
-                }`}
+                label="Gender *"
               >
-                <option value="">Select</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-              {errors.gender && <p className="text-red-500 text-xs">{errors.gender}</p>}
-            </div>
-            {/* Religion */}
-            <div>
-              <label className="block text-sm">Religion</label>
-              <input
-                name="religion"
-                value={formData.religion}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* B-Form */}
-            <div>
-              <label className="block text-sm">B-Form No</label>
-              <input
-                name="bFormNo"
-                value={formData.bFormNo}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* Email */}
-            <div>
-              <label className="block text-sm">Student Email <span className="text-red-500">*</span></label>
-              <input
-                type="email"
-                name="studentEmail"
-                value={formData.studentEmail}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.studentEmail ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.studentEmail && <p className="text-red-500 text-xs">{errors.studentEmail}</p>}
-            </div>
-            {/* Password */}
-            <div>
-              <label className="block text-sm">Student Password <span className="text-red-500">*</span></label>
-              <input
-                type="password"
-                name="studentPassword"
-                value={formData.studentPassword}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.studentPassword ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.studentPassword && <p className="text-red-500 text-xs">{errors.studentPassword}</p>}
-            </div>
-          </div>
-        </div>
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+              <FormHelperText>{errors.gender}</FormHelperText>
+            </FormControl>
+          </Grid>
 
-        {/* 2. Residential Address */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Residential Address</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* City */}
-            <div>
-              <label className="block text-sm">City <span className="text-red-500">*</span></label>
-              <select
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Religion"
+              name="religion"
+              value={formData.religion}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="B-Form No"
+              name="bFormNo"
+              onBlur={async (e) => {
+              handleBlur(e)             // your existing format–onBlur logic
+              await checkBFormExists(e.target.value)  // then check Supabase
+              }}
+              value={formData.bFormNo}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Student Email *"
+              name="studentEmail"
+              type="email"
+              value={formData.studentEmail}
+              onChange={handleChange}
+              error={!!errors.studentEmail}
+              helperText={errors.studentEmail}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Student Password *"
+              name="studentPassword"
+              type="password"
+              value={formData.studentPassword}
+              onChange={handleChange}
+              error={!!errors.studentPassword}
+              helperText={errors.studentPassword}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          {/* 2. Residential Address */}
+          <Grid item xs={12} mt={2}>
+            <Box display="flex" alignItems="center">
+              <HomeIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Residential Address</Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl
+              fullWidth
+              margin="dense"
+              error={!!errors.city}
+            >
+              <InputLabel>City *</InputLabel>
+              <Select
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.city ? 'border-red-500' : 'border-gray-300'
-                }`}
+                label="City *"
               >
-                <option value="">Select City</option>
+                <MenuItem value=""><em>Select City</em></MenuItem>
                 {cities.map(c => (
-                  <option key={c.city_id} value={c.city_name}>{c.city_name}</option>
+                  <MenuItem key={c.city_id} value={c.city_name}>
+                    {c.city_name}
+                  </MenuItem>
                 ))}
-              </select>
-              {errors.city && <p className="text-red-500 text-xs">{errors.city}</p>}
-            </div>
-            {/* Address */}
-            <div className="md:col-span-2">
-              <label className="block text-sm">Address <span className="text-red-500">*</span></label>
-              <textarea
-                name="residentialAddress"
-                value={formData.residentialAddress}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.residentialAddress ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.residentialAddress && <p className="text-red-500 text-xs">{errors.residentialAddress}</p>}
-            </div>
-            {/* Postal Code */}
-            <div>
-              <label className="block text-sm">Postal Code</label>
-              <input
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* Postal Address */}
-            <div>
-              <label className="block text-sm">Postal Address (if diff.)</label>
-              <textarea
-                name="postalAddress"
-                value={formData.postalAddress}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-          </div>
-        </div>
+              </Select>
+              <FormHelperText>{errors.city}</FormHelperText>
+            </FormControl>
+          </Grid>
 
-        {/* 3. Parent/Guardian */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Parent/Guardian Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* CNIC */}
-            <div>
-              <label className="block text-sm">Father's CNIC <span className="text-red-500">*</span></label>
-              <input
-                name="fatherCnic"
-                value={formData.fatherCnic}
-                onChange={handleChange}
-                placeholder="XXXXX-XXXXXXX-X"
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.fatherCnic ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.fatherCnic && <p className="text-red-500 text-xs">{errors.fatherCnic}</p>}
-            </div>
-            {/* Name */}
-            <div>
-              <label className="block text-sm">Father's Name <span className="text-red-500">*</span></label>
-              <input
-                name="fatherName"
-                value={formData.fatherName}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.fatherName ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.fatherName && <p className="text-red-500 text-xs">{errors.fatherName}</p>}
-            </div>
-            {/* Occupation */}
-            <div>
-              <label className="block text-sm">Father's Occupation</label>
-              <input
-                name="fatherOccupation"
-                value={formData.fatherOccupation}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* Contact */}
-            <div>
-              <label className="block text-sm">Father's Contact <span className="text-red-500">*</span></label>
-              <input
-                name="fatherContact"
-                value={formData.fatherContact}
-                onChange={handleChange}
-                placeholder="03XXXXXXXXX"
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.fatherContact ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.fatherContact && <p className="text-red-500 text-xs">{errors.fatherContact}</p>}
-            </div>
-            {/* Email */}
-            <div>
-              <label className="block text-sm">Father's Email</label>
-              <input
-                name="fatherEmail"
-                value={formData.fatherEmail}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* Mother */}
-            <div>
-              <label className="block text-sm">Mother's Name <span className="text-red-500">*</span></label>
-              <input
-                name="motherName"
-                value={formData.motherName}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.motherName ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.motherName && <p className="text-red-500 text-xs">{errors.motherName}</p>}
-            </div>
-            {/* Income */}
-            <div>
-              <label className="block text-sm">Family Income</label>
-              <input
-                name="familyIncome"
-                value={formData.familyIncome}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-          </div>
-        </div>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Address *"
+              name="residentialAddress"
+              multiline
+              rows={2}
+              value={formData.residentialAddress}
+              onChange={handleChange}
+              error={!!errors.residentialAddress}
+              helperText={errors.residentialAddress}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
 
-        {/* 4. Previous School */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Previous School Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* lastSchool, leavingReason, lastClass */}
-            <div>
-              <label className="block text-sm">Last School Attended</label>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Postal Code"
+              name="postalCode"
+              value={formData.postalCode}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Postal Address (if diff.)"
+              name="postalAddress"
+              multiline
+              rows={2}
+              value={formData.postalAddress}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          {/* 3. Parent/Guardian Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Parent/Guardian Information</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's CNIC *"
+              name="fatherCnic"
+              placeholder="XXXXX-XXXXXXX-X"
+              value={formData.fatherCnic}
+              onChange={handleChange}
+              error={!!errors.fatherCnic}
+              helperText={errors.fatherCnic}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Name *"
+              name="fatherName"
+              value={formData.fatherName}
+              onChange={handleChange}
+              error={!!errors.fatherName}
+              helperText={errors.fatherName}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Occupation"
+              name="fatherOccupation"
+              value={formData.fatherOccupation}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Contact *"
+              name="fatherContact"
+              placeholder="03XXXXXXXXX"
+              value={formData.fatherContact}
+              onChange={handleChange}
+              error={!!errors.fatherContact}
+              helperText={errors.fatherContact}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Email"
+              name="fatherEmail"
+              value={formData.fatherEmail}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Mother's Name *"
+              name="motherName"
+              value={formData.motherName}
+              onChange={handleChange}
+              error={!!errors.motherName}
+              helperText={errors.motherName}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Family Income"
+              name="familyIncome"
+              value={formData.familyIncome}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          {/* 4. Previous School Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Previous School Information</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Last School Attended"
+              name="lastSchool"
+              value={formData.lastSchool}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Reason for Leaving"
+              name="leavingReason"
+              value={formData.leavingReason}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Last Class Attended"
+              name="lastClass"
+              value={formData.lastClass}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Button
+              variant="outlined"
+              component="label"
+              fullWidth
+              sx={{ mt: 1, mb: 1 }}
+            >
+              Upload Report Card
               <input
-                name="lastSchool"
-                value={formData.lastSchool}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Reason for Leaving</label>
-              <input
-                name="leavingReason"
-                value={formData.leavingReason}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Last Class Attended</label>
-              <input
-                name="lastClass"
-                value={formData.lastClass}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Report Card Image</label>
-              <input
+                hidden
                 type="file"
                 name="reportCard"
                 accept="image/*,application/pdf"
                 onChange={handleChange}
-                className="mt-1 w-full"
               />
-              {errors.reportCard && <p className="text-red-500 text-xs">{errors.reportCard}</p>}
-            </div>
-          </div>
-        </div>
+            </Button>
+            {errors.reportCard && (
+              <FormHelperText error>{errors.reportCard}</FormHelperText>
+            )}
+          </Grid>
 
-        {/* 5. Admission */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Admission Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* admissionSchool */}
-            <div>
-              <label className="block text-sm">School for Admission <span className="text-red-500">*</span></label>
-              <input
-                name="admissionSchool"
-                value={formData.admissionSchool}
-                disabled
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 cursor-not-allowed ${
-                  errors.admissionSchool ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.admissionSchool && <p className="text-red-500 text-xs">{errors.admissionSchool}</p>}
-            </div>
-            {/* admissionClass */}
-            <div>
-              <label className="block text-sm">Class for Admission <span className="text-red-500">*</span></label>
-              <select
+          {/* 5. Admission Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Admission Information</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="School for Admission *"
+              name="admissionSchool"
+              value={formData.admissionSchool}
+              disabled
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControl
+              fullWidth
+              margin="dense"
+              error={!!errors.admissionClass}
+            >
+              <InputLabel>Class for Admission *</InputLabel>
+              <Select
                 name="admissionClass"
                 value={formData.admissionClass}
                 onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.admissionClass ? 'border-red-500' : 'border-gray-300'
-                }`}
+                label="Class for Admission *"
               >
-                <option value="">Select Class</option>
+                <MenuItem value=""><em>Select Class</em></MenuItem>
                 {classOptions.map(opt => (
-                  <option key={opt.section_id} value={opt.label}>{opt.label}</option>
+                  <MenuItem key={opt.section_id} value={opt.label}>
+                    {opt.label}
+                  </MenuItem>
                 ))}
-              </select>
-              {errors.admissionClass && <p className="text-red-500 text-xs">{errors.admissionClass}</p>}
-            </div>
-            {/* academicYear */}
-            <div>
-              <label className="block text-sm">Academic Year</label>
-              <input
-                name="academicYear"
-                value={formData.academicYear}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* registrationNo */}
-            <div>
-              <label className="block text-sm">Registration No</label>
-              <input
-                name="registrationNo"
-                value={formData.registrationNo}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* admissionDate */}
-            <div>
-              <label className="block text-sm">Admission Date <span className="text-red-500">*</span></label>
-              <input
-                type="date"
-                name="admissionDate"
-                value={formData.admissionDate}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.admissionDate ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.admissionDate && <p className="text-red-500 text-xs">{errors.admissionDate}</p>}
-            </div>
-            {/* secondLanguage */}
-            <div>
-              <label className="block text-sm">Second Language</label>
-              <input
-                name="secondLanguage"
-                value={formData.secondLanguage}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            {/* sibling */}
-            <div>
-              <label className="block text-sm">Any Sibling? </label>
-              <select
+              </Select>
+              <FormHelperText>{errors.admissionClass}</FormHelperText>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Academic Year"
+              name="academicYear"
+              value={formData.academicYear}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Registration No"
+              name="registrationNo"
+              disabled
+              value={formData.registrationNo}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Admission Date *"
+              name="admissionDate"
+              value={formData.admissionDate}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+              InputLabelProps={{ shrink: true }}
+              error={!!errors.admissionDate}
+              helperText={errors.admissionDate}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Second Language"
+              name="secondLanguage"
+              value={formData.secondLanguage}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControl margin="dense" fullWidth>
+              <InputLabel>Any Sibling?</InputLabel>
+              <Select
                 name="sibling"
                 value={formData.sibling}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
+                label="Any Sibling?"
               >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            {formData.sibling === 'yes' && (
-              <div>
-                <label className="block text-sm">Sibling's Name</label>
-                <input
-                  name="siblingName"
-                  value={formData.siblingName}
-                  onChange={handleChange}
-                  className="mt-1 w-full border rounded px-3 py-2"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          {formData.sibling === 'yes' && (
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Sibling's Name"
+                name="siblingName"
+                value={formData.siblingName}
+                onChange={handleChange}
+                variant="outlined"
+                margin="dense"
+              />
+            </Grid>
+          )}
 
-        {/* 6. Medical */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Medical Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm">Blood Group</label>
-              <input
-                name="bloodGroup"
-                value={formData.bloodGroup}
+          {/* 6. Quota & Elective Group */}
+          <Grid item xs={12} md={6} mt={2}>
+            <FormControl fullWidth margin="dense" error={!!errors.quota}>
+              <InputLabel>Quota *</InputLabel>
+              <Select
+                name="quota"
+                value={formData.quota}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Major Disability</label>
-              <input
-                name="majorDisability"
-                value={formData.majorDisability}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Other Disability</label>
-              <input
-                name="otherDisability"
-                value={formData.otherDisability}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Disability Cert No.</label>
-              <input
-                name="disabilityCertNo"
-                value={formData.disabilityCertNo}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Allergies</label>
-              <input
-                name="allergies"
-                value={formData.allergies}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Emergency Contact <span className="text-red-500">*</span></label>
-              <input
-                name="emergencyContact"
-                value={formData.emergencyContact}
-                onChange={handleChange}
-                className={`mt-1 w-full border rounded px-3 py-2 ${
-                  errors.emergencyContact ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.emergencyContact && <p className="text-red-500 text-xs">{errors.emergencyContact}</p>}
-            </div>
-          </div>
-        </div>
+                label="Quota *"
+              >
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="Workers">Workers</MenuItem>
+                <MenuItem value="Private">Private</MenuItem>
+              </Select>
+              <FormHelperText>{errors.quota}</FormHelperText>
+            </FormControl>
+          </Grid>
+          {(() => {
+            const clsNum = getClassNumber(formData.admissionClass)
+            if (clsNum === 9 || clsNum === 10) {
+              return (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Elective Group</InputLabel>
+                    <Select
+                      name="electiveGroup"
+                      value={formData.electiveGroup}
+                      onChange={handleChange}
+                      label="Elective Group"
+                    >
+                      <MenuItem value=""><em>Select Group</em></MenuItem>
+                      <MenuItem value="M.TECH Group">M.TECH Group</MenuItem>
+                      <MenuItem value="SCI Group">SCI Group</MenuItem>
+                      <MenuItem value="ARTS Group">ARTS Group</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )
+            } else if (clsNum === 11 || clsNum === 12) {
+              return (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Elective Group</InputLabel>
+                    <Select
+                      name="electiveGroup"
+                      value={formData.electiveGroup}
+                      onChange={handleChange}
+                      label="Elective Group"
+                    >
+                      <MenuItem value=""><em>Select Group</em></MenuItem>
+                      <MenuItem value="Pre-Medical">Pre-Medical</MenuItem>
+                      <MenuItem value="Pre-Engg">Pre-Engg</MenuItem>
+                      <MenuItem value="I.Com">I.Com</MenuItem>
+                      <MenuItem value="I.C.S">I.C.S</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )
+            }
+            return null
+          })()}
 
-        {/* 7. Documents */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Documents Checklist (Attach Copies)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { id: 'birthCert', label: 'Birth Certificate', name: 'birthCert' },
-              { id: 'bForm', label: 'B-Form/Smart Card', name: 'bForm' },
-              { id: 'transferCert', label: 'Transfer Certificate', name: 'transferCert' },
-              { id: 'reportCardDoc', label: 'Previous Report Card', name: 'reportCardDoc' },
-              { id: 'addressProof', label: 'Address Proof', name: 'addressProof' },
-              { id: 'photos', label: 'Passport Photos', name: 'photos' },
-              { id: 'identityProof', label: 'ID Proof of Parent', name: 'identityProof' },
-              { id: 'disabilityCert', label: 'Disability Cert', name: 'disabilityCert' },
-            ].map(item => (
-              <div key={item.id}>
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    name={item.name}
-                    onChange={handleChange}
-                    className="h-4 w-4"
-                  />
-                  <span className="ml-2 text-sm">{item.label}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 8. Declaration */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Declaration</h3>
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              name="declaration"
-              checked={formData.declaration}
+          {/* 7. Medical Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Medical Information</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Blood Group"
+              name="bloodGroup"
+              value={formData.bloodGroup}
               onChange={handleChange}
-              className="h-4 w-4"
+              variant="outlined"
+              margin="dense"
             />
-            <span className="ml-2 text-sm">
-              I, the undersigned, hereby declare that the information provided is true… <span className="text-red-500">*</span>
-            </span>
-          </label>
-          {errors.declaration && <p className="text-red-500 text-xs">{errors.declaration}</p>}
-          <div className="mt-4">
-            <label className="block text-sm">Date</label>
-            <input
-              type="date"
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Major Disability"
+              name="majorDisability"
+              value={formData.majorDisability}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Other Disability"
+              name="otherDisability"
+              value={formData.otherDisability}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Disability Cert No."
+              name="disabilityCertNo"
+              value={formData.disabilityCertNo}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Allergies"
+              name="allergies"
+              multiline
+              rows={2}
+              value={formData.allergies}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Emergency Contact *"
+              name="emergencyContact"
+              onBlur={handleBlur}
+              value={formData.emergencyContact}
+              onChange={handleChange}
+              error={!!errors.emergencyContact}
+              helperText={errors.emergencyContact}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+
+          {/* 8. Documents Checklist */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Documents Checklist (Attach Copies)</Typography>
+          </Grid>
+          {[
+            { key: 'birthCert', label: 'Birth Certificate' },
+            { key: 'bForm', label: 'B-Form/Smart Card' },
+            { key: 'transferCert', label: 'Transfer Certificate' },
+            { key: 'reportCardDoc', label: 'Previous Report Card' },
+            { key: 'addressProof', label: 'Address Proof' },
+            { key: 'photos', label: 'Passport Photos' },
+            { key: 'identityProof', label: 'ID Proof of Parent' },
+            { key: 'disabilityCert', label: 'Disability Cert' },
+          ].map(doc => (
+            <Grid item xs={12} md={6} key={doc.key}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name={doc.key}
+                    checked={formData.documents[doc.key]}
+                    onChange={handleChange}
+                  />
+                }
+                label={doc.label}
+              />
+            </Grid>
+          ))}
+
+          {/* 9. Declaration */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Declaration</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="declaration"
+                  checked={formData.declaration}
+                  onChange={handleChange}
+                />
+              }
+              label={<>I, the undersigned, hereby declare that the information provided is true… <span style={{ color: 'red' }}>*</span></>}
+            />
+            {errors.declaration && (
+              <FormHelperText error>{errors.declaration}</FormHelperText>
+            )}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Declaration Date"
               name="declarationDate"
               value={formData.declarationDate}
               disabled
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
+              variant="outlined"
+              margin="dense"
             />
-          </div>
-        </div>
+          </Grid>
 
-        {/* 9. Office Use */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">For Office Use Only</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm">Application Number</label>
-              <input
-                name="applicationNumber"
-                value={formData.applicationNumber}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm">Admission Approved</label>
-              <div className="inline-flex space-x-4">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
+          {/* 10. Office Use Only */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">For Office Use Only</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Application Number"
+              name="applicationNumber"
+              disabled
+              value={formData.applicationNumber}
+              onChange={handleChange}
+              variant="outlined"
+              margin="dense"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControl component="fieldset" margin="dense">
+              <Typography component="legend">Admission Approved</Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
                     name="admissionApproved"
                     value="yes"
                     checked={formData.admissionApproved === 'yes'}
                     onChange={handleChange}
-                    className="h-4 w-4"
                   />
-                  <span className="ml-2">Yes</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
+                }
+                label="Yes"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
                     name="admissionApproved"
                     value="no"
                     checked={formData.admissionApproved === 'no'}
                     onChange={handleChange}
-                    className="h-4 w-4"
                   />
-                  <span className="ml-2">No</span>
-                </label>
-              </div>
-            </div>
-            {formData.admissionApproved === 'no' && (
-              <div className="md:col-span-2">
-                <label className="block text-sm">Reason</label>
-                <textarea
-                  name="rejectionReason"
-                  value={formData.rejectionReason}
-                  onChange={handleChange}
-                  className="mt-1 w-full border rounded px-3 py-2"
-                />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm">Class Allotted</label>
-              <input
-                name="classAllotted"
-                value={formData.classAllotted}
-                onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
+                }
+                label="No"
               />
-            </div>
-            <div>
-              <label className="block text-sm">Principal Name</label>
-              <input
-                name="principalName"
-                value={formData.principalName}
+            </FormControl>
+          </Grid>
+          {formData.admissionApproved === 'no' && (
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reason"
+                name="rejectionReason"
+                value={formData.rejectionReason}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
+                multiline
+                rows={2}
+                variant="outlined"
+                margin="dense"
               />
-            </div>
-          </div>
-        </div>
+            </Grid>
+          )}
 
-        {/* submit */}
-        <div className="text-center">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded"
+          {/* 11. Transport + Route */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Transport</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="transport"
+                  checked={formData.transport}
+                  onChange={handleChange}
+                />
+              }
+              label="Availing Transport?"
+            />
+          </Grid>
+          {formData.transport && (
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth margin="dense" error={!!errors.route}>
+                <InputLabel>Route *</InputLabel>
+                <Select
+                  name="route"
+                  value={formData.route}
+                  onChange={handleChange}
+                  label="Route *"
+                >
+                  {[...Array(8)].map((_, i) => (
+                    <MenuItem key={i} value={`Route ${i + 1}`}>
+                      Route {i + 1}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>{errors.route}</FormHelperText>
+              </FormControl>
+            </Grid>
+          )}
+
+          {/* GENERAL ERROR */}
+          {errors.general && (
+            <Grid item xs={12}>
+              <FormHelperText error>{errors.general}</FormHelperText>
+            </Grid>
+          )}
+
+          {/* SUBMIT BUTTON */}
+          <Grid item xs={12} textAlign="center" mt={2}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={isSubmitting}
+              startIcon={isSubmitting && <CircularProgress size={16} />}
+            >
+              {isSubmitting ? 'Adding…' : 'Submit'}
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+      {/* after your form’s closing `</Box>` but inside the <Container>: */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
           >
-            {isSubmitting ? 'Adding…' : 'Submit'}
-          </button>
-        </div>
-        {errors.general && <p className="text-red-600 text-center mt-4">{errors.general}</p>}
-        {successMessage && <p className="text-green-600 text-center mt-4">{successMessage}</p>}
-      </form>
-    </div>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
+    </Container>
   )
 }

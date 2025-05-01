@@ -1,192 +1,302 @@
+// src/screens/School/EditStudent.jsx
 import React, { useState, useEffect } from 'react'
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  IconButton,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  FormControlLabel,
+  Checkbox,
+  Button,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material'
+import {
+  ArrowBack as ArrowBackIcon,
+  School as SchoolIcon,
+  Person as PersonIcon,
+  Home as HomeIcon,
+} from '@mui/icons-material'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
 export default function EditStudent() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const today = new Date().toISOString().slice(0,10)
 
-  const [formData, setFormData] = useState(null)
-  const [cities, setCities] = useState([])
-  const [classOptions, setClassOptions] = useState([])
-  const [errors, setErrors] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [success, setSuccess] = useState('')
+  // Initial full form shape
+  const initial = {
+    fullName: '',
+    dob: '',
+    gender: '',
+    religion: '',
+    bFormNo: '',
+    studentEmail: '',
+    studentPassword: '',
 
-  // CNIC formatter: XXXXX-XXXXXXX-X
-  const formatCnic = raw => {
-    const digits = raw.replace(/\D/g, '').slice(0, 13)
-    let out = digits.slice(0, 5)
-    if (digits.length > 5) out += '-' + digits.slice(5, 12)
-    if (digits.length > 12) out += '-' + digits.slice(12)
+    city: '',
+    residentialAddress: '',
+    postalCode: '',
+    postalAddress: '',
+
+    fatherCnic: '',
+    fatherName: '',
+    fatherOccupation: '',
+    fatherContact: '',
+    fatherEmail: '',
+    motherName: '',
+    familyIncome: '',
+
+    lastSchool: '',
+    leavingReason: '',
+    lastClass: '',
+    reportCard: null,
+
+    admissionSchool: '',
+    admissionClass: '',
+    academicYear: '',
+    registrationNo: '',
+    admissionDate: '',
+    secondLanguage: '',
+    sibling: '',
+    siblingName: '',
+    quota: '',
+    electiveGroup: '',
+
+    bloodGroup: '',
+    majorDisability: '',
+    otherDisability: '',
+    disabilityCertNo: '',
+    allergies: '',
+    emergencyContact: '',
+
+    documents: {
+      birthCert: false,
+      bForm: false,
+      transferCert: false,
+      reportCardDoc: false,
+      addressProof: false,
+      photos: false,
+      identityProof: false,
+      disabilityCert: false,
+    },
+
+    declaration: false,
+    declarationDate: today,
+
+    applicationNumber: '',
+    admissionApproved: '',
+    rejectionReason: '',
+
+    transport: false,
+    route: '',
+  }
+
+  const [formData, setFormData] = useState(initial)
+  const [errors, setErrors]     = useState({})
+  const [loading, setLoading]   = useState(true)
+  const [snackbar, setSnackbar] = useState({ open:false, message:'', severity:'success' })
+
+  const [cities, setCities]         = useState([])
+  const [classOptions, setClasses]  = useState([])
+
+  // Mask for CNIC/B-Form
+  const mask = raw => {
+    const d = raw.replace(/\D/g,'').slice(0,13)
+    let out = d.slice(0,5)
+    if (d.length>5) out += '-' + d.slice(5,12)
+    if (d.length>12) out += '-' + d.slice(12)
     return out
   }
 
-  // 1) Fetch existing student
+  // Fetch student + enums
   useEffect(() => {
-    ;(async () => {
-      const { data, error } = await supabase
+    async function load() {
+      // 1) load student
+      let { data, error } = await supabase
         .from('students')
         .select('*')
         .eq('id', id)
         .single()
-
       if (error) {
         console.error(error)
+        setSnackbar({ open:true, message:error.message, severity:'error' })
         setLoading(false)
-      } else {
-        setFormData({
-          fullName: data.full_name || '',
-          dob: data.dob || '',
-          gender: data.gender || '',
-          fatherCnic: data.father_cnic || '',
-
-          religion: data.religion || '',
-          bFormNo: data.b_form_no || '',
-          city: data.city || '',
-          residentialAddress: data.residential_address || '',
-          postalCode: data.postal_code || '',
-          postalAddress: data.postal_address || '',
-
-          fatherName: data.father_name || '',
-          fatherOccupation: data.father_occupation || '',
-          fatherContact: data.father_contact || '',
-          fatherEmail: data.father_email || '',
-          motherName: data.mother_name || '',
-          familyIncome: data.family_income || '',
-
-          lastSchool: data.last_school || '',
-          leavingReason: data.leaving_reason || '',
-          lastClass: data.last_class || '',
-
-          // file upload editing is out-of-scope here
-          reportCard: null,
-
-          admissionSchool: data.admission_school || '',
-          admissionClass: data.admission_class || '',
-          academicYear: data.academic_year || '',
-          registrationNo: data.registration_no || '',
-          admissionDate: data.admission_date || '',
-          secondLanguage: data.second_language || '',
-          sibling: data.sibling || '',
-          siblingName: data.sibling_name || '',
-
-          bloodGroup: data.blood_group || '',
-          majorDisability: data.major_disability || '',
-          otherDisability: data.other_disability || '',
-          disabilityCertNo: data.disability_cert_no || '',
-          allergies: data.allergies || '',
-          emergencyContact: data.emergency_contact || '',
-
-          documents: data.documents || {
-            birthCert: false,
-            bForm: false,
-            transferCert: false,
-            reportCardDoc: false,
-            addressProof: false,
-            photos: false,
-            identityProof: false,
-            disabilityCert: false,
-          },
-
-          declaration: data.declaration || false,
-          declarationDate: data.declaration_date || new Date().toISOString().slice(0, 10),
-
-          applicationNumber: data.application_number || '',
-          admissionApproved: data.admission_approved || '',
-          rejectionReason: data.rejection_reason || '',
-          classAllotted: data.class_allotted || '',
-          principalName: data.principal_name || '',
-
-          studentEmail: data.student_email || '',
-          studentPassword: '' // we never prefill passwords
-        })
-        setLoading(false)
+        return
       }
-    })()
+      // map into formData
+      setFormData({
+        fullName:            data.full_name,
+        dob:                 data.dob,
+        gender:              data.gender,
+        religion:            data.religion,
+        bFormNo:             data.b_form_no,
+        studentEmail:        data.student_email,
+        studentPassword:     '',
+
+        city:                data.city,
+        residentialAddress:  data.residential_address,
+        postalCode:          data.postal_code,
+        postalAddress:       data.postal_address,
+
+        fatherCnic:          data.father_cnic,
+        fatherName:          data.father_name,
+        fatherOccupation:    data.father_occupation,
+        fatherContact:       data.father_contact,
+        fatherEmail:         data.father_email,
+        motherName:          data.mother_name,
+        familyIncome:        data.family_income,
+
+        lastSchool:          data.last_school,
+        leavingReason:       data.leaving_reason,
+        lastClass:           data.last_class,
+        reportCard:          null,         // skip file editing
+
+        admissionSchool:     data.admission_school,
+        admissionClass:      data.admission_class,
+        academicYear:        data.academic_year,
+        registrationNo:      data.registration_no,
+        admissionDate:       data.admission_date,
+        secondLanguage:      data.second_language,
+        sibling:             data.sibling,
+        siblingName:         data.sibling_name,
+        quota:               data.quota,
+        electiveGroup:       data.elective_group,
+
+        bloodGroup:          data.blood_group,
+        majorDisability:     data.major_disability,
+        otherDisability:     data.other_disability,
+        disabilityCertNo:    data.disability_cert_no,
+        allergies:           data.allergies,
+        emergencyContact:    data.emergency_contact,
+
+        documents:           data.documents || initial.documents,
+
+        declaration:         data.declaration,
+        declarationDate:     data.declaration_date || today,
+
+        applicationNumber:   data.application_number,
+        admissionApproved:   data.admission_approved,
+        rejectionReason:     data.rejection_reason,
+
+        transport:           data.transport,
+        route:               data.route,
+      })
+      setLoading(false)
+    }
+    load()
   }, [id])
 
-  // 2) Load Punjab cities
+  // load cities
   useEffect(() => {
-    ;(async () => {
-      const { data: prov } = await supabase
-        .from('provinces')
-        .select('province_id')
-        .eq('province_name', 'Punjab')
-        .single()
-      if (prov) {
-        const { data: list } = await supabase
-          .from('cities')
-          .select('city_id, city_name')
-          .eq('province_id', prov.province_id)
-          .order('city_name')
-        setCities(list || [])
-      }
-    })()
-  }, [])
+    supabase
+      .from('provinces')
+      .select('province_id')
+      .eq('province_name','Punjab')
+      .single()
+      .then(({ data })=>{
+        if (data) {
+          supabase
+            .from('cities')
+            .select('city_id,city_name')
+            .eq('province_id', data.province_id)
+            .order('city_name')
+            .then(({ data:list })=>setCities(list||[]))
+        }
+      })
+  },[])
 
-  // 3) Load class/section options
+  // load classes
   useEffect(() => {
-    ;(async () => {
-      const { data } = await supabase
-        .from('sections')
-        .select('section_id, section_name, classes(class_id, class_name)')
-      setClassOptions(
-        (data || []).map(i => ({
+    supabase
+      .from('sections')
+      .select('section_id,section_name,classes(class_id,class_name)')
+      .then(({ data })=>{
+        setClasses((data||[]).map(i=>({
           section_id: i.section_id,
-          class_id: i.classes.class_id,
-          label: `${i.classes.class_name}${i.section_name}`
-        }))
-      )
-    })()
-  }, [])
+          class_id:   i.classes.class_id,
+          label:      `${i.classes.class_name}${i.section_name}`
+        })))
+      })
+  },[])
 
   const handleChange = e => {
-    let { name, value, type, checked, files } = e.target
+    const { name, type, checked, value, files } = e.target
+    let val = value
 
-    if (name === 'fatherCnic') {
-      value = formatCnic(value)
+    if (name==='bFormNo'||name==='fatherCnic') {
+      val = mask(value)
     }
-
-    if (name === 'reportCard') {
-      setFormData(f => ({ ...f, reportCard: files }))
+    if (name==='reportCard') {
+      setFormData(f=>({...f, reportCard: files}))
       return
     }
-
-    if (type === 'checkbox' && formData.documents?.hasOwnProperty(name)) {
-      setFormData(f => ({
+    if (type==='checkbox' && formData.documents.hasOwnProperty(name)) {
+      setFormData(f=>({
         ...f,
-        documents: { ...f.documents, [name]: checked }
+        documents: {...f.documents, [name]:checked}
       }))
-    } else {
-      setFormData(f => ({
-        ...f,
-        [name]: type === 'checkbox' ? checked : value
-      }))
+      return
     }
-
-    setErrors(err => ({ ...err, [name]: '' }))
-    setSuccess('')
+    setFormData(f=>({
+      ...f,
+      [name]: type==='checkbox'? checked : val
+    }))
+    setErrors(e=>({...e, [name]:''}))
   }
 
-  const handleUpdate = async e => {
-    e.preventDefault()
+  const validate = () => {
     const errs = {}
-    if (!formData.admissionClass) errs.admissionClass = 'Required'
+    const requiredOnEdit = [
+      'fullName','dob','gender','bFormNo',
+      'studentEmail',
+      'city','residentialAddress',
+      'fatherCnic','fatherName','motherName',
+      'admissionClass','admissionDate',
+      'emergencyContact','quota'
+    ]
+    requiredOnEdit.forEach(key => {
+      if (!formData[key]) errs[key] = 'Required'
+    })
+    return errs
+  }
+  
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    console.log("🔴 handleSubmit fired", formData)
+    const errs = validate()
     if (Object.keys(errs).length) {
+      console.warn("Validation errors:", errs)
       setErrors(errs)
       return
     }
-
+    
     const payload = {
+      full_name: formData.fullName,
+      dob: formData.dob,
+      gender: formData.gender,
       religion: formData.religion,
       b_form_no: formData.bFormNo,
+      student_email: formData.studentEmail,
+      student_password: formData.studentPassword, // handled separately
+
       city: formData.city,
       residential_address: formData.residentialAddress,
       postal_code: formData.postalCode,
       postal_address: formData.postalAddress,
 
+      father_cnic: formData.fatherCnic,
+      father_name: formData.fatherName,
       father_occupation: formData.fatherOccupation,
       father_contact: formData.fatherContact,
       father_email: formData.fatherEmail,
@@ -205,6 +315,8 @@ export default function EditStudent() {
       second_language: formData.secondLanguage,
       sibling: formData.sibling,
       sibling_name: formData.siblingName,
+      quota: formData.quota,
+      elective_group: formData.electiveGroup,
 
       blood_group: formData.bloodGroup,
       major_disability: formData.majorDisability,
@@ -221,12 +333,12 @@ export default function EditStudent() {
       application_number: formData.applicationNumber,
       admission_approved: formData.admissionApproved,
       rejection_reason: formData.rejectionReason,
-      class_allotted: formData.classAllotted,
-      principal_name: formData.principalName,
 
-      student_email: formData.studentEmail,
-      // we do NOT update password here
-      role: 'student'
+      transport: formData.transport,
+      route: formData.transport? formData.route : null,
+    }
+    if (formData.studentPassword) {
+      payload.student_password = formData.studentPassword
     }
 
     const { error } = await supabase
@@ -234,522 +346,816 @@ export default function EditStudent() {
       .update(payload)
       .eq('id', id)
 
-    if (error) {
-      setErrors({ general: error.message })
-    } else {
-      setSuccess('Student updated successfully!')
-      setTimeout(() => navigate('/school/manage-students'), 1200)
+      if (error) {
+        console.error("Supabase update error:", error)
+        setSnackbar({ open:true, message:error.message, severity:'error' })
+      } else {
+        setSnackbar({ open:true, message:'Updated successfully', severity:'success' })
+        setTimeout(() => navigate('/school/manage-students'), 1000)
+      }
     }
+
+  if (loading) {
+    return <Box textAlign="center" pt={4}><CircularProgress/></Box>
   }
 
-  if (loading) return <div>Loading…</div>
-  if (!formData) return <div>Student not found</div>
-
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-6">Edit Student</h2>
-      {success && <p className="text-green-600 mb-4">{success}</p>}
+    <Container maxWidth="lg" sx={{ py:4 }}>
+      <Box display="flex" alignItems="center" mb={3}>
+        <IconButton onClick={()=>navigate(-1)}><ArrowBackIcon/></IconButton>
+        <Typography variant="h4" ml={1}><SchoolIcon fontSize="inherit"/> Edit Student</Typography>
+      </Box>
 
-      <form onSubmit={handleUpdate} className="space-y-6">
-        {/* 1. Read‑only fields */}
-        {['fullName','dob','gender','fatherCnic'].map(f => (
-          <div key={f}>
-            <label className="block text-sm font-medium">
-              {{
-                fullName: 'Full Name',
-                dob: 'Date of Birth',
-                gender: 'Gender',
-                fatherCnic: "Father's CNIC"
-              }[f]}
-            </label>
-            <input
-              readOnly
-              value={formData[f]}
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Grid container spacing={2}>
+
+          {/* 1. Student Information */}
+          <Grid item xs={12}>
+            <Box display="flex" alignItems="center">
+              <PersonIcon sx={{mr:1}}/>
+              <Typography variant="h6">Student Information</Typography>
+            </Box>
+          </Grid>
+
+          {/* Full Name (read-only) */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Full Name *"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              margin="dense"
+              InputProps={{ readOnly:true }}
+              error={!!errors.fullName}
+              helperText={errors.fullName}
             />
-          </div>
-        ))}
+          </Grid>
 
-        {/* 2. Editable fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Dob */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Date of Birth *"
+              name="dob"
+              value={formData.dob}
+              onChange={handleChange}
+              margin="dense"
+              InputLabelProps={{ shrink:true }}
+              InputProps={{ readOnly:true }}
+              error={!!errors.dob}
+              helperText={errors.dob}
+            />
+          </Grid>
+
+          {/* Gender */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth margin="dense" error={!!errors.gender}>
+              <InputLabel>Gender *</InputLabel>
+              <Select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                label="Gender *"
+                readOnly
+              >
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+              <FormHelperText>{errors.gender}</FormHelperText>
+            </FormControl>
+          </Grid>
+
           {/* Religion */}
-          <div>
-            <label className="block text-sm">Religion</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Religion"
               name="religion"
               value={formData.religion}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* B‑Form No */}
-          <div>
-            <label className="block text-sm">B‑Form No</label>
-            <input
+          {/* B-Form No (read-only) */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="B-Form No"
               name="bFormNo"
               value={formData.bFormNo}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
+              InputProps={{ readOnly:true }}
             />
-          </div>
+          </Grid>
+
+          {/* Student Email */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Student Email *"
+              name="studentEmail"
+              type="email"
+              value={formData.studentEmail}
+              onChange={handleChange}
+              margin="dense"
+              error={!!errors.studentEmail}
+              helperText={errors.studentEmail}
+            />
+          </Grid>
+
+          {/* Password */}
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="New Password"
+              name="studentPassword"
+              type="password"
+              value={formData.studentPassword}
+              onChange={handleChange}
+              margin="dense"
+              helperText="Leave blank to keep current password"
+            />
+          </Grid>
+
+          {/* 2. Residential Address */}
+          <Grid item xs={12} mt={2}>
+            <Box display="flex" alignItems="center">
+              <HomeIcon sx={{mr:1}}/>
+              <Typography variant="h6">Residential Address</Typography>
+            </Box>
+          </Grid>
 
           {/* City */}
-          <div>
-            <label className="block text-sm">City</label>
-            <select
-              name="city"
-              value={formData.city}
+          <Grid item xs={12} md={6}>
+          <FormControl fullWidth margin="dense" error={!!errors.city}>
+          <InputLabel>City *</InputLabel>
+          <Select
+            name="city"
+              /* if `formData.city` isn’t one of our loaded cities, force it to '' */
+              value={
+                cities.some(c => c.city_name === formData.city)
+                  ? formData.city
+                  : ''
+              }
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-            >
-              <option value="">Select City</option>
-              {cities.map(c => (
-                <option key={c.city_id} value={c.city_name}>
-                  {c.city_name}
-                </option>
-              ))}
-            </select>
-          </div>
+              label="City *"
+          >
+            <MenuItem value=""><em>Select City</em></MenuItem>
+            {cities.map(c=>(
+              <MenuItem key={c.city_id} value={c.city_name}>
+                {c.city_name}
+              </MenuItem>
+            ))}
+          </Select>
+          <FormHelperText>{errors.city}</FormHelperText>
+        </FormControl>
 
-          {/* Residential Address */}
-          <div className="md:col-span-2">
-            <label className="block text-sm">Address</label>
-            <textarea
+          </Grid>
+
+          {/* Address */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Address *"
               name="residentialAddress"
+              multiline rows={2}
               value={formData.residentialAddress}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
+              error={!!errors.residentialAddress}
+              helperText={errors.residentialAddress}
             />
-          </div>
+          </Grid>
 
           {/* Postal Code */}
-          <div>
-            <label className="block text-sm">Postal Code</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Postal Code"
               name="postalCode"
               value={formData.postalCode}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
           {/* Postal Address */}
-          <div>
-            <label className="block text-sm">Postal Address (if different)</label>
-            <textarea
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Postal Address (if diff.)"
               name="postalAddress"
+              multiline rows={2}
               value={formData.postalAddress}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Father’s Name (read‑only here) */}
-          <div>
-            <label className="block text-sm">Father’s Name</label>
-            <input
-              readOnly
+          {/* 3. Parent/Guardian Info */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Parent/Guardian Information</Typography>
+          </Grid>
+
+          {/* Father CNIC */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's CNIC *"
+              name="fatherCnic"
+              value={formData.fatherCnic}
+              onChange={handleChange}
+              margin="dense"
+              placeholder="XXXXX-XXXXXXX-X"
+              error={!!errors.fatherCnic}
+              helperText={errors.fatherCnic}
+            />
+          </Grid>
+
+          {/* Father Name */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Name *"
+              name="fatherName"
               value={formData.fatherName}
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
+              onChange={handleChange}
+              margin="dense"
+              error={!!errors.fatherName}
+              helperText={errors.fatherName}
             />
-          </div>
+          </Grid>
 
-          {/* Father’s Occupation */}
-          <div>
-            <label className="block text-sm">Father’s Occupation</label>
-            <input
+          {/* Father Occupation */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Occupation"
               name="fatherOccupation"
               value={formData.fatherOccupation}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Father’s Contact */}
-          <div>
-            <label className="block text-sm">Father’s Contact</label>
-            <input
+          {/* Father Contact */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Contact *"
               name="fatherContact"
+              placeholder="03XX-XXXXXXX"
               value={formData.fatherContact}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
+              error={!!errors.fatherContact}
+              helperText={errors.fatherContact}
             />
-          </div>
+          </Grid>
 
-          {/* Father’s Email */}
-          <div>
-            <label className="block text-sm">Father’s Email</label>
-            <input
+          {/* Father Email */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Father's Email"
               name="fatherEmail"
               value={formData.fatherEmail}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Mother’s Name */}
-          <div>
-            <label className="block text-sm">Mother’s Name</label>
-            <input
+          {/* Mother Name */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Mother's Name *"
               name="motherName"
               value={formData.motherName}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
+              error={!!errors.motherName}
+              helperText={errors.motherName}
             />
-          </div>
+          </Grid>
 
           {/* Family Income */}
-          <div>
-            <label className="block text-sm">Family Income</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Family Income"
               name="familyIncome"
               value={formData.familyIncome}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Last School Attended */}
-          <div>
-            <label className="block text-sm">Last School Attended</label>
-            <input
+          {/* 4. Previous School */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Previous School Information</Typography>
+          </Grid>
+
+          {/* Last School */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Last School Attended"
               name="lastSchool"
               value={formData.lastSchool}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Reason for Leaving */}
-          <div>
-            <label className="block text-sm">Reason for Leaving</label>
-            <input
+          {/* Leaving Reason */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Reason for Leaving"
               name="leavingReason"
               value={formData.leavingReason}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Last Class Attended */}
-          <div>
-            <label className="block text-sm">Last Class Attended</label>
-            <input
+          {/* Last Class */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Last Class Attended"
               name="lastClass"
               value={formData.lastClass}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Report Card (cannot edit file here) */}
-          <div className="md:col-span-2">
-            <label className="block text-sm">Report Card</label>
-            <p className="mt-1 text-sm text-gray-500">
-              To change the report card, re-upload via the student’s profile.
-            </p>
-          </div>
+          {/* Report Card upload */}
+          <Grid item xs={12} md={6}>
+            <Button variant="outlined" component="label" fullWidth sx={{mt:1, mb:1}}>
+              Upload Report Card
+              <input
+                hidden
+                type="file"
+                name="reportCard"
+                accept="image/*,application/pdf"
+                onChange={handleChange}
+              />
+            </Button>
+            {errors.reportCard && <FormHelperText error>{errors.reportCard}</FormHelperText>}
+          </Grid>
 
-          {/* School for Admission */}
-          <div>
-            <label className="block text-sm">School for Admission</label>
-            <input
+          {/* 5. Admission Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Admission Information</Typography>
+          </Grid>
+
+          {/* Admission School */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="School for Admission *"
               name="admissionSchool"
               value={formData.admissionSchool}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              disabled
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Class for Admission */}
-          <div>
-            <label className="block text-sm">Class for Admission</label>
-            <select
-              name="admissionClass"
-              value={formData.admissionClass}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-            >
-              <option value="">Select Class</option>
-              {classOptions.map(o => (
-                <option key={o.section_id} value={o.label}>{o.label}</option>
-              ))}
-            </select>
-            {errors.admissionClass && (
-              <p className="text-red-500 text-xs">{errors.admissionClass}</p>
-            )}
-          </div>
+          {/* Admission Class */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth margin="dense" error={!!errors.admissionClass}>
+              <InputLabel>Class for Admission *</InputLabel>
+              <Select
+                name="admissionClass"
+                value={
+                        // if formData.admissionClass matches one of our option.labels, use it
+                         classOptions.some(opt => opt.label === formData.admissionClass)
+                           ? formData.admissionClass
+                         : ''
+                     }
+                onChange={handleChange}
+                label="Class for Admission *"
+              >
+                <MenuItem value=""><em>Select Class</em></MenuItem>
+                {classOptions.map(opt=>(
+                  <MenuItem key={opt.section_id} value={opt.label}>{opt.label}</MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>{errors.admissionClass}</FormHelperText>
+            </FormControl>
+          </Grid>
 
           {/* Academic Year */}
-          <div>
-            <label className="block text-sm">Academic Year</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Academic Year"
               name="academicYear"
               value={formData.academicYear}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
           {/* Registration No */}
-          <div>
-            <label className="block text-sm">Registration No</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Registration No"
               name="registrationNo"
+              disabled
               value={formData.registrationNo}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
           {/* Admission Date */}
-          <div>
-            <label className="block text-sm">Admission Date</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
               type="date"
+              label="Admission Date *"
               name="admissionDate"
               value={formData.admissionDate}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              InputLabelProps={{shrink:true}}
+              margin="dense"
+              error={!!errors.admissionDate}
+              helperText={errors.admissionDate}
             />
-          </div>
+          </Grid>
 
           {/* Second Language */}
-          <div>
-            <label className="block text-sm">Second Language</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Second Language"
               name="secondLanguage"
               value={formData.secondLanguage}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
+          </Grid>
 
-          {/* Any Sibling? */}
-          <div>
-            <label className="block text-sm">Any Sibling?</label>
-            <select
-              name="sibling"
-              value={formData.sibling}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-            >
-              <option value="">Select</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </div>
-
-          {/* Sibling's Name */}
-          {formData.sibling === 'yes' && (
-            <div>
-              <label className="block text-sm">Sibling’s Name</label>
-              <input
+          {/* Sibling */}
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Any Sibling?</InputLabel>
+              <Select
+                name="sibling"
+                value={formData.sibling}
+                onChange={handleChange}
+                label="Any Sibling?"
+              >
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          {formData.sibling==='yes' && (
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Sibling's Name"
                 name="siblingName"
                 value={formData.siblingName}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
+                margin="dense"
               />
-            </div>
+            </Grid>
           )}
 
-          {/* Blood Group */}
-          <div>
-            <label className="block text-sm">Blood Group</label>
-            <input
+          {/* 6. Quota & Elective */}
+          <Grid item xs={12} md={6} mt={2}>
+            <FormControl fullWidth margin="dense" error={!!errors.quota}>
+              <InputLabel>Quota *</InputLabel>
+              <Select
+                name="quota"
+                value={formData.quota}
+                onChange={handleChange}
+                label="Quota *"
+              >
+                <MenuItem value=""><em>Select</em></MenuItem>
+                <MenuItem value="Workers">Workers</MenuItem>
+                <MenuItem value="Private">Private</MenuItem>
+              </Select>
+              <FormHelperText>{errors.quota}</FormHelperText>
+            </FormControl>
+          </Grid>
+          {/* Elective group logic identical to Add */}
+          {(()=>{
+            const num = parseInt(formData.admissionClass?.match(/\d+/)?.[0])
+            if (num===9||num===10) {
+              return (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Elective Group</InputLabel>
+                    <Select
+                      name="electiveGroup"
+                      value={formData.electiveGroup}
+                      onChange={handleChange}
+                      label="Elective Group"
+                    >
+                      <MenuItem value=""><em>Select</em></MenuItem>
+                      <MenuItem value="M.TECH Group">M.TECH Group</MenuItem>
+                      <MenuItem value="SCI Group">SCI Group</MenuItem>
+                      <MenuItem value="ARTS Group">ARTS Group</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )
+            } else if (num===11||num===12) {
+              return (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth margin="dense">
+                    <InputLabel>Elective Group</InputLabel>
+                    <Select
+                      name="electiveGroup"
+                      value={formData.electiveGroup}
+                      onChange={handleChange}
+                      label="Elective Group"
+                    >
+                      <MenuItem value=""><em>Select</em></MenuItem>
+                      <MenuItem value="Pre-Medical">Pre-Medical</MenuItem>
+                      <MenuItem value="Pre-Engg">Pre-Engg</MenuItem>
+                      <MenuItem value="I.Com">I.Com</MenuItem>
+                      <MenuItem value="I.C.S">I.C.S</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )
+            }
+            return null
+          })()}
+
+          {/* 7. Medical Information */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Medical Information</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Blood Group"
               name="bloodGroup"
               value={formData.bloodGroup}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-
-          {/* Major Disability */}
-          <div>
-            <label className="block text-sm">Major Disability</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Major Disability"
               name="majorDisability"
               value={formData.majorDisability}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-
-          {/* Other Disability */}
-          <div>
-            <label className="block text-sm">Other Disability</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Other Disability"
               name="otherDisability"
               value={formData.otherDisability}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-
-          {/* Disability Cert No */}
-          <div>
-            <label className="block text-sm">Disability Cert No.</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Disability Cert No."
               name="disabilityCertNo"
               value={formData.disabilityCertNo}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-
-          {/* Allergies */}
-          <div>
-            <label className="block text-sm">Allergies</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Allergies"
               name="allergies"
               value={formData.allergies}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-
-          {/* Emergency Contact */}
-          <div>
-            <label className="block text-sm">Emergency Contact</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Emergency Contact *"
               name="emergencyContact"
               value={formData.emergencyContact}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
+              error={!!errors.emergencyContact}
+              helperText={errors.emergencyContact}
             />
-          </div>
-        </div>
+          </Grid>
 
-        {/* Documents Checklist */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.keys(formData.documents).map(key => (
-            <label key={key} className="inline-flex items-center">
-              <input
-                type="checkbox"
-                name={key}
-                checked={formData.documents[key]}
-                onChange={handleChange}
-                className="h-4 w-4"
+          {/* 8. Documents Checklist */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Documents Checklist</Typography>
+          </Grid>
+          {Object.entries(formData.documents).map(([key,label])=>(
+            <Grid item xs={12} md={6} key={key}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name={key}
+                    checked={formData.documents[key]}
+                    onChange={handleChange}
+                  />
+                }
+                label={key}
               />
-              <span className="ml-2 text-sm">{key}</span>
-            </label>
+            </Grid>
           ))}
-        </div>
 
-        {/* Declaration */}
-        <div>
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              name="declaration"
-              checked={formData.declaration}
-              onChange={handleChange}
-              className="h-4 w-4"
+          {/* 9. Declaration */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Declaration</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="declaration"
+                  checked={formData.declaration}
+                  onChange={handleChange}
+                />
+              }
+              label={<>I hereby declare that the above information is true. <span style={{color:'red'}}>*</span></>}
             />
-            <span className="ml-2 text-sm">
-              I hereby declare that the information provided is true. <span className="text-red-500">*</span>
-            </span>
-          </label>
-          <div className="mt-2">
-            <label className="block text-sm">Date</label>
-            <input
-              type="date"
+            {errors.declaration && <FormHelperText error>{errors.declaration}</FormHelperText>}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Declaration Date"
               name="declarationDate"
+              type="date"
               value={formData.declarationDate}
-              readOnly
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
+              disabled
+              InputLabelProps={{shrink:true}}
+              margin="dense"
             />
-          </div>
-        </div>
+          </Grid>
 
-        {/* For Office Use Only */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm">Application Number</label>
-            <input
+          {/* 10. Office Use Only */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">For Office Use Only</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Application Number"
               name="applicationNumber"
               value={formData.applicationNumber}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-          <div>
-            <label className="block text-sm">Admission Approved?</label>
-            <div className="inline-flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="admissionApproved"
-                  value="yes"
-                  checked={formData.admissionApproved === 'yes'}
-                  onChange={handleChange}
-                  className="h-4 w-4"
-                />
-                <span className="ml-2">Yes</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="admissionApproved"
-                  value="no"
-                  checked={formData.admissionApproved === 'no'}
-                  onChange={handleChange}
-                  className="h-4 w-4"
-                />
-                <span className="ml-2">No</span>
-              </label>
-            </div>
-          </div>
-          {formData.admissionApproved === 'no' && (
-            <div className="md:col-span-2">
-              <label className="block text-sm">If No, Reason</label>
-              <textarea
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControl component="fieldset" margin="dense">
+              <Typography component="legend">Admission Approved</Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="admissionApproved"
+                    value="yes"
+                    checked={formData.admissionApproved==='yes'}
+                    onChange={handleChange}
+                  />
+                }
+                label="Yes"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="admissionApproved"
+                    value="no"
+                    checked={formData.admissionApproved==='no'}
+                    onChange={handleChange}
+                  />
+                }
+                label="No"
+              />
+            </FormControl>
+          </Grid>
+          {formData.admissionApproved==='no' && (
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Rejection Reason"
                 name="rejectionReason"
+                multiline rows={2}
                 value={formData.rejectionReason}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2"
+                margin="dense"
               />
-            </div>
+            </Grid>
           )}
-          <div>
-            <label className="block text-sm">Class Allotted</label>
-            <input
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Class Allotted"
               name="classAllotted"
-              value={formData.classAllotted}
+              value={formData.classAllotted || ''}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-          <div>
-            <label className="block text-sm">Principal Name</label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Principal Name"
               name="principalName"
-              value={formData.principalName}
+              value={formData.principalName || ''}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
+              margin="dense"
             />
-          </div>
-        </div>
+          </Grid>
 
-        {errors.general && <p className="text-red-600">{errors.general}</p>}
+          {/* 11. Transport */}
+          <Grid item xs={12} mt={2}>
+            <Typography variant="h6">Transport</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="transport"
+                  checked={formData.transport}
+                  onChange={handleChange}
+                />
+              }
+              label="Availing Transport?"
+            />
+          </Grid>
+          {formData.transport && (
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth margin="dense" error={!!errors.route}>
+                <InputLabel>Route *</InputLabel>
+                 <Select
+                    name="route"
+                    /* only allow one of our “Route 1”–“Route 8”; else '' */
+                    value={['Route 1','Route 2','Route 3','Route 4','Route 5','Route 6','Route 7','Route 8']
+                              .includes(formData.route)
+                              ? formData.route
+                              : ''
+                          }
+                    onChange={handleChange}
+                    label="Route *"
+                  >
+                  <MenuItem value=""><em>Select Route</em></MenuItem>
+                  {Array.from({ length: 8 }, (_, i) => `Route ${i+1}`).map(r=>(
+                    <MenuItem key={r} value={r}>
+                      {r}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>{errors.route}</FormHelperText>
+              </FormControl>
 
-        <div className="flex space-x-4">
-          <button
-            type="submit"
-            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded"
-          >
-            Update
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="bg-gray-300 hover:bg-gray-400 px-6 py-2 rounded"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+            </Grid>
+          )}
+
+          {/* Submit */}
+          <Grid item xs={12} textAlign="center" mt={2}>
+            <Button variant="contained" type="submit">
+              Update Student
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={()=>setSnackbar(s=>({...s,open:false}))}
+        anchorOrigin={{vertical:'bottom',horizontal:'center'}}
+      >
+        <Alert
+          onClose={()=>setSnackbar(s=>({...s,open:false}))}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
   )
 }
