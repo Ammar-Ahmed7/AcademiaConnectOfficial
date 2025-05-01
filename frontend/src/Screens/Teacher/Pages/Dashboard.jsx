@@ -57,7 +57,14 @@ useEffect(() => {
       if (adminError || schoolError) throw adminError || schoolError;
 
       const allNotices = [...(adminNotices || []), ...(schoolNotices || [])];
-      const sorted = allNotices.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const sorted = allNotices.sort((a, b) => {
+  // Urgent notices first
+  if (a.Urgent === b.Urgent) {
+    return new Date(b.created_at) - new Date(a.created_at); // newer first
+  }
+  return b.Urgent ? 1 : -1;
+});
+
 
       setNotifications(sorted);
 
