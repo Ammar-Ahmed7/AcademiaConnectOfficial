@@ -44,7 +44,7 @@ const TeacherNotifications = () => {
           .select('*')
           .eq('AudienceTeacher', true)
           .eq('CreatedType', 'Admin')
-          .order('created_timestamp', { ascending: false });
+          .order('created_at', { ascending: false });
 
         // Fetch School-created notices for this teacher’s school (no EndDate filter)
         const { data: schoolNotices, error: schoolError } = await supabase
@@ -53,7 +53,7 @@ const TeacherNotifications = () => {
           .eq('AudienceTeacher', true)
           .eq('CreatedType', 'School')
           .eq('CreatedBy', teacherData.SchoolID)
-          .order('created_timestamp', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (adminError || schoolError) throw adminError || schoolError;
 
