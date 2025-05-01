@@ -1,5 +1,5 @@
 // ManageTeachers.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 
 export default function ManageTeachers() {
@@ -58,8 +58,6 @@ export default function ManageTeachers() {
       .select(`
         TeacherID,
         Name,
-        subject,
-        details,
         teacher_assignments (
           section_id,
           subject_id,
@@ -235,8 +233,7 @@ export default function ManageTeachers() {
   // 13) Render
   //
   const filteredTeachers = teacherRequests.filter(t =>
-    t.Name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (t.subject || '').toLowerCase().includes(searchQuery.toLowerCase())
+    t.Name?.toLowerCase().includes(searchQuery.toLowerCase()) 
   );
 
   return (
@@ -261,7 +258,7 @@ export default function ManageTeachers() {
             onClick={() => openModal(teacher)}
           >
             <h3 className="font-semibold">{teacher.Name}</h3>
-            <p className="text-gray-600">Subject: {teacher.subject}</p>
+            {/*<p className="text-gray-600">Subject: {teacher.subject}</p>*/}
             {teacher.teacher_assignments?.length > 0 && (
               <ul className="list-disc ml-4 mt-2">
                 {teacher.teacher_assignments.map((ta, i) => (
@@ -281,7 +278,7 @@ export default function ManageTeachers() {
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-full max-w-lg max-h-full overflow-auto">
             <h2 className="text-xl font-bold mb-2">{selectedTeacher.Name}</h2>
-            <p className="mb-4 text-gray-700">{selectedTeacher.details}</p>
+           {/* <p className="mb-4 text-gray-700">{selectedTeacher.details}</p>*/}
 
             {/* Section dropdown */}
             <h3 className="font-semibold mb-2">Assign Classes/Sections</h3>
