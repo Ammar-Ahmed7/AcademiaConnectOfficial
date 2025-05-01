@@ -2665,7 +2665,7 @@ const EditTeacher = () => {
                     }
                   >
                     <MenuItem value="Principal">Principal</MenuItem>
-                    <MenuItem value="Head-Teacher">Head-Teacher</MenuItem>
+                    <MenuItem value="Vice Principal">Vice Principal</MenuItem>
                     <MenuItem value="Teacher">Teacher</MenuItem>
                   </Select>
                   {formik.touched.EmployeeType && formik.errors.EmployeeType && (
@@ -2715,9 +2715,9 @@ const EditTeacher = () => {
                       Boolean(formik.errors.EmployementType)
                     }
                   >
-                    <MenuItem value="Permanent">Permanent</MenuItem>
+                    <MenuItem value="Regular">Regular</MenuItem>
                     <MenuItem value="Contract">Contract</MenuItem>
-                    <MenuItem value="Part-Time">Part-Time</MenuItem>
+                    <MenuItem value="Deputation">Deputation</MenuItem>
                   </Select>
                   {formik.touched.EmployementType &&
                     formik.errors.EmployementType && (
@@ -2783,3 +2783,13 @@ const EditTeacher = () => {
 };
 
 export default EditTeacher;
+
+
+
+
+
+
+
+
+
+
