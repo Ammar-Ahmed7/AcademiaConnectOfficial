@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css'; // Make sure styles are loaded // Make sure you have this import
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import DownloadIcon from '@mui/icons-material/Download';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,8 +18,56 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotices, setLoadingNotices] = useState(true);
 
+  const [timetableFilePath, setTimetableFilePath] = useState(null);
+  const [timetableFileName, setTimetableFileName] = useState('');
+
 
 const [calendarValue, setCalendarValue] = useState(new Date());
+
+useEffect(() => {
+  const fetchTimetableFile = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) return navigate('/');
+
+      // Fetch teacher info
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('Teacher')
+        .select('SchoolID')
+        .eq('user_id', user.id)
+        .single();
+      if (teacherError) throw teacherError;
+
+      // Fetch timetable record
+      const { data: timetableData, error: timetableError } = await supabase
+        .from('class_timetables')
+        .select('file_path, file_name')
+        .eq('SchoolID', teacherData.SchoolID)
+        .single();
+      if (timetableError) throw timetableError;
+
+      const filePath = timetableData?.file_path;
+      const fileName = timetableData?.file_name;
+
+      if (!filePath) return;
+
+      // Get public URL
+      const { data: urlData } = supabase
+        .storage
+        .from('class-timetables')
+        .getPublicUrl(filePath);
+
+      setTimetableFilePath(urlData?.publicUrl || null);
+      setTimetableFileName(fileName || '');
+    } catch (err) {
+      console.error('Error fetching timetable file:', err);
+    }
+  };
+
+  fetchTimetableFile();
+}, [navigate]);
+
 
 useEffect(() => {
   const fetchNotificationData = async () => {
@@ -228,19 +278,50 @@ useEffect(() => {
                 Class Timetable
               </Typography>
               <Box
-                sx={{
-                  flexGrow: 1,
-                  backgroundColor: '#f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 1
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Timetable Image Placeholder
-                </Typography>
-              </Box>
+  sx={{
+    flexGrow: 1,
+    backgroundColor: '#f8fafc',
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: 1,
+    p: 2,
+    flexDirection: 'column',
+    textAlign: 'center',
+    overflow: 'auto',
+  }}
+>
+  {timetableFilePath ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <InsertDriveFileIcon sx={{ color: '#fe0f0f' }} />
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {timetableFileName}
+      </Typography>
+      <a
+        href={timetableFilePath}
+        download={timetableFileName}
+        style={{
+          textDecoration: 'none',
+          backgroundColor: '#05a5d4',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        <DownloadIcon fontSize="small"/>
+        Download
+      </a>
+    </Box>
+  ) : (
+    <Typography variant="body2" color="text.secondary">
+      No timetable file available for this school.
+    </Typography>
+  )}
+</Box>
+
+
             </Paper>
           </Grid>
 
