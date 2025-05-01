@@ -280,7 +280,7 @@ useEffect(() => {
               <Box
   sx={{
     flexGrow: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#efefef',
     display: 'flex',
     alignItems: 'center',
     borderRadius: 1,
@@ -343,12 +343,11 @@ useEffect(() => {
     <Box
       sx={{
         flexGrow: 1,
-        backgroundColor: '#f8fafc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 1,
-        p: 1
+        
       }}
     >
       <Calendar 
@@ -372,12 +371,12 @@ useEffect(() => {
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
-  <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+  <Box sx={{ flexGrow: 1, overflow: 'auto'}}>
   <Typography variant="h6" gutterBottom color="primary">
                 Notifications and Announcements
               </Typography>
   {loadingNotices ? (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3,  backgroundColor: '#efefef' }}>
      <CircularProgress size={30} sx={{ color: '#4ade80' }} />
     </Box>
   ) : notifications.length === 0 ? (
@@ -396,7 +395,7 @@ useEffect(() => {
             notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
           }`,
           mb: 2,
-          p: 1,
+          p: 0.5,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
