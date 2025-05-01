@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
-function CreatedReports() {
+function SentReports() {
   const [reports, setReports] = useState([]);
   const [selectedReports, setSelectedReports] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -16,7 +16,7 @@ function CreatedReports() {
   const [Month, setMonth] = useState(0);
   const [Year, setYear] = useState(2024);
   const [Sender, setSender] = useState(0);
-  const Receiver= "a8d80b7b-42fe-4998-95df-4600ac69a2da";
+  const Receiver = "a8d80b7b-42fe-4998-95df-4600ac69a2da";
   const [alert, setAlert] = useState({
     open: false,
     message: "",
@@ -49,7 +49,7 @@ function CreatedReports() {
   const fetchReports = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from("SavedReports").select("*");
+      const { data, error } = await supabase.from("SendedReports").select("*");
       if (error) throw error;
       setReports(data);
     } catch (error) {
@@ -64,221 +64,8 @@ function CreatedReports() {
     }
   };
 
-  const handleCheckboxChange = (reportId, e) => {
-    e.stopPropagation();
-    setSelectedReports((prev) =>
-      prev.includes(reportId)
-        ? prev.filter((id) => id !== reportId)
-        : [...prev, reportId]
-    );
-  };
-
-  const handleCreateZip = async () => {
-    if (selectedReports.length === 0) return;
-
-    setIsLoading(true);
-    try {
-      const zip = new JSZip();
-      const selected = reports.filter((report) =>
-        selectedReports.includes(report.id)
-      );
-
-      for (let report of selected) {
-        try {
-          const response = await fetch(report.FilePath);
-          if (!response.ok) continue;
-          const blob = await response.blob();
-          zip.file(report.FileName || `report-${report.id}.pdf`, blob);
-        } catch (error) {
-          console.error(`Error processing ${report.ReportName}:`, error);
-        }
-      }
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const fileName = `Reports-${Month}-${Year}-${Sender}-${Date.now()}.zip`;
-
-      // Create download link
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setSelectedReports([]);
-      setAlert({
-        open: true,
-        message: "ZIP file downloaded successfully!",
-        severity: "success",
-      });
-    } catch (error) {
-      console.error("Error creating ZIP:", error);
-      setAlert({
-        open: true,
-        message: "Failed to create ZIP file: " + error.message,
-        severity: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRowClick = async (report) => {
-    setIsLoading(true);
-    setPdfLoadError(false);
-    try {
-      setPreviewUrl(report.FilePath);
-      setCurrentReport(report);
-      setIsPreviewOpen(true);
-    } catch (error) {
-      console.error("Error opening preview:", error);
-      setPdfLoadError(true);
-      setAlert({
-        open: true,
-        message: "Error opening PDF preview: " + error.message,
-        severity: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const closePreview = () => {
-    setIsPreviewOpen(false);
-    setPreviewUrl(null);
-    setCurrentReport(null);
-    setPdfLoadError(false);
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
-  };
-
-  const saveToDatabase = async (fileName, filePath) => {
-    try {
-      const selected = reports.filter((report) =>
-        selectedReports.includes(report.id)
-      );
-
-      // We'll take the month/year from the first selected report
-      // const firstReport = selected[0];
-      // if (!firstReport) throw new Error("No reports selected");
-
-      console.log("i am here");
-      // Check if a report for this month/year already exists
-      const { data: existingReport, error: fetchError } = await supabase
-        .from("SendedReports")
-        .select("*")
-        .eq("Month", Month)
-        .eq("Year", Year)
-        .eq("Sender", Sender)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-      if (existingReport) {
-        throw new Error(
-          "A report for this month/year is already sent to the admin"
-        );
-      }
-
-      // Save to database
-      const { error: dbError } = await supabase.from("SendedReports").insert({
-        Month: Month,
-        Year: Year,
-        FileName: fileName,
-        FilePath: filePath,
-        Sender: Sender,
-        Receiver: Receiver,
-        // ReportName: `Combined Report - ${Month}/${Year}`,
-
-        created_at: new Date().toISOString(),
-      });
-
-      if (dbError) throw dbError;
-
-      return true;
-    } catch (error) {
-      console.error("Error saving to database:", error);
-      throw error;
-    }
-  };
-
-  const handleUploadZipToAdmin = async () => {
-    if (selectedReports.length === 0) {
-      setAlert({
-        open: true,
-        message: "Please select at least one report.",
-        severity: "warning",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    console.log("i  amhere ............");
-    try {
-      const zip = new JSZip();
-      const selected = reports.filter((report) =>
-        selectedReports.includes(report.id)
-      );
-      console.log("i  amhere ............2");
-
-      for (let report of selected) {
-        try {
-          const response = await fetch(report.FilePath);
-          if (!response.ok) continue;
-          const blob = await response.blob();
-          zip.file(report.FileName || `report-${report.id}.pdf`, blob);
-        } catch (error) {
-          console.error(`Error processing ${report.ReportName}:`, error);
-        }
-      }
-      console.log("i  amhere ............3");
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const fileName = `Reports-${Month}-${Year}-${Sender}-${Date.now()}.zip`;
-
-      // Upload to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("zipreports")
-        .upload(`${fileName}`, zipBlob, {
-          contentType: "application/zip",
-          // upsert: true,
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("zipreports")
-        .getPublicUrl(fileName);
-
-      const publicUrl = urlData?.publicUrl || "";
-
-      // Save to database
-      await saveToDatabase(fileName, publicUrl);
-
-      setAlert({
-        open: true,
-        message: "File send Suceefully",
-        severity: "success",
-      });
-
-      setSelectedReports([]);
-    } catch (error) {
-      console.error("Upload failed:", error);
-      setAlert({
-        open: true,
-        message: `Failed to upload ZIP file: ${error.message}`,
-        severity: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleDownload = async (e) => {
@@ -527,4 +314,4 @@ function CreatedReports() {
   );
 }
 
-export default CreatedReports;
+export default SentReports;
