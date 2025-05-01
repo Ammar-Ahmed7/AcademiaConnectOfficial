@@ -54,7 +54,7 @@ const ReportVacanncy = ({ month, year, SchoolID, SchoolName }) => {
     "Subject Specialist": { matches: ["subject specialist"], exact: true },
     "S.S.T (Science + Arts)": {
       matches: ["s.s.t", "sse", "acting principal"],
-      exact: false,
+      exact: true,
     },
     "S.S.T (I.T)": { matches: ["s.s.t(i.t)"], exact: true },
     "Arabic Teacher": { matches: ["arabic teacher"], exact: true },
@@ -113,7 +113,7 @@ const ReportVacanncy = ({ month, year, SchoolID, SchoolName }) => {
         supabase.from("Teacher").select("Post"),
         supabase.from("staff").select("designation"),
       ]);
-
+console.log("list of all teachers",teachers)
       // Error handling
       if (sanctionedError)
         throw new Error(`Sanctioned data: ${sanctionedError.message}`);
@@ -127,6 +127,7 @@ const ReportVacanncy = ({ month, year, SchoolID, SchoolName }) => {
         ([reportPost, { matches, exact }]) => {
           teachingWorkingCounts[reportPost] = teachers.filter((teacher) => {
             const post = teacher.Post?.toLowerCase() || "";
+            console.log("i am apost",post)
             return matches.some((match) =>
               exact ? post === match : post.includes(match)
             );

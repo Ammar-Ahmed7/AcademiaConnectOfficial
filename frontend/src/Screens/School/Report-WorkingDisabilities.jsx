@@ -62,7 +62,7 @@ const ReportWorkingDisabilities = ({ month, year, SchoolID, SchoolName }) => {
         }`,
         designation: staffMember.designation || "N/A",
         bps: staffMember.BPS || "N/A",
-        joiningDate: staffMember.date_of_join_in_department || "N/A",
+        joiningDate: staffMember.joining_date || "N/A",
         status: staffMember.employment_type || "N/A",
         mode: staffMember.disability === "Yes" ? "Disable Quota" : "Open Merit",
       }));
