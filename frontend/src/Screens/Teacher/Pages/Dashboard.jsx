@@ -287,11 +287,11 @@ useEffect(() => {
     p: 2,
     flexDirection: 'column',
     textAlign: 'center',
-    overflow: 'auto',
+
   }}
 >
   {timetableFilePath ? (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'auto' }}>
       <InsertDriveFileIcon sx={{ color: '#fe0f0f' }} />
       <Typography variant="body2" sx={{ fontWeight: 500 }}>
         {timetableFileName}
