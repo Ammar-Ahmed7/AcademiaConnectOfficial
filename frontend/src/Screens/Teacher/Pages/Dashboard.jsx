@@ -396,7 +396,7 @@ useEffect(() => {
             notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
           }`,
           mb: 2,
-          p: 2,
+          p: 1,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
