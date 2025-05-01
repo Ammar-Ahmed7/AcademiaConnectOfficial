@@ -13,7 +13,7 @@ function CreatedReports() {
   const [currentReport, setCurrentReport] = useState(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [Month, setMonth] = useState(0);
+  const [Month, setMonth] = useState(1);
   const [Year, setYear] = useState(2024);
   const [Sender, setSender] = useState(0);
   const Receiver= "a8d80b7b-42fe-4998-95df-4600ac69a2da";

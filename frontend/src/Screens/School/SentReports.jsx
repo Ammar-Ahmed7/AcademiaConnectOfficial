@@ -1,46 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../../supabase-client";
 import { CircularProgress } from "@mui/material";
-import JSZip from "jszip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
 function SentReports() {
   const [reports, setReports] = useState([]);
-  const [selectedReports, setSelectedReports] = useState([]);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [currentReport, setCurrentReport] = useState(null);
-  const [pdfLoadError, setPdfLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [Month, setMonth] = useState(0);
-  const [Year, setYear] = useState(2024);
-  const [Sender, setSender] = useState(0);
-  const Receiver = "a8d80b7b-42fe-4998-95df-4600ac69a2da";
   const [alert, setAlert] = useState({
     open: false,
     message: "",
     severity: "info",
   });
 
-  const handleCloseAlert = () => setAlert({ ...alert, open: false });
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error fetching user:", error.message);
-        return;
-      }
-      if (user) {
-        setSender(user.id); // Set Sender to user's UUID
-      }
-    };
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
-    fetchUser();
-  }, []);
+  const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   useEffect(() => {
     fetchReports();
@@ -68,51 +56,91 @@ function SentReports() {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleDownload = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const getMonthName = (monthIndex) => {
+    return monthNames[monthIndex] || "Unknown Month";
+  };
 
-    if (!previewUrl || !currentReport?.FileName) return;
-
+  const handleDownload = async (report) => {
     try {
-      const response = await fetch(previewUrl, {
-        mode: "cors",
-      });
+      setIsLoading(true);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch the file");
+      if (!report.FilePath) {
+        throw new Error("No file path available for download");
       }
 
-      const blob = await response.blob();
-      const downloadUrl = URL.createObjectURL(blob);
+      // Check if the URL is valid
+      if (!report.FilePath.startsWith("http")) {
+        throw new Error("Invalid file URL");
+      }
+
+      // Create a hidden anchor tag for direct download
       const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = currentReport.FileName || "report.pdf";
+      a.href = report.FilePath;
+      a.target = "_blank"; // Open in new tab as fallback
+      a.rel = "noopener noreferrer";
+
+      // Set an appropriate filename
+      const defaultName = `report_${getMonthName(report.Month)}_${
+        report.Year
+      }.zip`;
+      a.download = report.FileName || defaultName;
+
+      // Trigger the download
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
 
-      setAlert({
-        open: true,
-        message: "Report downloaded successfully!",
-        severity: "success",
-      });
+      // Fallback method if the direct download doesn't work
+      setTimeout(async () => {
+        try {
+          const response = await fetch(report.FilePath, {
+            mode: "cors",
+            cache: "no-cache",
+          });
 
-      closePreview();
+          if (!response.ok) throw new Error("Failed to fetch file");
+
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const fallbackLink = document.createElement("a");
+          fallbackLink.href = blobUrl;
+          fallbackLink.download = a.download;
+          document.body.appendChild(fallbackLink);
+          fallbackLink.click();
+          document.body.removeChild(fallbackLink);
+          URL.revokeObjectURL(blobUrl);
+
+          setAlert({
+            open: true,
+            message: "Report downloaded successfully!",
+            severity: "success",
+          });
+        } catch (fallbackError) {
+          console.error("Fallback download failed:", fallbackError);
+          setAlert({
+            open: true,
+            message: `Download failed. Try opening in new tab.`,
+            severity: "error",
+          });
+          // Open in new tab as last resort
+          window.open(report.FilePath, "_blank");
+        }
+      }, 2000); // Wait 2 seconds before trying fallback
     } catch (error) {
-      console.error("Error downloading the file:", error);
+      console.error("Download error:", error);
       setAlert({
         open: true,
-        message: "Failed to download report: " + error.message,
+        message: `Download failed: ${error.message}`,
         severity: "error",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
-
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-4">Created Reports</h2>
+      <h2 className="text-lg font-semibold mb-4">Sent Reports</h2>
 
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -130,89 +158,43 @@ function SentReports() {
         </Alert>
       </Snackbar>
 
-      {selectedReports.length > 7 && (
-        <div>
-          <button
-            onClick={handleCreateZip}
-            disabled={isLoading}
-            className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-          >
-            {isLoading
-              ? "Processing..."
-              : `Download ZIP of Selected (${selectedReports.length})`}
-          </button>
-
-          <button
-            onClick={handleUploadZipToAdmin}
-            disabled={isLoading}
-            className="mb-4 ml-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400"
-          >
-            {isLoading ? "Uploading..." : "Send Zip File to an Admin"}
-          </button>
-        </div>
-      )}
-
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto border-collapse border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th className="border px-2 py-2">
-                <input
-                  type="checkbox"
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedReports(reports.map((r) => r.id));
-                    } else {
-                      setSelectedReports([]);
-                    }
-                  }}
-                  checked={
-                    reports.length > 0 &&
-                    selectedReports.length === reports.length
-                  }
-                  disabled={isLoading}
-                />
-              </th>
-              <th className="border px-4 py-2">Report Name</th>
               <th className="border px-4 py-2">Month</th>
               <th className="border px-4 py-2">Year</th>
-              <th className="border px-4 py-2">Records</th>
-              <th className="border px-4 py-2">Created At</th>
+              <th className="border px-4 py-2">Sent At</th>
+              <th className="border px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {reports.length > 0 ? (
               reports.map((report) => (
-                <tr
-                  key={report.id}
-                  onClick={() => !isLoading && handleRowClick(report)}
-                  className={`hover:bg-gray-50 ${
-                    !isLoading ? "cursor-pointer" : "cursor-not-allowed"
-                  }`}
-                >
-                  <td
-                    className="border px-2 py-2 text-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedReports.includes(report.id)}
-                      onChange={(e) => handleCheckboxChange(report.id, e)}
-                      disabled={isLoading}
-                    />
+                <tr key={report.id} className="hover:bg-gray-50">
+                  <td className="border px-4 py-2 text-center">
+                    {getMonthName(report.Month)}
                   </td>
-                  <td className="border px-4 py-2">{report.ReportName}</td>
-                  <td className="border px-4 py-2">{report.Month}</td>
-                  <td className="border px-4 py-2">{report.Year}</td>
-                  <td className="border px-4 py-2">{report.RecordCount}</td>
+                  <td className="border px-4 py-2 text-center">
+                    {report.Year}
+                  </td>
                   <td className="border px-4 py-2">
                     {formatDate(report.created_at)}
+                  </td>
+                  <td className="border px-4 py-2 text-center">
+                    <button
+                      onClick={() => handleDownload(report)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      disabled={isLoading}
+                    >
+                      Download
+                    </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center py-4 text-gray-500">
+                <td colSpan="4" className="text-center py-4 text-gray-500">
                   {isLoading ? "Loading reports..." : "No reports found."}
                 </td>
               </tr>
@@ -220,96 +202,6 @@ function SentReports() {
           </tbody>
         </table>
       </div>
-
-      {/* PDF Preview Modal */}
-      {isPreviewOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-semibold">
-                {currentReport?.ReportName || "Report Preview"}
-              </h3>
-              <button
-                onClick={closePreview}
-                className="text-gray-500 hover:text-gray-700 p-1"
-                aria-label="Close preview"
-                disabled={isLoading}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex-grow overflow-hidden relative">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-700">Loading PDF...</p>
-                </div>
-              ) : pdfLoadError ? (
-                <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                  <p className="text-red-500 mb-4">
-                    Could not display the PDF preview.
-                  </p>
-                  <div className="flex space-x-2">
-                    <a
-                      href={previewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      Open in New Tab
-                    </a>
-                    <button
-                      onClick={handleDownload}
-                      className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <iframe
-                  src={`${previewUrl}#view=fitH`}
-                  className="w-full h-full min-h-[60vh]"
-                  frameBorder="0"
-                  title="PDF Preview"
-                  onError={() => setPdfLoadError(true)}
-                  onLoad={() => setIsLoading(false)}
-                />
-              )}
-            </div>
-
-            <div className="p-4 border-t flex justify-end space-x-2">
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Open in New Tab
-              </a>
-              <button
-                onClick={handleDownload}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Download
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
