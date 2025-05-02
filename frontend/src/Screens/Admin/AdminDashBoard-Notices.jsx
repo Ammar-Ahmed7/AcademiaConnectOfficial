@@ -83,11 +83,11 @@ const AdminDashBoardNotices = () => {
         let notificationColor = "#F28A30";
 
         if (item.Urgent) {
-          notificationColor = "#FFEB3B";
+          notificationColor = "#fae955";
         } else if (item.SubType === "Holiday") {
-          notificationColor = "#006400";
+          notificationColor = "#88E788";
         } else if (item.SubType === "Event") {
-          notificationColor = "#8A2BE2";
+          notificationColor = "#DAB1DA";
         }
 
         return {

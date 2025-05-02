@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { Link } from "react-router-dom";
 import supabase from "../../../supabase-client";
 import AdminSidebarCalender from "./AdminDashBoard-Calender";
 import AdminDashBoardNotices from "./AdminDashBoard-Notices";
@@ -390,18 +391,31 @@ const Home = () => {
   return (
     <Box sx={{ padding: "20px" }}>
       {/* Top Statistics Cards */}
-      <Grid container spacing={2}>
+      {/* <Grid container spacing={2}>
+        
         <Grid item xs={12} sm={4}>
-          <Card sx={{ bgcolor: "#F28A30", color: "white" }}>
-            <CardContent>
-              <Typography variant="h5" fontWeight="bold">
-                Schools
-              </Typography>
-              <Typography variant="h4" fontWeight="bold">
-                {loading ? "Loading..." : data.totalSchools}
-              </Typography>
-            </CardContent>
-          </Card>
+          <Link to="/admin/all-schools" style={{ textDecoration: "none" }}>
+            <Card
+              sx={{
+                bgcolor: "#F28A30",
+                color: "white",
+                cursor: "pointer",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  transition: "transform 0.2s",
+                },
+              }}
+            >
+              <CardContent>
+                <Typography variant="h5" fontWeight="bold">
+                  Schools
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {loading ? "Loading..." : data.totalSchools}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Link>
         </Grid>
         <Grid item xs={12} sm={4}>
           <Card sx={{ bgcolor: "#1E90FF", color: "white" }}>
@@ -427,7 +441,86 @@ const Home = () => {
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+      </Grid> */}
+
+
+
+<Grid container spacing={2}>
+  {/* Schools Card */}
+  <Grid item xs={12} sm={4}>
+    <Link to="/admin/all-schools" style={{ textDecoration: 'none' }}>
+      <Card sx={{ 
+        bgcolor: "#F28A30", 
+        color: "white", 
+        cursor: 'pointer', 
+        '&:hover': { 
+          transform: 'scale(1.02)', 
+          transition: 'transform 0.2s',
+          boxShadow: 3 
+        } 
+      }}>
+        <CardContent>
+          <Typography variant="h5" fontWeight="bold">
+            Schools
+          </Typography>
+          <Typography variant="h4" fontWeight="bold">
+            {loading ? "Loading..." : data.totalSchools}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Link>
+  </Grid>
+
+  {/* Teachers Card */}
+  <Grid item xs={12} sm={4}>
+    <Link to="/admin/all-teachers" style={{ textDecoration: 'none' }}>
+      <Card sx={{ 
+        bgcolor: "#1E90FF", 
+        color: "white", 
+        cursor: 'pointer', 
+        '&:hover': { 
+          transform: 'scale(1.02)', 
+          transition: 'transform 0.2s',
+          boxShadow: 3 
+        } 
+      }}>
+        <CardContent>
+          <Typography variant="h5" fontWeight="bold">
+            Teachers
+          </Typography>
+          <Typography variant="h4" fontWeight="bold">
+            {loading ? "Loading..." : data.totalTeachers}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Link>
+  </Grid>
+
+  {/* Students Card */}
+  <Grid item xs={12} sm={4}>
+    <Link to="/admin/all-students" style={{ textDecoration: 'none' }}>
+      <Card sx={{ 
+        bgcolor: "#32CD32", 
+        color: "white", 
+        cursor: 'pointer', 
+        '&:hover': { 
+          transform: 'scale(1.02)', 
+          transition: 'transform 0.2s',
+          boxShadow: 3 
+        } 
+      }}>
+        <CardContent>
+          <Typography variant="h5" fontWeight="bold">
+            Students
+          </Typography>
+          <Typography variant="h4" fontWeight="bold">
+            {loading ? "Loading..." : data.totalStudents}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Link>
+  </Grid>
+</Grid>
 
       <Grid container spacing={2} mt={2}>
         {/* Upcoming Events Section */}

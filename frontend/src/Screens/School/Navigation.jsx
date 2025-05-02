@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React from 'react';
 import {
   LayoutGrid,
@@ -67,8 +66,8 @@ const Navigation = () => {
   return (
     <div className="w-20 bg-white flex flex-col items-center shadow-sm py-8 h-full overflow-y-auto">
       {/* Logo */}
-      <div className="mb-10 bg-amber-100 p-3 rounded-xl">
-        <div className="h-8 w-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+      <div className="mb-10 bg-blue-100 p-3 rounded-xl">
+        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
             <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
           </svg>
@@ -81,10 +80,10 @@ const Navigation = () => {
           <Link to={item.path} key={index}>
             <button
               className={`flex flex-col items-center gap-1 w-full p-2 ${
-                location.pathname === item.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'
+                location.pathname === item.path ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'
               }`}
             >
-              <div className={`p-2 rounded-xl ${location.pathname === item.path ? 'bg-amber-50' : ''}`}>
+              <div className={`p-2 rounded-xl ${location.pathname === item.path ? 'bg-blue-50' : ''}`}>
                 {item.icon}
               </div>
               <span className="text-xs">{item.text}</span>
@@ -94,7 +93,7 @@ const Navigation = () => {
       </div>
 
       {/* Logout Button */}
-      <button className="mt-auto flex flex-col items-center gap-1 text-gray-500 hover:text-amber-500 p-2" onClick={handleLogout}>
+      <button className="mt-auto flex flex-col items-center gap-1 text-gray-500 hover:text-blue-500 p-2" onClick={handleLogout}>
         <div className="p-2 rounded-xl">
           <LogOut className="h-5 w-5" />
         </div>

@@ -1,10 +1,29 @@
 // src/Screens/School/EditSchoolDetails.jsx
-import React, { useState, useEffect } from 'react';
-import { supabase } from './supabaseClient'; // adjust path as needed
+import React, { useState, useEffect } from 'react'
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  Divider,
+  Grid,
+  CircularProgress,
+  Snackbar,
+  Alert
+} from '@mui/material'
+import EditIcon from '@mui/icons-material/Edit'
+import SaveIcon from '@mui/icons-material/Save'
+import { supabase } from './supabaseClient' // adjust path if needed
 
 export default function EditSchoolDetails() {
-  const [loading, setLoading] = useState(true);
-  const [school, setSchool]   = useState(null);
+  const [loading, setLoading] = useState(true)
+  const [school, setSchool] = useState(null)
+  const [message, setMessage] = useState(null)
+
+  // formData holds all editable fields plus the JSON object
   const [formData, setFormData] = useState({
     SchoolID: '',
     Email: '',
@@ -19,292 +38,334 @@ export default function EditSchoolDetails() {
     ComputerLab: false,
     ScienceLab: false,
     Recognizedbyboard: '',
-    BoardattestationId: ''
-  });
-  const [message, setMessage] = useState(null);
+    BoardattestationId: '',
+    NoOfSactions: {}           // JSON field parsed here
+  })
 
-  // Fetch the school record for the logged-in user
+  // 1️⃣ Load school record on mount
   useEffect(() => {
     async function load() {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      setLoading(true)
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+
       if (!session?.user?.id) {
-        setMessage({ type: 'error', text: 'Not logged in.' });
-        setLoading(false);
-        return;
+        setMessage({ type: 'error', text: 'Not logged in.' })
+        setLoading(false)
+        return
       }
 
       const { data, error } = await supabase
         .from('School')
         .select('*')
         .eq('user_id', session.user.id)
-        .single();
+        .single()
 
       if (error) {
-        setMessage({ type: 'error', text: error.message });
-      } else if (data) {
+        setMessage({ type: 'error', text: error.message })
+      } else {
+        setSchool(data)
         // initialize formData
-        setSchool(data);
         setFormData({
-          SchoolID:           data.SchoolID || '',
-          Email:              data.Email || '',
-          SchoolName:         data.SchoolName || '',
-          SchoolFor:          data.SchoolFor || '',
-          SchoolLevel:        data.SchoolLevel || '',
-          Address:            data.Address || '',
-          PhoneNumber:        data.PhoneNumber || '',
-          EstablishedYear:    data.EstablishedYear || '',
-          Library:            !!data.Library,
-          SportsGround:       !!data.SportsGround,
-          ComputerLab:        !!data.ComputerLab,
-          ScienceLab:         !!data.ScienceLab,
-          Recognizedbyboard:  data.Recognizedbyboard || '',
-          BoardattestationId: data.BoardattestationId || ''
-        });
+          SchoolID: data.SchoolID || '',
+          Email: data.Email || '',
+          SchoolName: data.SchoolName || '',
+          SchoolFor: data.SchoolFor || '',
+          SchoolLevel: data.SchoolLevel || '',
+          Address: data.Address || '',
+          PhoneNumber: data.PhoneNumber || '',
+          EstablishedYear: data.EstablishedYear || '',
+          Library: !!data.Library,
+          SportsGround: !!data.SportsGround,
+          ComputerLab: !!data.ComputerLab,
+          ScienceLab: !!data.ScienceLab,
+          Recognizedbyboard: data.Recognizedbyboard || '',
+          BoardattestationId: data.BoardattestationId || '',
+          NoOfSactions: data.NoOfSactions || {}
+        })
       }
-      setLoading(false);
+      setLoading(false)
     }
-    load();
-  }, []);
+    load()
+  }, [])
 
+  // 2️⃣ Handle input changes
   const handleChange = e => {
-    const { name, type, value, checked } = e.target;
-    setFormData(f => ({
-      ...f,
-      [name]:
-        type === 'checkbox'
-          ? checked
-          : value
-    }));
-  };
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
+  }
 
+  // 3️⃣ Handle sanction edits (JSON)
+  const handleSanctionChange = (role, field, value) => {
+    setFormData(prev => {
+      const copy = { ...prev.NoOfSactions }
+      copy[role] = { ...copy[role], [field]: Number(value) }
+      return { ...prev, NoOfSactions: copy }
+    })
+  }
+
+  // 4️⃣ Submit updates
   const handleSubmit = async e => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+    e.preventDefault()
+    setLoading(true)
+    setMessage(null)
 
-    // Build payload with only editable fields
+    // payload includes JSON column
     const payload = {
-      SchoolFor:         formData.SchoolFor,
-      SchoolLevel:       formData.SchoolLevel,
-      Address:           formData.Address,
-      PhoneNumber:       formData.PhoneNumber,
-      EstablishedYear:   formData.EstablishedYear || null,
-      Library:           formData.Library,
-      SportsGround:      formData.SportsGround,
-      ComputerLab:       formData.ComputerLab,
-      ScienceLab:        formData.ScienceLab,
+      SchoolFor: formData.SchoolFor,
+      SchoolLevel: formData.SchoolLevel,
+      Address: formData.Address,
+      PhoneNumber: formData.PhoneNumber,
+      EstablishedYear:
+        formData.EstablishedYear !== ''
+          ? Number(formData.EstablishedYear)
+          : null,
+      Library: formData.Library,
+      SportsGround: formData.SportsGround,
+      ComputerLab: formData.ComputerLab,
+      ScienceLab: formData.ScienceLab,
       Recognizedbyboard: formData.Recognizedbyboard,
-      BoardattestationId: formData.BoardattestationId || null
-    };
+      BoardattestationId:
+        formData.BoardattestationId !== ''
+          ? formData.BoardattestationId
+          : null,
+      NoOfSactions: formData.NoOfSactions
+    }
 
     const { error } = await supabase
       .from('School')
       .update(payload)
-      .eq('SchoolID', formData.SchoolID);
+      .eq('SchoolID', formData.SchoolID)
 
     if (error) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error.message })
     } else {
-      setMessage({ type: 'success', text: 'School details updated.' });
+      setMessage({ type: 'success', text: 'School details updated!' })
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   if (loading) {
-    return <div className="p-6">Loading…</div>;
+    return (
+      <Box textAlign="center" py={8}>
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-semibold mb-4">Edit School Details</h2>
+    <Paper sx={{ maxWidth: 'lg', mx: 'auto', p: 4 }} elevation={3}>
+      <Typography variant="h5" gutterBottom display="flex" alignItems="center">
+        <EditIcon sx={{ mr: 1 }} /> Edit School Details
+      </Typography>
 
       {message && (
-        <div
-          className={`p-3 mb-4 rounded ${
-            message.type === 'error'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-green-100 text-green-800'
-          }`}
+        <Alert
+          severity={message.type}
+          sx={{ mb: 2 }}
+          onClose={() => setMessage(null)}
         >
           {message.text}
-        </div>
+        </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <Box component="form" onSubmit={handleSubmit} noValidate>
         {/* Read-only fields */}
-        <div>
-          <label className="block font-medium">School ID</label>
-          <input
-            name="SchoolID"
-            value={formData.SchoolID}
-            disabled
-            className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-          />
-        </div>
-        <div>
-          <label className="block font-medium">Email</label>
-          <input
-            name="Email"
-            value={formData.Email}
-            disabled
-            className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-          />
-        </div>
-        <div>
-          <label className="block font-medium">School Name</label>
-          <input
-            name="SchoolName"
-            value={formData.SchoolName}
-            disabled
-            className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-          />
-        </div>
+        <Grid container spacing={2}>
+          {[
+            ['SchoolID', 'School ID'],
+            ['Email', 'Email'],
+            ['SchoolName', 'School Name']
+          ].map(([name, label]) => (
+            <Grid item xs={12} sm={4} key={name}>
+              <TextField
+                label={label}
+                name={name}
+                value={formData[name]}
+                fullWidth
+                disabled
+              />
+            </Grid>
+          ))}
 
-        {/* Editable fields */}
-        <div>
-          <label className="block font-medium">School For</label>
-          <input
-            name="SchoolFor"
-            value={formData.SchoolFor}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
+          {/* Editable Text Inputs */}
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="School For"
+              name="SchoolFor"
+              value={formData.SchoolFor}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="School Level"
+              name="SchoolLevel"
+              value={formData.SchoolLevel}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Address"
+              name="Address"
+              value={formData.Address}
+              onChange={handleChange}
+              fullWidth
+              multiline
+              rows={2}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Phone Number"
+              name="PhoneNumber"
+              value={formData.PhoneNumber}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Established Year"
+              name="EstablishedYear"
+              type="number"
+              value={formData.EstablishedYear}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+        </Grid>
 
-        <div>
-          <label className="block font-medium">School Level</label>
-          <select
-            name="SchoolLevel"
-            value={formData.SchoolLevel}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
+        <Divider sx={{ my: 3 }} />
+
+        {/* Facilities Checkboxes */}
+        <Typography variant="subtitle1" gutterBottom>
+          Facilities
+        </Typography>
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="Library"
+              checked={formData.Library}
+              onChange={handleChange}
+            />
+          }
+          label="Library"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="SportsGround"
+              checked={formData.SportsGround}
+              onChange={handleChange}
+            />
+          }
+          label="Sports Ground"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="ComputerLab"
+              checked={formData.ComputerLab}
+              onChange={handleChange}
+            />
+          }
+          label="Computer Lab"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="ScienceLab"
+              checked={formData.ScienceLab}
+              onChange={handleChange}
+            />
+          }
+          label="Science Lab"
+        />
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Recognitions */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Recognized by Board"
+              name="Recognizedbyboard"
+              value={formData.Recognizedbyboard}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Board Attestation ID"
+              name="BoardattestationId"
+              type="number"
+              value={formData.BoardattestationId}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* 🔢 NoOfSanctions JSON editor */}
+        <Typography variant="subtitle1" gutterBottom>
+          Staff Sanctions
+        </Typography>
+        <Grid container spacing={2}>
+          {Object.entries(formData.NoOfSactions).map(
+            ([role, { Sanctioned }]) => (
+              <Grid item xs={12} sm={6} md={4} key={role}>
+                <TextField
+                  label={`${role} (Sanctioned)`}
+                  type="number"
+                  value={Sanctioned}
+                  fullWidth
+                  onChange={e =>
+                    handleSanctionChange(role, 'Sanctioned', e.target.value)
+                  }
+                />
+              </Grid>
+            )
+          )}
+        </Grid>
+
+        <Box textAlign="right" mt={4}>
+          <Button
+            type="submit"
+            variant="contained"
+            startIcon={<SaveIcon />}
+            disabled={loading}
           >
-            <option value="">Select Level</option>
-            <option value="Primary">Primary</option>
-            <option value="Secondary">Secondary</option>
-            <option value="Higher Secondary">Higher Secondary</option>
-            {/* adjust options to your needs */}
-          </select>
-        </div>
+            {loading ? 'Saving…' : 'Save Changes'}
+          </Button>
+        </Box>
+      </Box>
 
-        <div>
-          <label className="block font-medium">Address</label>
-          <textarea
-            name="Address"
-            value={formData.Address}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium">Phone Number</label>
-          <input
-            name="PhoneNumber"
-            value={formData.PhoneNumber}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium">Established Year</label>
-          <input
-            name="EstablishedYear"
-            type="number"
-            value={formData.EstablishedYear}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        {/* Checkboxes for facilities */}
-        <div className="space-y-2">
-          <label className="block font-medium">Facilities</label>
-          <div>
-            <label className="inline-flex items-center">
-              <input
-                name="Library"
-                type="checkbox"
-                checked={formData.Library}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              Library
-            </label>
-          </div>
-          <div>
-            <label className="inline-flex items-center">
-              <input
-                name="SportsGround"
-                type="checkbox"
-                checked={formData.SportsGround}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              Sports Ground
-            </label>
-          </div>
-          <div>
-            <label className="inline-flex items-center">
-              <input
-                name="ComputerLab"
-                type="checkbox"
-                checked={formData.ComputerLab}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              Computer Lab
-            </label>
-          </div>
-          <div>
-            <label className="inline-flex items-center">
-              <input
-                name="ScienceLab"
-                type="checkbox"
-                checked={formData.ScienceLab}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              Science Lab
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block font-medium">Recognized by Board</label>
-          <input
-            name="Recognizedbyboard"
-            value={formData.Recognizedbyboard}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium">Board Attestation ID</label>
-          <input
-            name="BoardattestationId"
-            type="number"
-            value={formData.BoardattestationId}
-            onChange={handleChange}
-            className="mt-1 w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`mt-4 px-6 py-2 font-semibold rounded ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700'
-          }`}
-        >
-          {loading ? 'Saving…' : 'Save Changes'}
-        </button>
-      </form>
-    </div>
-  );
+      {/* Snackbar for messages */}
+      <Snackbar
+        open={Boolean(message)}
+        autoHideDuration={4000}
+        onClose={() => setMessage(null)}
+      >
+        {message && (
+          <Alert
+            severity={message.type}
+            onClose={() => setMessage(null)}
+          >
+            {message.text}
+          </Alert>
+        )}
+      </Snackbar>
+    </Paper>
+  )
 }

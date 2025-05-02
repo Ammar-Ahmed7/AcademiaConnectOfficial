@@ -1,215 +1,335 @@
 // src/Screens/School/ManageStaff.jsx
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate }         from 'react-router-dom';
-import { supabase} from './supabaseClient'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Box, Card, CardContent, Typography,
+  Grid, Button, TextField, InputAdornment,
+  TableContainer, Paper, Table,
+  TableHead, TableRow, TableCell, TableBody,
+  CircularProgress, TablePagination,
+  Snackbar, Alert,
+  IconButton, Dialog, DialogTitle,
+  DialogContent, DialogActions
+} from '@mui/material'
+import {
+  Search as SearchIcon,
+  Edit as EditIcon,
+  Block as BlockIcon,
+  Restore as RestoreIcon,
+  Visibility as VisibilityIcon
+} from '@mui/icons-material'
+import { supabase } from './supabaseClient'
 
 export default function ManageStaff() {
-  const PAGE_SIZE = 50;
-  const navigate = useNavigate();
+  const PAGE_SIZE = 10
+  const navigate = useNavigate()
 
-  const [view, setView]     = useState('total');     // 'total' | 'rusticated'
-  const [staff, setStaff]   = useState([]);
-  const [count, setCount]   = useState(0);
-  const [page, setPage]     = useState(1);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
+  // ─── List State ──────────────────────────────────────────
+  const [staff,       setStaff]       = useState([])
+  const [filtered,    setFiltered]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [snackbar,    setSnackbar]    = useState({ open:false, msg:'', sev:'success' })
+  const [searchTerm,  setSearchTerm]  = useState('')
+  const [view,        setView]        = useState('total')   // 'total'|'rusticated'
+  const [page,        setPage]        = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(PAGE_SIZE)
 
+  // ─── Dialog State ────────────────────────────────────────
+  const [dialogOpen,     setDialogOpen]     = useState(false)
+  const [selectedStaff,  setSelectedStaff]  = useState(null)
+
+  // ─── Fetch on mount & view change ─────────────────────────
   useEffect(() => {
-    fetchStaff();
-  }, [view, search, page]);
+    fetchStaff()
+  }, [view])
 
   async function fetchStaff() {
-    setLoading(true);
-  
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-  
-    const { data: schoolData, error: schoolError } = await supabase
-      .from('School')
-      .select('SchoolID')
-      .eq('user_id', userId)
-      .single();
-      console.log("Fetched schoolData:", schoolData);
-    if (schoolError) {
-      console.error('School fetch error:', schoolError);
-      setLoading(false);
-      return;
+    setLoading(true)
+    try {
+      // get schoolId
+      const { data:{ session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('No session')
+      const { data: sch } = await supabase
+        .from('School')
+        .select('SchoolID')
+        .eq('user_id', session.user.id)
+        .single()
+      if (!sch?.SchoolID) throw new Error('No school')
+
+      // base query
+      let qb = supabase
+        .from('staff')
+        .select('id, full_name, father_name, is_rusticated', { count:'exact' })
+        .eq('school_id', sch.SchoolID)
+        .eq('is_rusticated', view==='rusticated')
+
+      // filter by searchTerm
+      if (searchTerm.trim()) {
+        const q = searchTerm.trim().replace(/'/g,'')
+        qb = qb.or(
+          `full_name.ilike.%${q}%,father_name.ilike.%${q}%`
+        )
+      }
+
+      const { data, error } = await qb.order('full_name', { ascending:true })
+      if (error) throw error
+      setStaff(data||[])
+      setFiltered(data||[])
     }
-  
-    let qb = supabase
-      .from('staff')
-      .select('id, full_name, father_name', { count: 'exact' })
-      .eq('school_id', schoolData.SchoolID);  // ✅ filter by school
-      
-  
-    if (search) {
-      qb = qb.or(
-        `full_name.ilike.%${search}%` +
-        `,father_name.ilike.%${search}%`
-      );
+    catch(err) {
+      console.error(err)
+      setSnackbar({ open:true, msg:err.message, sev:'error' })
     }
-  
-    qb = qb.eq('is_rusticated', view === 'rusticated');
-  
-    const from = (page - 1) * PAGE_SIZE;
-    const to   = from + PAGE_SIZE - 1;
-    qb = qb.range(from, to).order('full_name');
-  
-    const { data, error, count: total } = await qb;
-    console.log("Fetched staff result:", data);  // ✅ Log actual rows
-  
-    if (error) {
-      console.error('Fetch error:', error);
-    } else {
-      setStaff(data || []);
-      setCount(total || 0);
+    finally {
+      setLoading(false)
     }
-  
-    setLoading(false);
   }
-  
-  
 
-  const totalPages = Math.ceil(count / PAGE_SIZE) || 1;
+  // ─── Search Filtering ──────────────────────────────────────
+  useEffect(() => {
+    let arr = [...staff]
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase()
+      arr = arr.filter(s =>
+        (s.full_name||'').toLowerCase().includes(q) ||
+        (s.father_name||'').toLowerCase().includes(q)
+      )
+    }
+    setFiltered(arr)
+    setPage(0)
+  }, [searchTerm, staff])
 
-  const rusticate = async (id) => {
-    const reason = window.prompt('Reason for rustication?');
-    if (!reason) return;
+  // ─── Pagination Handlers ───────────────────────────────────
+  const handleChangePage = (_e,newPage) => setPage(newPage)
+  const handleChangeRowsPerPage = e => {
+    setRowsPerPage(+e.target.value)
+    setPage(0)
+  }
+
+  // ─── Rusticate / Re-register ───────────────────────────────
+  async function rusticate(id) {
+    const reason = prompt('Reason?')
+    if (!reason) return
     const { error } = await supabase
       .from('staff')
-      .update({ is_rusticated: true, rusticate_reason: reason })
-      .eq('id', id);
-    if (error) console.error('Rusticate failed:', error);
-    else fetchStaff();
-  };
+      .update({ is_rusticated:true, rusticate_reason:reason })
+      .eq('id',id)
+    if (error) setSnackbar({ open:true, msg:error.message, sev:'error' })
+    else {
+      setSnackbar({ open:true, msg:'Rusticated', sev:'success' })
+      fetchStaff()
+    }
+  }
 
-  const reregister = async (id) => {
+  async function reRegister(id) {
     const { error } = await supabase
       .from('staff')
-      .update({ is_rusticated: false, rusticate_reason: null })
-      .eq('id', id);
-    if (error) console.error('Re-register failed:', error);
-    else fetchStaff();
-  };
+      .update({ is_rusticated:false, rusticate_reason:null })
+      .eq('id',id)
+    if (error) setSnackbar({ open:true, msg:error.message, sev:'error' })
+    else {
+      setSnackbar({ open:true, msg:'Re-registered', sev:'success' })
+      fetchStaff()
+    }
+  }
+
+  // ─── Open Details Dialog ────────────────────────────────────
+  async function openDetails(id) {
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select(`*
+        `)
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      setSelectedStaff(data)
+      setDialogOpen(true)
+    } catch(err) {
+      console.error(err)
+      setSnackbar({ open:true, msg:err.message, sev:'error' })
+    }
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Manage Staff</h2>
+    <Box p={4} bgcolor="#f5f5f5" minHeight="100vh">
+      <Card sx={{ maxWidth:1200, mx:'auto', boxShadow:4, borderRadius:2 }}>
+        <CardContent>
+          {/* Header / Tabs */}
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h4" color="primary">Manage Staff</Typography>
+            <Box>
+              <Button
+                variant={view==='total'?'contained':'outlined'}
+                onClick={()=>setView('total')} sx={{mr:1}}
+              >Total Staff</Button>
+              <Button
+                variant={view==='rusticated'?'contained':'outlined'}
+                onClick={()=>setView('rusticated')} sx={{mr:1}}
+              >Rusticated Staff</Button>
+              <Button
+                variant="outlined"
+                onClick={()=>navigate('/school/add-staff-member')}
+              >Add Staff</Button>
+            </Box>
+          </Box>
 
-      {/* Nav cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Link to="/school/add-staff-member">
-          <div
-            className={`p-4 rounded-lg shadow cursor-pointer ${
-              view === 'add' ? 'bg-amber-100' : 'bg-white hover:bg-amber-50'
-            }`}
-            onClick={() => setView('add')}
-          >
-            <h3 className="font-semibold">Add Staff Member</h3>
-          </div>
-        </Link>
-        <div
-          className={`p-4 rounded-lg shadow cursor-pointer ${
-            view === 'total' ? 'bg-amber-100' : 'bg-white hover:bg-amber-50'
-          }`}
-          onClick={() => setView('total')}
-        >
-          <h3 className="font-semibold">Total Staff</h3>
-        </div>
-        <div
-          className={`p-4 rounded-lg shadow cursor-pointer ${
-            view === 'rusticated' ? 'bg-amber-100' : 'bg-white hover:bg-amber-50'
-          }`}
-          onClick={() => setView('rusticated')}
-        >
-          <h3 className="font-semibold">Rusticated Staff</h3>
-        </div>
-      </div>
+          {/* Search Bar */}
+          <Grid container spacing={2} mb={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                placeholder="Search by name or father…"
+                value={searchTerm}
+                onChange={e=>setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+          </Grid>
 
-      {/* List / search */}
-      {(view === 'total' || view === 'rusticated') && (
-        <>
-          <input
-            type="text"
-            placeholder="Search by name or father's name…"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full mb-4 p-2 border rounded"
-          />
-
-          <div className="overflow-x-auto bg-white rounded shadow">
-            <table className="min-w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 text-left">Name</th>
-                  <th className="p-2 text-left">Father's Name</th>
-                  <th className="p-2 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="3" className="p-4 text-center">Loading…</td></tr>
-                ) : staff.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="p-4 text-center text-gray-500">
-                      No staff found.
-                    </td>
-                  </tr>
-                ) : staff.map(s => (
-                  <tr key={s.id} className="border-t">
-                    <td className="p-2">{s.full_name}</td>
-                    <td className="p-2">{s.father_name}</td>
-                    <td className="p-2 space-x-2">
-                      <button
-                        onClick={() => navigate(`/school/edit-staff/${s.id}`)}
-                        className="text-amber-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      {view === 'rusticated' ? (
-                        <button
-                          onClick={() => reregister(s.id)}
-                          className="text-green-600 hover:underline"
-                        >
-                          Re‑register
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => rusticate(s.id)}
-                          className="text-red-600 hover:underline"
-                        >
-                          Rusticate
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Table */}
+          {loading
+            ? <Box textAlign="center" py={4}><CircularProgress/></Box>
+            : (
+              <TableContainer component={Paper} sx={{ borderRadius:2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor:'#e0e0e0' }}>
+                      <TableCell><strong>Name</strong></TableCell>
+                      <TableCell><strong>Father's Name</strong></TableCell>
+                      <TableCell align="center"><strong>Actions</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filtered
+                      .slice(page*rowsPerPage, page*rowsPerPage+rowsPerPage)
+                      .map(s=>(
+                        <TableRow key={s.id} hover>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={()=>openDetails(s.id)}
+                            >
+                              <VisibilityIcon fontSize="small"/>
+                            </IconButton>
+                            {s.full_name}
+                          </TableCell>
+                          <TableCell>{s.father_name}</TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={()=>navigate(`/school/edit-staff/${s.id}`)}
+                            >
+                              <EditIcon fontSize="small"/>
+                            </IconButton>
+                            {s.is_rusticated
+                              ? <IconButton size="small" color="success"
+                                  onClick={()=>reRegister(s.id)}>
+                                  <RestoreIcon fontSize="small"/>
+                                </IconButton>
+                              : <IconButton size="small" color="error"
+                                  onClick={()=>rusticate(s.id)}>
+                                  <BlockIcon fontSize="small"/>
+                                </IconButton>
+                            }
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    }
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )
+          }
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <button
-              onClick={() => setPage(p => Math.max(p-1,1))}
-              disabled={page <= 1}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          <TablePagination
+            component="div"
+            count={filtered.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5,10,25]}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Details Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={()=>setDialogOpen(false)}
+        fullWidth maxWidth="sm"
+      >
+        <DialogTitle>Staff Details</DialogTitle>
+        <DialogContent dividers>
+          {selectedStaff ? (
+            <Box component="dl"
+              sx={{
+                display:'grid',
+                gridTemplateColumns:'1fr 2fr',
+                rowGap:1,
+                columnGap:2
+              }}
             >
-              ← Prev
-            </button>
-            <span>Page {page} of {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(p+1, totalPages))}
-              disabled={page >= totalPages}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-            >
-              Next →
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
+              {[
+                ['Full Name', selectedStaff.full_name],
+                ['Father Name', selectedStaff.father_name],
+                ['DOB', selectedStaff.date_of_birth],
+                ['Gender', selectedStaff.gender],
+                ['CNIC', selectedStaff.cnic],
+                ['Mobile', selectedStaff.mobile_number],
+                ['Email', selectedStaff.email_address],
+                ['Designation', selectedStaff.designation],
+                ['Department', selectedStaff.department],
+                ['BPS', selectedStaff.BPS],
+                ['Disability', selectedStaff.disability],
+                ['Disability Details', selectedStaff.disability_details],
+                ['Domicile', selectedStaff.Domicile],
+                ['Qualification', selectedStaff.Qualification],
+                ['Rusticated?', selectedStaff.is_rusticated?'Yes':'No'],
+                ['Reason', selectedStaff.rusticate_reason],
+              ].map(([dt, dd])=>(
+                <React.Fragment key={dt}>
+                  <Typography component="dt" fontWeight="bold">{dt}:</Typography>
+                  <Typography component="dd">{dd||'—'}</Typography>
+                </React.Fragment>
+              ))}
+            </Box>
+          ) : (
+            <Typography>Loading…</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={()=>setDialogOpen(false)} variant="outlined">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={()=>setSnackbar(s=>({...s,open:false}))}
+        anchorOrigin={{vertical:'bottom', horizontal:'center'}}
+      >
+        <Alert
+          onClose={()=>setSnackbar(s=>({...s,open:false}))}
+          severity={snackbar.sev}
+          sx={{width:'100%'}}
+        >
+          {snackbar.msg}
+        </Alert>
+      </Snackbar>
+    </Box>
+  )
 }

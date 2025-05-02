@@ -1,509 +1,830 @@
-// src/Screens/School/EditStaffMember.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams }       from 'react-router-dom';
-import { supabase }                      from './supabaseClient';
+// src/Screens/Staff/EditStaffMember.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams }                 from 'react-router-dom';
+
+import {
+  Container,
+  Box,
+  Grid,
+  Typography,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  FormHelperText,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  IconButton
+} from '@mui/material';
+
+import {
+  ArrowBack as ArrowBackIcon,
+  Person as PersonIcon,
+  UploadFile as UploadFileIcon,
+} from '@mui/icons-material';
+
+import { supabase } from './supabaseClient';
 
 export default function EditStaffMember() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [loading, setLoading]     = useState(true);
+  // loading / submitting
+  const [loading, setLoading]         = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
-  const [message, setMessage]     = useState({ text: '', type: '' });
-  const [errors, setErrors]       = useState({});
-  const [cities, setCities]       = useState([]);
+  const [message, setMessage]         = useState({ text:'', type:'success' });
 
-  const [formData, setFormData] = useState({
-    fullName: '',     // read‑only
-    fatherName: '',   // read‑only
-    dob: '',
-    gender: '',
-    cnic: '',         // read‑only
-    nationality: '',
-    religion: '',
-    bloodGroup: '',
-    mobileNumber: '',
-    emailAddress: '',
-    residentialAddress: '',
-    city: '',
-    employeeId: '',
-    designation: '',
-    department: '',
-    joiningDate: '',
-    employmentType: '',
-    salary: '',
-    dutyHours: '',
-    medicalConditions: '',
-    emergencyContactName: '',
-    emergencyContactNumber: '',
-    relationship: '',
-    status: '',
-    remarks: '',
-  });
+  // lists
+  const [cities, setCities]           = useState([]);
+  const ALL_POSTS = [
+    "Principal","Vice Principal","Superintendent","Accountant","Senior Clerk",
+    "Assistant/ Caretaker","Account Assistant","Library Assistant","Junior Clerk",
+    "Library Clerk","Store keeper","Laboratory Attendent","Driver","Bus Conductor",
+    "Chowkidar","Naib Qasid","Mail","Aya","Sweeper","Escort"
+  ];
 
-  // CNIC formatter & validator
-  const formatCnic = raw => {
-    const d = raw.replace(/\D/g, '').slice(0,13);
+  // form state
+  const initial = {
+    // 1. Basic Info
+    fullName:'', fatherName:'', dob:'', gender:'', cnic:'',
+    nationality:'Pakistani', religion:'', bloodGroup:'',
+    // 2. Contact & Address
+    mobileNumber:'', emailAddress:'', residentialAddress:'', city:'',
+    schoolId:'', schoolName:'',
+    // 3. Employment
+    employeeId:'', designation:'', department:'', joiningDate:'',
+    employmentType:'', salary:'', dutyHours:'',
+    // 4. Docs (we skip editing file upload in edit)
+    // 5. Health & Emergency
+    medicalConditions:'', emergencyContactName:'', emergencyContactNumber:'',
+    relationship:'',
+    // 6. Final Actions
+    status:'active', remarks:'', is_rusticated:false, rusticate_reason:'',
+    // 7. Extra Fields
+    BPS:'', disability:'No', disability_details:'', Domicile:'', Qualification:'',
+  };
+  const [formData, setFormData] = useState(initial);
+  const [errors,   setErrors]   = useState({});
+
+  // CNIC mask & validator (for display only)
+  const maskCnic = raw => {
+    const d = raw.replace(/\D/g,'').slice(0,13);
     let out = d.slice(0,5);
-    if (d.length > 5)  out += '-' + d.slice(5,12);
-    if (d.length > 12) out += '-' + d.slice(12);
+    if (d.length>5)  out += '-' + d.slice(5,12);
+    if (d.length>12) out += '-' + d.slice(12);
     return out;
   };
   const validateCnic = c => /^\d{5}-\d{7}-\d$/.test(c);
 
-  // Fetch staff & load cities
+  // load staff + cities
   useEffect(() => {
-    async function loadData() {
-      // 1) load staff record
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) {
-        console.error(error);
-        setMessage({ text: 'Failed to load staff.', type:'error' });
+    async function load() {
+      try {
+        // load staff record
+        const { data, error } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (error) throw error;
+
+        // map fields
+        setFormData({
+          fullName:     data.full_name,
+          fatherName:   data.father_name,
+          dob:          data.date_of_birth,
+          gender:       data.gender,
+          cnic:         data.cnic,
+          nationality:  data.nationality,
+          religion:     data.religion,
+          bloodGroup:   data.blood_group,
+
+          mobileNumber: data.mobile_number,
+          emailAddress: data.email_address,
+          residentialAddress: data.residential_address,
+          city:         data.city,
+
+          schoolId:     data.school_id,
+          schoolName:   data.school_name,
+
+          employeeId:   data.employee_id,
+          designation:  data.designation,
+          department:   data.department,
+          joiningDate:  data.joining_date,
+          employmentType: data.employment_type,
+          salary:       data.salary,
+          dutyHours:    data.duty_hours,
+
+          medicalConditions:   data.medical_conditions,
+          emergencyContactName:   data.emergency_contact_name,
+          emergencyContactNumber: data.emergency_contact_number,
+          relationship:            data.relationship,
+
+          status:       data.status,
+          remarks:      data.remarks,
+          is_rusticated:data.is_rusticated,
+          rusticate_reason: data.rusticate_reason,
+
+          BPS:            data.BPS,
+          disability:     data.disability,
+          disability_details: data.disability_details,
+          Domicile:       data.Domicile,
+          Qualification:  data.Qualification,
+        });
+
+        // load cities
+        const { data:prov } = await supabase
+          .from('provinces')
+          .select('province_id')
+          .eq('province_name','Punjab')
+          .single();
+        if (prov?.province_id) {
+          const { data:list } = await supabase
+            .from('cities')
+            .select('city_name')
+            .eq('province_id',prov.province_id)
+            .order('city_name');
+          setCities(list.map(c=>c.city_name));
+        }
+      }
+      catch(err) {
+        console.error(err);
+        setMessage({ text: err.message||'Could not load staff', type:'error' });
+      }
+      finally {
         setLoading(false);
-        return;
       }
-      setFormData({
-        fullName:     data.full_name,
-        fatherName:   data.father_name,
-        dob:          data.date_of_birth,
-        gender:       data.gender,
-        cnic:         data.cnic,
-        nationality:  data.nationality,
-        religion:     data.religion,
-        bloodGroup:   data.blood_group,
-        mobileNumber: data.mobile_number,
-        emailAddress: data.email_address,
-        residentialAddress: data.residential_address,
-        city:         data.city,
-        employeeId:   data.employee_id,
-        designation:  data.designation,
-        department:   data.department,
-        joiningDate:  data.joining_date,
-        employmentType: data.employment_type,
-        salary:       data.salary,
-        dutyHours:    data.duty_hours,
-        medicalConditions: data.medical_conditions,
-        emergencyContactName: data.emergency_contact_name,
-        emergencyContactNumber: data.emergency_contact_number,
-        relationship: data.relationship,
-        status:       data.status,
-        remarks:      data.remarks,
-      });
-
-      // 2) load Punjab cities
-      const { data: prov } = await supabase
-        .from('provinces')
-        .select('province_id')
-        .eq('province_name','Punjab')
-        .single();
-      if (prov?.province_id) {
-        const { data: list } = await supabase
-          .from('cities')
-          .select('city_name')
-          .eq('province_id',prov.province_id)
-          .order('city_name');
-        setCities(list.map(c => c.city_name));
-      }
-
-      setLoading(false);
     }
-    loadData();
+    load();
   }, [id]);
 
+  // unified change handler
   const handleChange = e => {
-    const { id, value } = e.target;
-    if (id === 'cnic') {
-      // shouldn't happen since CNIC is readonly, but just in case
-      const formatted = formatCnic(value);
-      setFormData(fd => ({ ...fd, [id]: formatted }));
-      setErrors(err => ({ ...err, [id]: '' }));
-    } else {
-      setFormData(fd => ({ ...fd, [id]: value }));
-      setErrors(err => ({ ...err, [id]: '' }));
+    const { name, value, type, checked } = e.target;
+    let val = type==='checkbox' ? checked : value;
+
+    // CNIC read-only, but keep mask if user ever types
+    if (name==='cnic') {
+      val = maskCnic(val);
+      setErrors(err=>({ ...err, cnic:'' }));
     }
+
+    // if disability toggled to No, clear details:
+    if (name==='disability' && val==='No') {
+      setFormData(fd=>({
+        ...fd,
+        disability:'No',
+        disability_details:''
+      }));
+      return;
+    }
+
+    setFormData(fd=>({ ...fd, [name]: val }));
+    setErrors(err=>({ ...err, [name]: '' }));
   };
 
-  const handleUpdate = async e => {
+  // client-side validation
+  const validate = () => {
+    const errs = {};
+
+    // fields required on edit (fullName/fatherName/cnic read-only so skip those)
+    ;[
+      'dob','gender',
+      'mobileNumber','emailAddress',
+      'residentialAddress','city',
+      'joiningDate','designation','department',
+      'employmentType','salary',
+      'emergencyContactName','emergencyContactNumber','relationship',
+      'status'
+    ].forEach(key => {
+      if (!formData[key]) errs[key] = 'Required';
+    });
+
+    // CNIC format validation
+    if (!validateCnic(formData.cnic)) {
+      errs.cnic = 'Invalid CNIC';
+    }
+    return errs;
+  };
+
+  // submit
+  const handleSubmit = async e => {
     e.preventDefault();
     setSubmitting(true);
     setMessage({ text:'', type:'' });
 
-    // (Name/Father/CNIC are readonly, so no need to re-validate)
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      setSubmitting(false);
+      return;
+    }
+
+    // build payload
+    const payload = {
+      date_of_birth:            formData.dob,
+      gender:                   formData.gender,
+      nationality:              formData.nationality,
+      religion:                 formData.religion,
+      blood_group:              formData.bloodGroup,
+
+      mobile_number:            formData.mobileNumber,
+      email_address:            formData.emailAddress,
+      residential_address:      formData.residentialAddress,
+      city:                     formData.city,
+
+      designation:              formData.designation,
+      department:               formData.department,
+      joining_date:             formData.joiningDate,
+      employment_type:          formData.employmentType,
+      salary:                   formData.salary,
+      duty_hours:               formData.dutyHours,
+
+      medical_conditions:       formData.medicalConditions,
+      emergency_contact_name:   formData.emergencyContactName,
+      emergency_contact_number: formData.emergencyContactNumber,
+      relationship:             formData.relationship,
+
+      status:                   formData.status,
+      remarks:                  formData.remarks,
+      is_rusticated:            formData.is_rusticated,
+      rusticate_reason:         formData.rusticate_reason,
+
+      BPS:            formData.BPS,
+      disability:     formData.disability,
+      disability_details: formData.disability_details,
+      Domicile:       formData.Domicile,
+      Qualification:  formData.Qualification,
+    };
 
     try {
-      const payload = {
-        date_of_birth:        formData.dob,
-        gender:               formData.gender,
-        nationality:          formData.nationality,
-        religion:             formData.religion,
-        blood_group:          formData.bloodGroup,
-        mobile_number:        formData.mobileNumber,
-        email_address:        formData.emailAddress,
-        residential_address:  formData.residentialAddress,
-        city:                 formData.city,
-        employee_id:          formData.employeeId,
-        designation:          formData.designation,
-        department:           formData.department,
-        joining_date:         formData.joiningDate,
-        employment_type:      formData.employmentType,
-        salary:               formData.salary,
-        duty_hours:           formData.dutyHours,
-        medical_conditions:   formData.medicalConditions,
-        emergency_contact_name:   formData.emergencyContactName,
-        emergency_contact_number: formData.emergencyContactNumber,
-        relationship:             formData.relationship,
-        status:                   formData.status,
-        remarks:                  formData.remarks
-      };
-
       const { error } = await supabase
         .from('staff')
         .update(payload)
         .eq('id', id);
 
       if (error) throw error;
-      setMessage({ text:'Updated successfully!', type:'success' });
-      // navigate back after a short delay
+      setMessage({ text:'Staff updated successfully!', type:'success' });
       setTimeout(() => navigate('/school/manage-staff'), 800);
-    } catch (err) {
+    }
+    catch(err) {
       console.error(err);
-      setMessage({ text: err.message||'Update failed', type:'error' });
-    } finally {
+      setMessage({ text:err.message||'Update failed', type:'error' });
+    }
+    finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading) {
+    return (
+      <Box textAlign="center" py={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Edit Staff Member</h2>
-      {message.text && (
-        <div className={`mb-4 p-2 rounded ${
-          message.type==='success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {message.text}
-        </div>
-      )}
-      <form onSubmit={handleUpdate} className="space-y-6">
-        {/* read‑only */}
-        {['fullName','fatherName','cnic'].map(field => (
-          <div key={field}>
-            <label className="block text-sm font-medium">
-              {field==='fullName' ? 'Full Name' :
-               field==='fatherName' ? "Father’s/Husband’s Name" :
-               'CNIC'}
-            </label>
-            <input
-              readOnly
-              value={formData[field]}
-              className="mt-1 w-full border rounded px-3 py-2 bg-gray-100"
-            />
-          </div>
-        ))}
+    <Container maxWidth="lg" sx={{ pt:4, pb:6 }}>
+      {/* back + title */}
+      <Box display="flex" alignItems="center" mb={3}>
+        <IconButton onClick={()=>navigate(-1)}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h4" ml={1} component="h1">
+          <PersonIcon sx={{ verticalAlign:'middle', mr:1 }} />
+          Edit Staff Member
+        </Typography>
+      </Box>
 
-        {/* editable fields */}
-        <div className="grid md:grid-cols-2 gap-4">
+      {/* snackbar */}
+      <Snackbar
+        open={!!message.text}
+        autoHideDuration={4000}
+        onClose={()=>setMessage({ text:'', type:'' })}
+      >
+        <Alert
+          onClose={()=>setMessage({ text:'', type:'' })}
+          severity={message.type}
+          variant="filled"
+        >
+          {message.text}
+        </Alert>
+      </Snackbar>
+
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt:2 }}>
+        <Grid container spacing={2}>
+
+          {/* Section 1: Basic Information */}
+          <Grid item xs={12}>
+            <Typography variant="h6">Basic Information</Typography>
+          </Grid>
+
+          {/* Full Name (read-only) */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Full Name"
+              fullWidth
+              value={formData.fullName}
+              InputProps={{ readOnly:true }}
+            />
+          </Grid>
+
+          {/* Father/Husband's Name (read-only) */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Father’s/Husband’s Name"
+              fullWidth
+              value={formData.fatherName}
+              InputProps={{ readOnly:true }}
+            />
+          </Grid>
+
           {/* DOB */}
-          <div>
-            <label className="block text-sm">Date of Birth</label>
-            <input
-              id="dob"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Date of Birth"
               type="date"
+              name="dob"
+              fullWidth
+              required
+              InputLabelProps={{ shrink:true }}
               value={formData.dob}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.dob}
+              helperText={errors.dob}
             />
-          </div>
+          </Grid>
+
           {/* Gender */}
-          <div>
-            <label className="block text-sm">Gender</label>
-            <select
-              id="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.gender}>
+              <InputLabel>Gender</InputLabel>
+              <Select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                label="Gender"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+              <FormHelperText>{errors.gender}</FormHelperText>
+            </FormControl>
+          </Grid>
+
+          {/* CNIC (read-only) */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="CNIC"
+              fullWidth
+              value={formData.cnic}
+              InputProps={{ readOnly:true }}
+              error={!!errors.cnic}
+              helperText={errors.cnic}
+            />
+          </Grid>
+
           {/* Nationality */}
-          <div>
-            <label className="block text-sm">Nationality</label>
-            <input
-              id="nationality"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Nationality"
+              name="nationality"
+              fullWidth
               value={formData.nationality}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
             />
-          </div>
+          </Grid>
+
           {/* Religion */}
-          <div>
-            <label className="block text-sm">Religion</label>
-            <input
-              id="religion"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Religion"
+              name="religion"
+              fullWidth
               value={formData.religion}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
             />
-          </div>
+          </Grid>
+
           {/* Blood Group */}
-          <div>
-            <label className="block text-sm">Blood Group</label>
-            <select
-              id="bloodGroup"
-              value={formData.bloodGroup}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-            >
-              <option value="">Select</option>
-              {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(bg => (
-                <option key={bg} value={bg}>{bg}</option>
-              ))}
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Blood Group</InputLabel>
+              <Select
+                name="bloodGroup"
+                value={formData.bloodGroup}
+                onChange={handleChange}
+                label="Blood Group"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(bg=>(
+                  <MenuItem key={bg} value={bg}>{bg}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Section 2: Contact & Address */}
+          <Grid item xs={12}><Typography variant="h6">Contact & Address</Typography></Grid>
+
           {/* Mobile */}
-          <div>
-            <label className="block text-sm">Mobile Number</label>
-            <input
-              id="mobileNumber"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Mobile Number"
+              name="mobileNumber"
+              required
+              fullWidth
               value={formData.mobileNumber}
               onChange={handleChange}
-              placeholder="03XX-XXXXXXX"
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.mobileNumber}
+              helperText={errors.mobileNumber}
             />
-          </div>
+          </Grid>
+
           {/* Email */}
-          <div>
-            <label className="block text-sm">Email Address</label>
-            <input
-              id="emailAddress"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Email Address"
+              name="emailAddress"
               type="email"
+              required
+              fullWidth
               value={formData.emailAddress}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.emailAddress}
+              helperText={errors.emailAddress}
             />
-          </div>
+          </Grid>
+
           {/* Address */}
-          <div className="md:col-span-2">
-            <label className="block text-sm">Residential Address</label>
-            <textarea
-              id="residentialAddress"
+          <Grid item xs={12}>
+            <TextField
+              label="Residential Address"
+              name="residentialAddress"
+              required
+              fullWidth
+              multiline
+              rows={2}
               value={formData.residentialAddress}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.residentialAddress}
+              helperText={errors.residentialAddress}
             />
-          </div>
+          </Grid>
+
           {/* City */}
-          <div>
-            <label className="block text-sm">City</label>
-            <select
-              id="city"
-              value={formData.city}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select city</option>
-              {cities.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          {/* Employee ID */}
-          <div>
-            <label className="block text-sm">Employee ID</label>
-            <input
-              id="employeeId"
-              value={formData.employeeId}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.city}>
+              <InputLabel>City</InputLabel>
+              <Select
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                label="City"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {cities.map(c=>(
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>{errors.city}</FormHelperText>
+            </FormControl>
+          </Grid>
+
+          {/* School (read-only) */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="School"
+              fullWidth
+              value={formData.schoolName}
+              disabled
             />
-          </div>
+          </Grid>
+
+          {/* Section 3: Employment Details */}
+          <Grid item xs={12}><Typography variant="h6">Employment Details</Typography></Grid>
+
+          {/* Employee ID (readonly) */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Employee ID"
+              fullWidth
+              value={formData.employeeId}
+              disabled
+            />
+          </Grid>
+
           {/* Designation */}
-          <div>
-            <label className="block text-sm">Designation</label>
-            <select
-              id="designation"
-              value={formData.designation}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select</option>
-              <option value="clerk">Clerk</option>
-              <option value="admin_staff">Admin Staff</option>
-              <option value="accountant">Accountant</option>
-              <option value="security-guard">Security Guard</option>
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.designation}>
+              <InputLabel>Designation</InputLabel>
+              <Select
+                name="designation"
+                value={formData.designation}
+                onChange={handleChange}
+                label="Designation"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {ALL_POSTS.map(post=>(
+                  <MenuItem key={post} value={post}>{post}</MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>{errors.designation}</FormHelperText>
+            </FormControl>
+          </Grid>
+
           {/* Department */}
-          <div>
-            <label className="block text-sm">Department</label>
-            <select
-              id="department"
-              value={formData.department}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select</option>
-              <option value="science">Science</option>
-              <option value="arts">Arts</option>
-              <option value="administration">Administration</option>
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.department}>
+              <InputLabel>Department</InputLabel>
+              <Select
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                label="Department"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                <MenuItem value="science">Science</MenuItem>
+                <MenuItem value="arts">Arts</MenuItem>
+                <MenuItem value="administration">Administration</MenuItem>
+              </Select>
+              <FormHelperText>{errors.department}</FormHelperText>
+            </FormControl>
+          </Grid>
+
           {/* Joining Date */}
-          <div>
-            <label className="block text-sm">Date of Joining</label>
-            <input
-              id="joiningDate"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Joining Date"
               type="date"
+              name="joiningDate"
+              required
+              fullWidth
+              InputLabelProps={{ shrink:true }}
               value={formData.joiningDate}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.joiningDate}
+              helperText={errors.joiningDate}
             />
-          </div>
+          </Grid>
+
           {/* Employment Type */}
-          <div>
-            <label className="block text-sm">Employment Type</label>
-            <select
-              id="employmentType"
-              value={formData.employmentType}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select</option>
-              <option value="permanent">Permanent</option>
-              <option value="contract">Contract</option>
-              <option value="visiting">Visiting</option>
-              <option value="temporary">Temporary</option>
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.employmentType}>
+              <InputLabel>Employment Type</InputLabel>
+              <Select
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+                label="Employment Type"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                <MenuItem value="Regular">Regular</MenuItem>
+                <MenuItem value="Contract">Contract</MenuItem>
+                <MenuItem value="Deputation">Deputation</MenuItem>
+              </Select>
+              <FormHelperText>{errors.employmentType}</FormHelperText>
+            </FormControl>
+          </Grid>
+
           {/* Salary */}
-          <div>
-            <label className="block text-sm">Salary</label>
-            <input
-              id="salary"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Salary"
+              name="salary"
               type="number"
+              required
+              fullWidth
               value={formData.salary}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.salary}
+              helperText={errors.salary}
             />
-          </div>
+          </Grid>
+
           {/* Duty Hours */}
-          <div>
-            <label className="block text-sm">Duty Hours</label>
-            <input
-              id="dutyHours"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Duty Hours"
+              name="dutyHours"
+              fullWidth
               value={formData.dutyHours}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
             />
-          </div>
+          </Grid>
+
+          {/* Section 4: Health & Emergency */}
+          <Grid item xs={12}><Typography variant="h6">Health & Emergency</Typography></Grid>
+
           {/* Medical Conditions */}
-          <div>
-            <label className="block text-sm">Medical Conditions</label>
-            <textarea
-              id="medicalConditions"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Medical Conditions"
+              name="medicalConditions"
+              fullWidth
+              multiline
+              rows={2}
               value={formData.medicalConditions}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
             />
-          </div>
-          {/* Emergency Contact */}
-          <div>
-            <label className="block text-sm">Emergency Contact Name</label>
-            <input
-              id="emergencyContactName"
+          </Grid>
+
+          {/* Emergency Contact Name */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Emergency Contact Name"
+              name="emergencyContactName"
+              required
+              fullWidth
               value={formData.emergencyContactName}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.emergencyContactName}
+              helperText={errors.emergencyContactName}
             />
-          </div>
-          <div>
-            <label className="block text-sm">Emergency Contact Number</label>
-            <input
-              id="emergencyContactNumber"
+          </Grid>
+
+          {/* Emergency Contact Number */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Emergency Contact Number"
+              name="emergencyContactNumber"
+              required
+              fullWidth
               value={formData.emergencyContactNumber}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
+              error={!!errors.emergencyContactNumber}
+              helperText={errors.emergencyContactNumber}
             />
-          </div>
-          <div>
-            <label className="block text-sm">Relationship</label>
-            <select
-              id="relationship"
-              value={formData.relationship}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="">Select</option>
-              <option value="parent">Parent</option>
-              <option value="spouse">Spouse</option>
-              <option value="sibling">Sibling</option>
-              <option value="friend">Friend</option>
-            </select>
-          </div>
+          </Grid>
+
+          {/* Relationship */}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.relationship}>
+              <InputLabel>Relationship</InputLabel>
+              <Select
+                name="relationship"
+                value={formData.relationship}
+                onChange={handleChange}
+                label="Relationship"
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                <MenuItem value="parent">Parent</MenuItem>
+                <MenuItem value="spouse">Spouse</MenuItem>
+                <MenuItem value="sibling">Sibling</MenuItem>
+                <MenuItem value="friend">Friend</MenuItem>
+              </Select>
+              <FormHelperText>{errors.relationship}</FormHelperText>
+            </FormControl>
+          </Grid>
+
+          {/* Section 5: Final Actions */}
+          <Grid item xs={12}><Typography variant="h6">Final Actions</Typography></Grid>
+
           {/* Status */}
-          <div>
-            <label className="block text-sm">Status</label>
-            <select
-              id="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
-              required
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-              <option value="retired">Retired</option>
-            </select>
-          </div>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth required error={!!errors.status}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                label="Status"
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="suspended">Suspended</MenuItem>
+                <MenuItem value="retired">Retired</MenuItem>
+              </Select>
+              <FormHelperText>{errors.status}</FormHelperText>
+            </FormControl>
+          </Grid>
+
           {/* Remarks */}
-          <div>
-            <label className="block text-sm">Remarks</label>
-            <textarea
-              id="remarks"
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Remarks"
+              name="remarks"
+              fullWidth
+              multiline
+              rows={2}
               value={formData.remarks}
               onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2"
             />
-          </div>
-        </div>
+          </Grid>
 
-        <div className="text-right">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {isSubmitting ? 'Updating…' : 'Update'}
-          </button>
-        </div>
-      </form>
-    </div>
+          {/* Rustication checkbox (if needed) */}
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="is_rusticated"
+                  checked={formData.is_rusticated}
+                  onChange={handleChange}
+                />
+              }
+              label="Mark as Rusticated"
+            />
+          </Grid>
+          {formData.is_rusticated && (
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Rustication Reason"
+                name="rusticate_reason"
+                fullWidth
+                value={formData.rusticate_reason}
+                onChange={handleChange}
+              />
+            </Grid>
+          )}
+
+          {/* Section 6: Extra Staff Details */}
+          <Grid item xs={12}><Typography variant="h6">Extra Staff Details</Typography></Grid>
+
+          {/* BPS */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="BPS"
+              name="BPS"
+              fullWidth
+              value={formData.BPS}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          {/* Disability */}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Disability?</InputLabel>
+              <Select
+                name="disability"
+                value={formData.disability}
+                onChange={handleChange}
+                label="Disability?"
+              >
+                <MenuItem value="No">No</MenuItem>
+                <MenuItem value="Yes">Yes</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Disability Details */}
+          {formData.disability==='Yes' && (
+            <Grid item xs={12}>
+              <TextField
+                label="Disability Details"
+                name="disability_details"
+                fullWidth
+                multiline
+                rows={2}
+                value={formData.disability_details}
+                onChange={handleChange}
+              />
+            </Grid>
+          )}
+
+          {/* Domicile */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Domicile"
+              name="Domicile"
+              fullWidth
+              value={formData.Domicile}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          {/* Qualification */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Qualification"
+              name="Qualification"
+              fullWidth
+              value={formData.Qualification}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          {/* Submit */}
+          <Grid item xs={12} textAlign="center" sx={{ mt:2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Updating…' : 'Update Staff'}
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
+    </Container>
   );
 }
