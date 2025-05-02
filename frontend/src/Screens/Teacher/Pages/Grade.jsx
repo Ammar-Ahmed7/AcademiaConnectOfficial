@@ -1,17 +1,24 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, TextField, Table, 
   TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Modal, IconButton, Tooltip 
+  Modal, IconButton, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Sidebar from '../Components/Sidebar';
-import { useNavigate,useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client'; // adjust the path if needed
+import { MenuItem, FormControl, InputLabel, Select } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import InputBase from '@mui/material/InputBase';
+import SearchIcon from '@mui/icons-material/Search';
+
+
 
 const Grade = () => {
   const navigate = useNavigate();
@@ -19,20 +26,62 @@ const Grade = () => {
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const location = useLocation();
-const classInfo = location.state?.classInfo;
+  const classInfo = location.state?.classInfo;
 
-const [students, setStudents] = useState([]);
-// eslint-disable-next-line no-unused-vars
-const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [loading, setLoading] = useState(true);
+
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
+  const [uploadingAssignment, setUploadingAssignment] = useState(false);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState(null);
+  
+  // Track assignments with grades
+  const [assignmentsWithGrades, setAssignmentsWithGrades] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false); // Track the deletion progress
+  const [isSubmittingMarks, setIsSubmittingMarks] = useState(false); // Track marks submission progress
+  const [hasExistingGrades, setHasExistingGrades] = useState(false); // add at the top with other state
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+
+  // Added Snackbar state from Attendance.jsx
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  // Added showSnackbar function from Attendance.jsx
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  // Added handleCloseSnackbar function from Attendance.jsx
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false,
+    }));
+  };
 
   
   useEffect(() => {
     if (classInfo) {
       console.log('Received Class Info in Grade:', classInfo);
       fetchStudents();
+      fetchAssignments();
     }
   }, [classInfo]);
 
+
+  
   const fetchStudents = async () => {
     try {
       const combinedClassSection = `${classInfo.sections.classes.class_name}${classInfo.sections.section_name}`;
@@ -58,14 +107,20 @@ const [loading, setLoading] = useState(true);
       setStudents(studentList);
     } catch (error) {
       console.error('Error fetching students:', error.message);
+      // Added snackbar for errors
+      showSnackbar('Error fetching students.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const [formData, setFormData] = useState({ 
-    name: "", subject: "", description: "", file: null 
+    name: "", 
+    subject: classInfo?.subjects?.subject_name || "", 
+    description: "", 
+    file: null 
   });
+  
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -79,16 +134,298 @@ const [loading, setLoading] = useState(true);
     setFormData({ ...formData, file: e.target.files[0] });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setAssignments([...assignments, { ...formData, id: assignments.length + 1 }]);
-    setFormData({ name: "", subject: "", description: "", file: null });
-    handleCloseModal();
+  // Fetch assignments and check which ones have grades
+  const fetchAssignments = async () => {
+    setLoadingAssignments(true);
+    try {
+      // First, fetch all assignments
+      const { data, error } = await supabase
+      .from('assignments_quizzes')
+      .select(`
+        id,
+        name,
+        description,
+        file_url,
+        subject_id,
+        subjects (
+          subject_name
+        )
+      `)
+      .eq('class_id', classInfo.sections.class_id)
+      .eq('section_id', classInfo.section_id)
+      .eq('subject_id', classInfo.subject_id)
+      .order('created_at', { ascending: false });  // Newest first
+    
+      if (error) {
+        throw error;
+      }
+
+      console.log('Fetched assignments:', data);
+
+      // Next, check which assignments have grades
+      const { data: gradesData, error: gradesError } = await supabase
+        .from('grades')
+        .select('assignment_quiz_id, marks')
+        .in('assignment_quiz_id', data.map(a => a.id));
+      
+      if (gradesError) {
+        throw gradesError;
+      }
+
+      // Create a Set of assignment IDs that have grades
+      const assignmentIdsWithGrades = new Set(gradesData.map(g => g.assignment_quiz_id));
+      setAssignmentsWithGrades(Array.from(assignmentIdsWithGrades));
+
+      // Map assignments into the correct format for rendering
+      const assignmentsData = data.map((assignment) => ({
+        id: assignment.id,
+        name: assignment.name,
+        description: assignment.description,
+        file: assignment.file_url
+        ? {
+            name: decodeURIComponent(assignment.file_url.split('/').pop().replace(/^\d+-\d+-/, '')),
+            url: assignment.file_url,
+          }
+        : null,
+        subject_name: assignment.subjects?.subject_name || "Subject not found",
+        hasGrades: assignmentIdsWithGrades.has(assignment.id)
+      }));
+      
+      setAssignments(assignmentsData);
+    } catch (error) {
+      console.error('Error fetching assignments:', error.message);
+      // Added snackbar for errors
+      showSnackbar('Error fetching assignments.', 'error');
+    } finally {
+      setLoadingAssignments(false);
+    }
   };
 
-  const handleAssignmentClick = (assignment) => {
-    setSelectedAssignment(assignment);
+  const openDeleteDialog = (assignment) => {
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
   };
+
+  const closeDeleteDialog = () => {
+    setAssignmentToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteAssignment = async () => {
+    if (!assignmentToDelete) return;
+    setIsDeleting(true); // Set deleting state to true when starting the deletion process
+    try {
+      // First, get the assignment details to obtain the file URL
+      const { data: assignmentData, error: fetchError } = await supabase
+        .from('assignments_quizzes')
+        .select('file_url')
+        .eq('id', assignmentToDelete.id)
+        .single();
+  
+      if (fetchError) throw fetchError;
+  
+      // Check if there are any grades for this assignment
+      const { data: gradesData, error: checkError } = await supabase
+        .from('grades')
+        .select('id')
+        .eq('assignment_quiz_id', assignmentToDelete.id)
+        .limit(1);
+  
+      if (checkError) throw checkError;
+  
+      // If grades exist, delete them first
+      if (gradesData && gradesData.length > 0) {
+        const { error: gradeError } = await supabase
+          .from('grades')
+          .delete()
+          .eq('assignment_quiz_id', assignmentToDelete.id);
+  
+        if (gradeError) throw gradeError;
+      }
+  
+      // Delete the assignment from the database
+      const { error: assignmentError } = await supabase
+        .from('assignments_quizzes')
+        .delete()
+        .eq('id', assignmentToDelete.id);
+  
+      if (assignmentError) throw assignmentError;
+  
+      // If there's a file associated with this assignment, delete it from storage
+      if (assignmentData && assignmentData.file_url) {
+        try {
+          const fileUrl = assignmentData.file_url;
+          console.log('File URL to process:', fileUrl);
+          
+          // Extract the path from the URL
+          // Format: https://pabfmpqggljjhncdlzwx.supabase.co/storage/v1/object/public/assessments/upload/1745962092623-717-j1.11.jpg
+          // We need just the "upload/1745962092623-717-j1.11.jpg" part
+          
+          let filePath;
+          
+          // Check if the URL matches the expected format
+          if (fileUrl.includes('/public/assessments/')) {
+            // Parse the path after 'public/assessments/'
+            filePath = fileUrl.split('/public/assessments/')[1];
+            console.log('Extracted path using public/assessments pattern:', filePath);
+          } else {
+            // Fallback to a more generic approach - get everything after the last instance of "assessments/"
+            const parts = fileUrl.split('assessments/');
+            filePath = parts[parts.length - 1];
+            console.log('Extracted path using generic pattern:', filePath);
+          }
+          
+          if (filePath) {
+            console.log('Attempting to delete file with path:', filePath);
+            
+            const { data: deleteResult, error: deleteError } = await supabase
+              .storage
+              .from('assessments')
+              .remove([filePath]);
+              
+            console.log('Delete result:', deleteResult);
+            
+            if (deleteError) {
+              console.error('Storage deletion error:', deleteError);
+              throw deleteError;
+            } else {
+              console.log('File successfully deleted');
+            }
+          } else {
+            console.error('Could not extract a valid file path from URL:', fileUrl);
+            showSnackbar('Could not determine file path for deletion', 'warning');
+          }
+        } catch (storageError) {
+          console.error('Storage operation failed:', storageError);
+          showSnackbar(`File deletion failed: ${storageError.message}`, 'warning');
+        }
+      }
+  
+      showSnackbar('Assignment deleted successfully!', 'success');
+      
+      // Update the local state to remove the deleted assignment
+      setAssignments(prev => prev.filter(a => a.id !== assignmentToDelete.id));
+    } catch (error) {
+      console.error('Error deleting assignment:', error.message);
+      showSnackbar(`Failed to delete assignment: ${error.message}`, 'error');
+    } finally {
+      closeDeleteDialog();
+      setIsDeleting(false); // Set deleting state to false after deletion
+    }
+  };
+
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setUploadingAssignment(true);
+
+    let fileUrl = null;
+
+    if (formData.file) {
+      const file = formData.file;
+
+      // Generate a unique filename using timestamp + random number
+      const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const uniqueFileName = `${uniqueSuffix}-${file.name}`;
+      const filePath = `upload/${uniqueFileName}`;
+
+      try {
+        const { error: uploadError } = await supabase
+          .storage
+          .from('assessments')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Fix: Get the correct public URL format
+        const { data } = supabase.storage.from('assessments').getPublicUrl(filePath);
+        fileUrl = data.publicUrl; // Use data.publicUrl instead of .publicURL
+      } catch (error) {
+        console.error('Error uploading file:', error.message);
+        showSnackbar('Error uploading file.', 'error'); // Added snackbar
+        setUploadingAssignment(false);
+        return;
+      }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('assignments_quizzes')
+        .insert([{
+          name: formData.name,
+          subject_id: classInfo.subject_id,
+          description: formData.description || null,
+          file_url: fileUrl || null,
+          teacher_id: classInfo.TeacherID,
+          class_id: classInfo.sections.class_id,
+          section_id: classInfo.section_id,
+        }]);
+
+      if (error) throw error;
+
+      await fetchAssignments();
+      showSnackbar('Assignment created successfully!', 'success'); // Added snackbar
+
+      setFormData({ name: "", subject: "", description: "", file: null });
+      handleCloseModal();
+
+    } catch (error) {
+      console.error('Error inserting assignment:', error.message);
+      showSnackbar('Error creating assignment.', 'error'); // Added snackbar
+    } finally {
+      setUploadingAssignment(false);
+    }
+  };
+
+
+    
+  const handleAssignmentClick = async (assignment) => {
+    setSelectedAssignment(assignment);
+    setLoadingGrades(true); // Start loading
+
+    try {
+      const { data: gradesData, error } = await supabase
+        .from('grades')
+        .select('registration_no, marks')
+        .eq('assignment_quiz_id', assignment.id);
+
+      if (error) throw error;
+
+      setHasExistingGrades(gradesData.length > 0); // set flag
+
+      // Update assignment's hasGrades status
+      if (gradesData && gradesData.length > 0) {
+        setAssignmentsWithGrades(prev => 
+          prev.includes(assignment.id) ? prev : [...prev, assignment.id]
+        );
+      }
+
+
+      // Merge marks into student list
+      const updatedStudents = students.map(student => {
+        const gradeEntry = gradesData.find(g => g.registration_no === student.registration_no);
+        return {
+          ...student,
+          marks: gradeEntry ? gradeEntry.marks : "",
+        };
+      });
+
+      setStudents(updatedStudents);
+      // Added check to show appropriate message
+      if (gradesData.length > 0) {
+        showSnackbar('Existing grades loaded for update.', 'info');
+      } else {
+        showSnackbar('No grades found. Ready to submit.', 'info');
+      }
+    } catch (error) {
+      console.error("Error fetching existing grades:", error.message);
+      showSnackbar('Error fetching grades.', 'error');
+    } finally {
+      setLoadingGrades(false); // Stop loading
+    }
+  };
+
 
   const handleMarksChange = (index, value) => {
     const updated = [...students];
@@ -96,29 +433,90 @@ const [loading, setLoading] = useState(true);
     setStudents(updated);
   };
 
-  const handleMarksSubmit = () => {
-    alert("Marks saved successfully!");
-    setSelectedAssignment(null);
+  const handleMarksSubmit = async () => {
+    if (!selectedAssignment || !students.length) return;
+
+    // Check for any empty marks
+  const hasEmptyMarks = students.some(student => student.marks === "" || student.marks === null);
+
+  if (hasEmptyMarks) {
+    showSnackbar("Please fill in all marks before submitting.", "warning");
+    return;
+  }
+  
+    setIsSubmittingMarks(true); // Set submitting state to true when marks are being submitted
+
+    try {
+      const gradeData = students
+        .filter((student) => student.marks !== "")
+        .map((student) => ({
+          assignment_quiz_id: selectedAssignment.id,
+          teacher_id: classInfo.TeacherID,
+          class_id: classInfo.sections.class_id,
+          section_id: classInfo.section_id,
+          registration_no: student.registration_no,
+          full_name: student.full_name,
+          marks: parseFloat(student.marks),
+        }));
+  
+      const { error } = await supabase
+        .from('grades')
+        .upsert(gradeData, {
+          onConflict: ['assignment_quiz_id', 'registration_no'], // ensure unique per assignment & student
+        });
+  
+      if (error) throw error;
+  
+      // Add this assignment to the list of assignments with grades
+      if (gradeData.length > 0) {
+        setAssignmentsWithGrades(prev => 
+          prev.includes(selectedAssignment.id) ? prev : [...prev, selectedAssignment.id]
+        );
+        
+        // Update the assignments list to reflect the change
+        setAssignments(prev => 
+          prev.map(a => a.id === selectedAssignment.id ? {...a, hasGrades: true} : a)
+        );
+      }
+  
+      // Changed alert to snackbar
+      showSnackbar('Marks saved successfully!', 'success');
+      // setSelectedAssignment(null);
+    } catch (error) {
+      console.error("Error saving marks:", error.message);
+      // Changed alert to snackbar
+      showSnackbar('Failed to save marks.', 'error');
+    } finally{
+      setIsSubmittingMarks(false); // Set submitting state to false after marks submission
+    }
   };
+  
 
   const handleBack = () => {
     setSelectedAssignment(null);
+
+    // Reset the marks of all students when going back to the assignments view
+    const resetStudentsMarks = students.map((student) => ({
+      ...student,
+      marks: "", // Reset marks to an empty string
+    }));
+    
+    setStudents(resetStudentsMarks); // Update the state with the reset marks
   };
 
+
   const handleDownload = (file) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 0);
+    if (file && file.url) {
+      const link = document.createElement('a');
+      link.href = file.url;
+      link.setAttribute('download', file.name); // optional: lets browser name the file
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showSnackbar(`Downloading ${file.name}...`, 'info');
     }
   };
+  
 
   const modalStyle = {
     position: 'absolute', top: '50%', left: '50%',
@@ -127,6 +525,12 @@ const [loading, setLoading] = useState(true);
     boxShadow: 24, p: 4,
   };
 
+  const filteredAssignments = assignments.filter(
+    (assignment) =>
+      assignment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (assignment.description && assignment.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
@@ -146,29 +550,59 @@ const [loading, setLoading] = useState(true);
           {!selectedAssignment ? (
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
-                <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="h6" color="primary">
-                    Assignment & Grade Management
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenModal}
-                    sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
-                  >
-                    Create Assignment
-                  </Button>
-                </Paper>
+              <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  <Typography variant="h6" color="primary">
+    Assignment & Grade Management
+  </Typography>
+  <Box sx={{ display: 'flex', gap: 1 }}>
+    <Button
+      variant="outlined"
+      onClick={() => navigate(-1)}
+    >
+      Back
+    </Button>
+    <Button
+      variant="contained"
+      startIcon={<AddIcon />}
+      onClick={handleOpenModal}
+      sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+      disabled={uploadingAssignment}
+    >
+      {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
+    </Button>
+   
+  </Box>
+  
+</Paper>
+
               </Grid>
+              <Grid item xs={12}>
+  <Paper
+    sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', mb: 2 }}
+  >
+    <InputBase
+      sx={{ ml: 1, flex: 1 }}
+      placeholder="Search assignments by name or description"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+    <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+      <SearchIcon />
+    </IconButton>
+  </Paper>
+</Grid>
+
               <Grid item xs={12}>
                 <Paper sx={{ p: 2, minHeight: 400 }}>
                   <Typography variant="h6" gutterBottom color="primary">
                     Assignments & Quizzes
                   </Typography>
-                  {assignments.length === 0 ? (
+                  {loadingAssignments ? (
+                    <Typography>Loading assignments...</Typography>
+                  ) : assignments.length === 0 ? (
                     <Typography>No assignments created yet.</Typography>
                   ) : (
-                    assignments.map((assignment) => (
+                    filteredAssignments.map((assignment) => (
                       <Box
                         key={assignment.id}
                         sx={{
@@ -186,9 +620,15 @@ const [loading, setLoading] = useState(true);
                           <Typography variant="subtitle1">{assignment.name}</Typography>
 
                           <Typography variant="body2" color="text.secondary">
-  {assignment.subject} {assignment.file && `• ${assignment.file.name}`}
-</Typography>
-                          
+                            {assignment.subject_name ? assignment.subject_name : "Subject not found"} 
+                          </Typography>
+                           
+                          <Typography variant="body2" color="text.secondary">
+                            {assignment.description || "No description provided"}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem'}}> 
+                            {assignment.file &&  `${assignment.file.name}`}
+                          </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           {assignment.file && (
@@ -199,10 +639,26 @@ const [loading, setLoading] = useState(true);
                                   handleDownload(assignment.file);
                                 }}
                               >
-                                <DownloadIcon />
+                                <DownloadIcon sx={{ color:'#05a5d4'}} />
                               </IconButton>
                             </Tooltip>
                           )}
+
+                          {/* Only show delete button if assignment doesn't have grades */}
+                          {!assignmentsWithGrades.includes(assignment.id) && !assignment.hasGrades && (
+                            <Tooltip title="Delete Assignment">
+                              <IconButton
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // prevent triggering the parent onClick
+                                  openDeleteDialog(assignment);
+                                }}
+                              >
+                                <DeleteIcon/>
+                              </IconButton>
+                            </Tooltip>
+                          )}
+
                           <Button
                             variant="contained"
                             size="small"
@@ -231,12 +687,11 @@ const [loading, setLoading] = useState(true);
                       {selectedAssignment.subject}
                     </Typography>
                     {selectedAssignment.file && (
-  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-    <AttachFileIcon fontSize="small" sx={{ mr: 0.5, color: '#4ade80' }} />
-    <Typography variant="body2">{selectedAssignment.file.name}</Typography>
-  </Box>
-)}
-
+                      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                        <AttachFileIcon fontSize="small" sx={{ mr: 0.5, color: '#4ade80' }} />
+                        <Typography variant="body2">{selectedAssignment.file.name}</Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     {selectedAssignment.file && (
@@ -245,6 +700,7 @@ const [loading, setLoading] = useState(true);
                         startIcon={<DownloadIcon />}
                         onClick={() => handleDownload(selectedAssignment.file)}
                         size="small"
+                        sx={{ backgroundColor: '#05a5d4', color:'white'}}
                       >
                         Download
                       </Button>
@@ -261,37 +717,56 @@ const [loading, setLoading] = useState(true);
                   <Typography variant="body2" sx={{ mb: 2 }}>
                     {selectedAssignment.description || 'No description provided'}
                   </Typography>
-                  <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 3 }}>
-  <Table sx={{ minWidth: 650 }}>
-    <TableHead>
-      <TableRow>
-        <TableCell>Roll No</TableCell>
-        <TableCell>Name</TableCell>
-        <TableCell>Marks</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {students.map((student, index) => (
-        <TableRow key={student.id}>
-          <TableCell>{student.registration_no}</TableCell>
-          <TableCell>{student.full_name}</TableCell>
-          <TableCell>
-            <TextField
-              type='number'
-              size="small"
-              value={student.marks}
-              onChange={(e) => handleMarksChange(index, e.target.value)}
-            />
-          </TableCell>
+                  {loadingGrades ? (
+  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+    <CircularProgress />
+  </Box>
+) : (
+  <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 3 }}>
+    <Table sx={{ minWidth: 650 }}>
+      <TableHead>
+        <TableRow>
+          <TableCell>Roll No</TableCell>
+          <TableCell>Name</TableCell>
+          <TableCell>Marks</TableCell>
         </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</TableContainer>
+      </TableHead>
+      <TableBody>
+        {students.map((student, index) => (
+          <TableRow key={student.id}>
+            <TableCell>{student.registration_no}</TableCell>
+            <TableCell>{student.full_name}</TableCell>
+            <TableCell>
+              <TextField
+                type="number"
+                size="small"
+                value={student.marks}
+                onChange={(e) => handleMarksChange(index, e.target.value)}
+                inputProps={{ min: 0 }}
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+)}
+
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    <Button variant="contained" onClick={handleMarksSubmit} sx={{ backgroundColor: '#4ade80' }}>
-                      Submit Marks
-                    </Button>
+                  <Button
+  variant="contained"
+  color="primary"
+  onClick={handleMarksSubmit}
+  disabled={isSubmittingMarks}
+>
+  {isSubmittingMarks
+    ? "Submitting..."
+    : hasExistingGrades
+    ? "Update Marks"
+    : "Insert Marks"}
+</Button>
+
+
                   </Box>
                 </Paper>
               </Grid>
@@ -299,14 +774,7 @@ const [loading, setLoading] = useState(true);
           )}
         </Box>
 
-        {/* Bottom Back Button only in list view */}
-        {!selectedAssignment && (
-          <Box sx={{ textAlign: 'left', pt: 2 }}>
-            <Button variant="contained" onClick={() => navigate(-1)} sx={{ backgroundColor: '#4ade80' }}>
-              Back
-            </Button>
-          </Box>
-        )}
+       
 
         {/* Modal */}
         <Modal open={openModal} onClose={handleCloseModal}>
@@ -317,22 +785,76 @@ const [loading, setLoading] = useState(true);
             </Box>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <TextField label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
-              <TextField label="Subject" name="subject" value={formData.subject} onChange={handleInputChange} required />
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="subject-select-label">Subject</InputLabel>
+                <Select
+                  labelId="subject-select-label"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  label="Subject"
+                >
+                  {classInfo && classInfo.subjects && (
+                    <MenuItem value={classInfo.subjects.subject_name}>
+                      {classInfo.subjects.subject_name}
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
               <Box>
-                <Typography variant="body2">Attach File</Typography>
+                <Typography variant="body2">Attach File (optional)</Typography>
                 <input type="file" onChange={handleFileChange} />
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                 <Button onClick={handleCloseModal}>Cancel</Button>
-                <Button type="submit" variant="contained" sx={{ backgroundColor: '#4ade80' }}>
-                  Create
+                <Button 
+                  type="submit" 
+                  variant="contained" 
+                  disabled={uploadingAssignment}
+                  sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+                >
+                  {uploadingAssignment ? 'Uploading...' : 'Create'}
                 </Button>
               </Box>
             </form>
           </Box>
         </Modal>
+
+        {/* Added Snackbar component from Attendance.jsx */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={closeDeleteDialog}
+      >
+        <DialogTitle>Delete Assignment</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this assignment? 
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Cancel</Button>
+          <Button
+    onClick={handleDeleteAssignment}
+    color="error"
+    disabled={isDeleting} // Disable button while deleting
+  >
+    {isDeleting ? 'Deleting...' : 'Delete'} {/* Show "Deleting..." while in progress */}
+  </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

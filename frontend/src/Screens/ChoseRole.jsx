@@ -25,22 +25,15 @@ const ChooseRole = () => {
   ];
 
   const handleRoleSelect = (role) => {
-    if (role=='Admin') 
-      {
-        navigate('/admin-login');
-    }else if (role == 'School')
-    {
+    if (role === 'Admin') {
+      navigate('/admin-login');
+    } else if (role === 'School') {
       navigate('/school-login');
-    }else if
-    (role == 'Teacher')
-    {
+    } else if (role === 'Teacher') {
       navigate('/teacher-login');
-
+    } else {
+      navigate('/login', { state: { selectedRole: role } });
     }
-    else{
-      navigate('/login', { state: { selectedRole: role } }); // Pass selected role to the Login component
-    }
-   
   };
 
   return (
@@ -49,9 +42,12 @@ const ChooseRole = () => {
       justifyContent="center"
       alignItems="center"
       height="100vh"
-      bgcolor="linear-gradient(to bottom, #411d70, #19118b)"
+      sx={{
+        background: 'linear-gradient(to bottom, #5C6BC0, #3F51B5)', // Indigo gradient background
+        padding: 2,
+      }}
     >
-      <Box display="flex" justifyContent="center" gap={3} flexWrap="wrap">
+      <Box display="flex" justifyContent="center" gap={4} flexWrap="wrap">
         {roles.map((role, index) => (
           <Card
             key={index}
@@ -60,13 +56,20 @@ const ChooseRole = () => {
               width: 300,
               textAlign: 'center',
               cursor: 'pointer',
-              boxShadow: 3,
-              ':hover': { boxShadow: 6, backgroundColor: '#f5f5f5' },
+              borderRadius: 3,
+              backgroundColor: '#ffffff', // White background for the card
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)', // Light shadow for elevation
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 6px 18px rgba(0, 0, 0, 0.2)', // Darker shadow on hover
+                backgroundColor: '#f3f4f6', // Light gray on hover
+              },
             }}
           >
             <CardContent>
               <Box mb={2}>{role.icon}</Box>
-              <Typography variant="h6" fontWeight="bold">
+              <Typography variant="h6" fontWeight="bold" color="primary">
                 {role.label}
               </Typography>
               <Typography variant="body2" color="textSecondary">
