@@ -600,11 +600,11 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           label: "Edit a Teacher",
           path: "/admin/edit-teacher",
         },
-        {
-          icon: <TransferWithinAStationIcon />,
-          label: "Teacher Transfer",
-          path: "/admin/teacher-transfer",
-        },
+        // {
+        //   icon: <TransferWithinAStationIcon />,
+        //   label: "Teacher Transfer",
+        //   path: "/admin/teacher-transfer",
+        // },
       ],
     },
     {
