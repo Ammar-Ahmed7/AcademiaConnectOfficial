@@ -1124,12 +1124,8 @@ const TeacherAdd = () => {
     bps: Yup.string().required("BPS is required"),
     teachersubject: Yup.string().required("Teacher subject is required"),
     post: Yup.string().required("Post is required"),
-
-    
   });
 
-
-  
   const calculateAge = (dob) => {
     const birthDate = new Date(dob);
     const today = new Date();
@@ -1250,14 +1246,13 @@ const TeacherAdd = () => {
     },
   });
 
-
   useEffect(() => {
     if (formik.values.employeetype === "Principal") {
       formik.setFieldValue("bps", "Grade 18");
     } else if (formik.values.employeetype === "Vice Principal") {
       formik.setFieldValue("bps", "Grade 17");
     } else if (formik.values.employeetype === "Teacher") {
-      switch(formik.values.post) {
+      switch (formik.values.post) {
         case "Subject Specialist":
         case "Acting Principal":
           formik.setFieldValue("bps", "Grade 17");
@@ -1448,7 +1443,7 @@ const TeacherAdd = () => {
               <FormControl fullWidth required>
                 <InputLabel>Domicile</InputLabel>
                 <Select
-                  label="DOmicile"
+                  label="Domicile"
                   name="domicile"
                   value={formik.values.domicile}
                   onChange={formik.handleChange}
@@ -1785,20 +1780,20 @@ const TeacherAdd = () => {
                 />
               </Grid>
             )}
-<Grid item xs={12} sm={6}>
-  <TextField
-    label="BPS"
-    fullWidth
-    name="bps"
-    value={formik.values.bps}
-    onChange={formik.handleChange}
-    onBlur={formik.handleBlur}
-    error={formik.touched.bps && Boolean(formik.errors.bps)}
-    helperText={formik.touched.bps && formik.errors.bps}
-    required
-    disabled // Make it disabled since it's auto-calculated
-  />
-</Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="BPS"
+                fullWidth
+                name="bps"
+                value={formik.values.bps}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.bps && Boolean(formik.errors.bps)}
+                helperText={formik.touched.bps && formik.errors.bps}
+                required
+                disabled // Make it disabled since it's auto-calculated
+              />
+            </Grid>
             {/* Submit Button */}
             <Grid item xs={12}>
               <Button
