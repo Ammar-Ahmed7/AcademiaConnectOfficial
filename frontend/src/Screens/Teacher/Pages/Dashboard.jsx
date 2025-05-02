@@ -20,6 +20,7 @@ const Dashboard = () => {
 
   const [timetableFilePath, setTimetableFilePath] = useState(null);
   const [timetableFileName, setTimetableFileName] = useState('');
+  const [timetableLoading, setTimetableLoading] = useState(true);
 
 
 const [calendarValue, setCalendarValue] = useState(new Date());
@@ -27,6 +28,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
 useEffect(() => {
   const fetchTimetableFile = async () => {
     try {
+      setTimetableLoading(true); // Start loading
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) return navigate('/');
@@ -62,6 +64,8 @@ useEffect(() => {
       setTimetableFileName(fileName || '');
     } catch (err) {
       console.error('Error fetching timetable file:', err);
+    } finally {
+      setTimetableLoading(false); // Stop loading
     }
   };
 
@@ -290,7 +294,10 @@ useEffect(() => {
 
   }}
 >
-  {timetableFilePath ? (
+{timetableLoading ? (
+<CircularProgress size={30} sx={{ color: '#4ade80' }} />
+) : 
+  timetableFilePath ? (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'auto' }}>
       <InsertDriveFileIcon sx={{ color: '#fe0f0f' }} />
       <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -406,9 +413,10 @@ useEffect(() => {
             }}
           />
           <Box>
-            <Typography variant="subtitle1" fontWeight="bold">
-              {notification.Title}
-            </Typography>
+          <Typography variant="subtitle1" fontWeight="bold">
+  {notification.Title} {notification.Urgent && <span style={{ color: '#ff0000', fontSize:'11px' }}>(Urgent)</span>}
+</Typography>
+
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
   {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
 </Typography>

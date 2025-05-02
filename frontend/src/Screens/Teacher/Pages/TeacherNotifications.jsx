@@ -139,7 +139,7 @@ const TeacherNotifications = () => {
                   notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
                 }`,
                 mb: 2,
-                p: 2,
+                p: 1,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -150,9 +150,9 @@ const TeacherNotifications = () => {
                   }}
                 />
                 <Box>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {notification.Title}
-                  </Typography>
+                 <Typography variant="subtitle1" fontWeight="bold">
+                   {notification.Title} {notification.Urgent && <span style={{ color: '#ff0000', fontSize:'11px' }}>(Urgent)</span>}
+                 </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                     {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
                   </Typography>
