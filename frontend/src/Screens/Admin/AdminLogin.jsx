@@ -133,17 +133,17 @@ export default function LoginAuth() {
   // Show loading indicator while checking session
   if (loading && !errorMsg) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-indigo-600 to-indigo-800">
         <div className="p-8 text-center">
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-700">Loading...</p>
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white font-semibold">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-indigo-600 to-indigo-800">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
         <div>
           <h1 className="text-2xl font-bold text-center text-gray-900">

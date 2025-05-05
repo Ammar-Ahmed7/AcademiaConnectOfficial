@@ -7,19 +7,131 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css'; // Make sure styles are loaded // Make sure you have this import
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import DownloadIcon from '@mui/icons-material/Download';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [assignedClasses, setAssignedClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotices, setLoadingNotices] = useState(true);
+
+  const [timetableFilePath, setTimetableFilePath] = useState(null);
+  const [timetableFileName, setTimetableFileName] = useState('');
+  const [timetableLoading, setTimetableLoading] = useState(true);
+
 
 const [calendarValue, setCalendarValue] = useState(new Date());
-  const notifications = [
-    'Staff meeting scheduled for tomorrow at 9 AM',
-    'Submit quarterly assessment reports by Friday',
-    'Parent-teacher meeting next week',
-  ];
+
+useEffect(() => {
+  const fetchTimetableFile = async () => {
+    try {
+      setTimetableLoading(true); // Start loading
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) return navigate('/');
+
+      // Fetch teacher info
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('Teacher')
+        .select('SchoolID')
+        .eq('user_id', user.id)
+        .single();
+      if (teacherError) throw teacherError;
+
+      // Fetch timetable record
+      const { data: timetableData, error: timetableError } = await supabase
+        .from('class_timetables')
+        .select('file_path, file_name')
+        .eq('SchoolID', teacherData.SchoolID)
+        .single();
+      if (timetableError) throw timetableError;
+
+      const filePath = timetableData?.file_path;
+      const fileName = timetableData?.file_name;
+
+      if (!filePath) return;
+
+      // Get public URL
+      const { data: urlData } = supabase
+        .storage
+        .from('class-timetables')
+        .getPublicUrl(filePath);
+
+      setTimetableFilePath(urlData?.publicUrl || null);
+      setTimetableFileName(fileName || '');
+    } catch (err) {
+      console.error('Error fetching timetable file:', err);
+    } finally {
+      setTimetableLoading(false); // Stop loading
+    }
+  };
+
+  fetchTimetableFile();
+}, [navigate]);
+
+
+useEffect(() => {
+  const fetchNotificationData = async () => {
+    setLoadingNotices(true); // Start loader
+    try {
+      setLoading(true);
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) return navigate('/');
+
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('Teacher')
+        .select('TeacherID, SchoolID')
+        .eq('user_id', user.id)
+        .single();
+      if (teacherError) throw teacherError;
+
+      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+      // Fetch relevant notices
+      const { data: adminNotices, error: adminError } = await supabase
+        .from('Notice')
+        .select('*')
+        .eq('AudienceTeacher', true)
+        .eq('CreatedType', 'Admin')
+        .gte('EndDate', today);  // ✅ only include future or current notices
+
+      const { data: schoolNotices, error: schoolError } = await supabase
+        .from('Notice')
+        .select('*')
+        .eq('AudienceTeacher', true)
+        .eq('CreatedType', 'School')
+        .eq('CreatedBy', teacherData.SchoolID)
+        .gte('EndDate', today); // ✅ only include future or current notices
+
+      if (adminError || schoolError) throw adminError || schoolError;
+
+      const allNotices = [...(adminNotices || []), ...(schoolNotices || [])];
+      const sorted = allNotices.sort((a, b) => {
+  // Urgent notices first
+  if (a.Urgent === b.Urgent) {
+    return new Date(b.created_at) - new Date(a.created_at); // newer first
+  }
+  return b.Urgent ? 1 : -1;
+});
+
+
+      setNotifications(sorted);
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      setError('Failed to load dashboard data.');
+    } finally {
+      setLoadingNotices(false); // Stop loader
+    }
+  };
+
+  fetchNotificationData();
+}, [navigate]);
 
   useEffect(() => {
     const fetchAssignedClasses = async () => {
@@ -56,7 +168,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
           .from('teacher_assignments') // Use correct table name
           .select(`
             *,
-            sections:section_id(section_name, classes:class_id(class_name)),
+            sections:section_id(section_name, classes:class_id(class_name), class_id),
             subjects:subject_id(subject_name)
           `)
           .eq('TeacherID', teacherData.TeacherID)
@@ -75,8 +187,10 @@ const [calendarValue, setCalendarValue] = useState(new Date());
 
           return {
             className: cls.sections.classes.class_name, // Fetch the class_name through sections table
+            classID: cls.sections.class_id, // Fetch the class ID
             section: cls.sections.section_name, // Fetch the section name
             subject: cls.subjects.subject_name, // Fetch the subject name
+            subjectId: cls.subject_id, // Store the subject ID
             day: cls.day_of_week, // Directly use day_of_week from database
             time: `${formatTime(cls.start_time)} - ${formatTime(cls.end_time)}`, // Format times
             period: cls.period, // Period
@@ -84,7 +198,40 @@ const [calendarValue, setCalendarValue] = useState(new Date());
           };
         });
 
-        setAssignedClasses(formattedClasses);
+        // Group classes by className and section
+        const groupedClasses = [];
+        const classMap = {};
+
+        formattedClasses.forEach(cls => {
+          const key = `${cls.className}-${cls.section}`;
+          
+          if (!classMap[key]) {
+            // Create a new entry with the first subject
+            const newEntry = {
+              ...cls,
+              subjects: [{ 
+                name: cls.subject, 
+                id: cls.subjectId, 
+                rawData: cls.rawData 
+              }],
+              // Store the original subject in the subjects array but keep the displayed one
+              displaySubjects: cls.subject
+            };
+            classMap[key] = newEntry;
+            groupedClasses.push(newEntry);
+          } else {
+            // Add this subject to existing entry
+            classMap[key].subjects.push({ 
+              name: cls.subject, 
+              id: cls.subjectId, 
+              rawData: cls.rawData 
+            });
+            // Update the displayed subjects
+            classMap[key].displaySubjects = classMap[key].subjects.map(s => s.name).join(', ');
+          }
+        });
+
+        setAssignedClasses(groupedClasses);
       } catch (err) {
         console.error('Error fetching assigned classes:', err);
         setError('Failed to load assigned classes');
@@ -108,9 +255,38 @@ const [calendarValue, setCalendarValue] = useState(new Date());
   };
 
   const handleManageClick = (classInfo) => {
-    navigate('/teacher/class-management', { state: { classInfo } });
+    // For grouped classes with multiple subjects
+    if (classInfo.subjects && classInfo.subjects.length > 0) {
+      // Take the first subject's rawData as the base
+      const baseData = classInfo.subjects[0].rawData;
+      
+      // Create a modified version that includes all subjects
+      const enhancedData = {
+        ...baseData,
+        // Add a new property that contains all subjects
+        allSubjects: classInfo.subjects.map(subj => ({
+          name: subj.name,
+          rawData: subj.rawData
+        }))
+      };
+      
+      navigate('/teacher/class-management', { state: { classInfo: enhancedData } });
+    } else {
+      // Original behavior for non-grouped classes
+      navigate('/teacher/class-management', { state: { classInfo: classInfo.rawData } });
+    }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+  
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
@@ -159,19 +335,53 @@ const [calendarValue, setCalendarValue] = useState(new Date());
                 Class Timetable
               </Typography>
               <Box
-                sx={{
-                  flexGrow: 1,
-                  backgroundColor: '#f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 1
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Timetable Image Placeholder
-                </Typography>
-              </Box>
+  sx={{
+    flexGrow: 1,
+    backgroundColor: '#efefef',
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: 1,
+    p: 2,
+    flexDirection: 'column',
+    textAlign: 'center',
+
+  }}
+>
+{timetableLoading ? (
+<CircularProgress size={30} sx={{ color: '#4ade80' }} />
+) : 
+  timetableFilePath ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'auto' }}>
+      <InsertDriveFileIcon sx={{ color: '#fe0f0f' }} />
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {timetableFileName}
+      </Typography>
+      <a
+        href={timetableFilePath}
+        download={timetableFileName}
+        style={{
+          textDecoration: 'none',
+          backgroundColor: '#05a5d4',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        <DownloadIcon fontSize="small"/>
+        Download
+      </a>
+    </Box>
+  ) : (
+    <Typography variant="body2" color="text.secondary">
+      No timetable file available for this school.
+    </Typography>
+  )}
+</Box>
+
+
             </Paper>
           </Grid>
 
@@ -193,12 +403,11 @@ const [calendarValue, setCalendarValue] = useState(new Date());
     <Box
       sx={{
         flexGrow: 1,
-        backgroundColor: '#f8fafc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 1,
-        p: 1
+        
       }}
     >
       <Calendar 
@@ -222,25 +431,64 @@ const [calendarValue, setCalendarValue] = useState(new Date());
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             >
-              <Typography variant="h6" gutterBottom color="primary">
-                Notifications & Announcements
+  <Box sx={{ flexGrow: 1, overflow: 'auto'}}>
+  <Typography variant="h6" gutterBottom color="primary">
+                Notifications and Announcements
               </Typography>
-              <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                {notifications.map((notification, index) => (
-                  <Box 
-                    key={index} 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      p: 1,
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <NotificationsIcon sx={{ mr: 2, color: '#4ade80' }} />
-                    <Typography>{notification}</Typography>
-                  </Box>
-                ))}
-              </Box>
+  {loadingNotices ? (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3,  backgroundColor: '#efefef' }}>
+     <CircularProgress size={30} sx={{ color: '#4ade80' }} />
+    </Box>
+  ) : notifications.length === 0 ? (
+    <Typography sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
+      No notifications found.
+    </Typography>
+  ) : (
+    notifications.map((notification, index) => (
+      <Paper
+        key={index}
+        elevation={3}
+        sx={{
+          backgroundColor:
+            notification.CreatedType === 'Admin' ? '#fff9c4' : '#e6f4ea',
+          borderLeft: `6px solid ${
+            notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
+          }`,
+          mb: 2,
+          p: 0.5,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <NotificationsIcon
+            sx={{
+              mr: 2,
+              color: notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80',
+            }}
+          />
+          <Box>
+          <Typography variant="subtitle1" fontWeight="bold">
+  {notification.Title} {notification.Urgent && <span style={{ color: '#ff0000', fontSize:'11px' }}>(Urgent)</span>}
+</Typography>
+
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+  {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
+</Typography>
+
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
+              {notification.Message}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              From: {notification.CreatedType}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+    
+    ))
+  )}
+</Box>
+
+
             </Paper>
           </Grid>
 
@@ -286,7 +534,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
                           {class_.className} - {class_.section}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {class_.subject}
+                          {class_.displaySubjects || class_.subject}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {class_.day} | {class_.time}
@@ -295,7 +543,7 @@ const [calendarValue, setCalendarValue] = useState(new Date());
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleManageClick(class_.rawData)}
+                        onClick={() => handleManageClick(class_)}
                         sx={{
                           backgroundColor: '#4ade80',
                           '&:hover': {

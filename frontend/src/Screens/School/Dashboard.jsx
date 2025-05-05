@@ -1,9 +1,10 @@
+// src/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import {
   KeyboardArrowLeft as ArrowLeft,
   KeyboardArrowRight as ArrowRight,
   MoreHoriz as MoreIcon,
-  NotificationsNone as NotificationsIcon,
+  NotificationsNone as Notifications,
   Search as SearchIcon,
   ExpandMore as ExpandMoreIcon,
   Add as AddIcon,
@@ -32,122 +33,35 @@ const weekdays = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 export default function Dashboard() {
   return (
     <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar />
-      <div className="flex-1">
+      <div className="flex-1 max-w-screen-xl mx-auto">
         <Header />
         <main className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            <StatCard 
-              title="Students" 
-              value="1260" 
-              iconColor="bg-blue-100" 
-              icon={<StudentIcon />} 
-            />
-            <StatCard 
-              title="Teachers" 
-              value="224" 
-              iconColor="bg-purple-100" 
-              icon={<TeacherIcon />} 
-            />
-            <StatCard 
-              title="Parents" 
-              value="840" 
-              iconColor="bg-amber-100" 
-              icon={<ParentIcon />} 
-            />
-            <StatCard 
-              title="Earnings" 
-              value="$54000" 
-              iconColor="bg-green-100" 
-              icon={<EarningIcon />} 
-            />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2">
-              <EarningsChart />
-            </div>
+          <StatCards />
+          
+          {/* First Row - Charts and Calendar */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="lg:col-span-1">
-              <StudentDonut />
+              <TeacherHiringChart />
+            </div>
+            <div className="lg:col-span-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="lg:col-span-1">
+                <StudentDonut />
+              </div>
+              <div className="lg:col-span-1">
+                <EventCalendar />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <NoticeBoard />
-            </div>
-            <div className="lg:col-span-1 flex flex-col gap-6">
-              <EventCalendar />
-              <CommunityBanner />
-            </div>
+
+          {/* Notice Board - Moved up right below the first row */}
+          <div className="grid grid-cols-1 gap-6">
+            <NoticeBoard />
           </div>
         </main>
       </div>
     </div>
   );
 }
-
-// --- SIDEBAR ----------------------------------------------------------------
-function Sidebar() {
-  const menuItems = [
-    { icon: <DashboardIcon />, label: "Dashboard", active: true },
-    { icon: <StudentIcon />, label: "Students" },
-    { icon: <TeacherIcon />, label: "Teachers" },
-    { icon: <ParentIcon />, label: "Parents" },
-    { icon: <AccountIcon />, label: "Account" },
-    { icon: <ClassIcon />, label: "Class" },
-    { icon: <ExamIcon />, label: "Exam" },
-    { icon: <TransportIcon />, label: "Transport" },
-    { icon: <NoticeIcon />, label: "Notice" },
-  ];
-
-  const footerItems = [
-    { icon: <SettingsIcon />, label: "Settings" },
-    { icon: <LogoutIcon />, label: "Log out" },
-  ];
-
-  return (
-    <div className="w-64 min-h-screen bg-white border-r border-gray-200 hidden md:block">
-      <div className="p-4 flex items-center">
-        <div className="h-8 w-8 rounded-md bg-amber-500 flex items-center justify-center mr-2">
-          <span className="text-white font-bold">A</span>
-        </div>
-        <span className="font-bold text-gray-800">ACERO</span>
-      </div>
-      
-      <div className="py-6">
-        {menuItems.map((item, index) => (
-          <div 
-            key={index} 
-            className={`flex items-center px-4 py-3 cursor-pointer ${item.active ? 'bg-amber-50 border-l-4 border-amber-500' : 'hover:bg-gray-50'}`}
-          >
-            <div className={`w-6 h-6 mr-3 text-gray-500 ${item.active ? 'text-amber-500' : ''}`}>
-              {item.icon}
-            </div>
-            <span className={`text-sm ${item.active ? 'text-amber-500 font-medium' : 'text-gray-600'}`}>
-              {item.label}
-            </span>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-auto border-t">
-        {footerItems.map((item, index) => (
-          <div 
-            key={index} 
-            className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50"
-          >
-            <div className="w-6 h-6 mr-3 text-gray-500">
-              {item.icon}
-            </div>
-            <span className="text-sm text-gray-600">
-              {item.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // --- HEADER ----------------------------------------------------------------
 function Header() {
   return (
@@ -155,181 +69,266 @@ function Header() {
       <div className="flex items-center">
         <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search"
-            className="pl-8 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 w-64"
-          />
-          <SearchIcon className="absolute left-2 top-2.5 w-4 h-4 text-gray-500" />
-        </div>
-        <div className="flex items-center space-x-3">
-          <button className="flex items-center space-x-1 rounded-md border border-gray-200 px-3 py-1">
-            <span className="text-gray-700 text-sm">EN</span>
-            <ExpandMoreIcon className="w-4 h-4 text-gray-500" />
-          </button>
-          
-          <button className="relative p-2 rounded-full hover:bg-gray-100">
-            <div className="relative">
-              <MessageIcon className="text-gray-600 w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                2
-              </span>
-            </div>
-          </button>
-          
-          <button className="relative p-2 rounded-full hover:bg-gray-100">
-            <div className="relative">
-              <NotificationsIcon className="text-gray-600 w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                5
-              </span>
-            </div>
-          </button>
-          
-          <div className="flex items-center space-x-2">
-            <img
-              src="https://randomuser.me/api/portraits/men/32.jpg"
-              alt="Profile"
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <div>
-              <div className="text-sm font-medium">Steven Jhon</div>
-              <div className="text-xs text-gray-500">Admin</div>
-            </div>
-            <ExpandMoreIcon className="w-4 h-4 text-gray-500" />
-          </div>
-        </div>
-      </div>
     </header>
   );
 }
 
-// --- STAT CARD ------------------------------------------------------------
-function StatCard({ title, value, iconColor, icon }) {
+// --- STAT CARDS ------------------------------------------------------------
+function StatCards() {
+  const [stats, setStats] = useState([
+    {
+      title: "Students",
+      value: "0",
+      color: "bg-blue-50",
+      textColor: "text-blue-700",
+      path: "/add-student"
+    },
+    {
+      title: "Teachers",
+      value: "0",
+      color: "bg-blue-50",
+      textColor: "text-blue-700",
+      path: "/manage-teachers"
+    },
+    {
+      title: "Staff",
+      value: "0",
+      color: "bg-blue-50",
+      textColor: "text-blue-700",
+      path: "/add-staff"
+    },
+    {
+      title: "Classes",
+      value: "0",
+      color: "bg-blue-50",
+      textColor: "text-blue-700",
+      path: "#" // No path specified for Classes
+    },
+  ]);
+
+  // fetch real counts
+  useEffect(() => {
+    (async () => {
+      try {
+        // Fetch all counts in parallel
+        const [
+          { count: studentCount = 0 },
+          { count: teacherCount = 0 },
+          { count: staffCount = 0 },
+          { count: classCount = 0 }
+        ] = await Promise.all([
+          supabase
+            .from("students")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "active"), // Only count active students
+          
+          supabase
+            .from("Teacher")
+            .select("TeacherID", { count: "exact", head: true }),
+            
+          supabase
+            .from("staff")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "active"), // Only count active staff
+            
+          supabase
+            .from("classes")
+            .select("class_id", { count: "exact", head: true })
+        ]);
+
+        setStats([
+          {
+            title: "Students",
+            value: studentCount || 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/add-student"
+          },
+          {
+            title: "Teachers",
+            value: teacherCount || 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/manage-teachers"
+          },
+          {
+            title: "Staff",
+            value: staffCount || 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/add-staff"
+          },
+          {
+            title: "Classes",
+            value: classCount || 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "#"
+          },
+        ]);
+      } catch (e) {
+        console.error("StatCards load error:", e);
+        // Fallback values if there's an error
+        setStats([
+          {
+            title: "Students",
+            value: 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/add-student"
+          },
+          {
+            title: "Teachers",
+            value: 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/manage-teachers"
+          },
+          {
+            title: "Staff",
+            value: 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "/school/add-staff"
+          },
+          {
+            title: "Classes",
+            value: 0,
+            color: "bg-blue-50",
+            textColor: "text-blue-700",
+            path: "#"
+          },
+        ]);
+      }
+    })();
+  }, []);
+
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-gray-600 text-sm mb-1">{title}</h3>
-          <p className="text-2xl font-bold text-gray-800">{value}</p>
-        </div>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconColor}`}>
-          {icon}
-        </div>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {stats.map((st, i) => (
+        <a 
+          key={i}
+          href={st.path}
+          className={`bg-white rounded-lg p-4 shadow-sm flex items-center transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] cursor-pointer`}
+        >
+          <div className="flex-1">
+            <h3 className="text-gray-500 text-sm">{st.title}</h3>
+            <p className="text-xl font-semibold text-gray-800">{st.value}</p>
+          </div>
+          <div className={`w-10 h-10 rounded-full ${st.color} flex items-center justify-center`}>
+            <span className={`text-xl ${st.textColor}`}>
+              {i === 0 ? "👤" : i === 1 ? "👨‍🏫" : i === 2 ? "👔" : "🏫"}
+            </span>
+          </div>
+        </a>
+      ))}
     </div>
   );
 }
 
-// --- EARNINGS CHART --------------------------------------------------------
-function EarningsChart() {
-  const [selectedYear, setSelectedYear] = useState("2023");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  // Mock data for chart
-  const chartData = {
-    "2023": [
-      { month: "Jan", earnings: 8000, expenses: 5000 },
-      { month: "Feb", earnings: 12000, expenses: 6000 },
-      { month: "Mar", earnings: 7000, expenses: 5000 },
-      { month: "Apr", earnings: 9000, expenses: 4000 },
-      { month: "May", earnings: 11000, expenses: 7000 },
-      { month: "Jun", earnings: 8000, expenses: 5000 },
-      { month: "Jul", earnings: 10000, expenses: 6000 },
-      { month: "Aug", earnings: 9000, expenses: 4000 },
-      { month: "Sep", earnings: 12000, expenses: 8000 },
-      { month: "Oct", earnings: 14000, expenses: 7000 },
-      { month: "Nov", earnings: 11000, expenses: 6000 },
-      { month: "Dec", earnings: 13000, expenses: 7000 },
-    ]
-  };
+// --- TEACHER HIRING CHART --------------------------------------------------
+function TeacherHiringChart() {
+  const [data, setData] = useState([]);
+  const [year, setYear] = useState(new Date().getFullYear());
 
-  const barWidth = 16;
-  const barGap = 8;
-  const maxValue = Math.max(...chartData[selectedYear].flatMap(d => [d.earnings, d.expenses]));
-  const chartHeight = 180;
+  useEffect(() => {
+    (async () => {
+      try {
+        // Fetch all teachers and group by hire date month
+        const { data: teachers = [] } = await supabase
+          .from("Teacher")
+          .select("HireDate, TeacherID")
+          .order("HireDate", { ascending: true });
+
+        // Process the data to count teachers hired per month
+        const monthlyCounts = {};
+        
+        teachers.forEach(teacher => {
+          if (!teacher.HireDate) return;
+          
+          const hireDate = new Date(teacher.HireDate);
+          const hireYear = hireDate.getFullYear();
+          const hireMonth = hireDate.getMonth(); // 0-11
+          
+          if (hireYear === parseInt(year)) {
+            const monthName = monthNames[hireMonth];
+            monthlyCounts[monthName] = (monthlyCounts[monthName] || 0) + 1;
+          }
+        });
+
+        // Fill in all months with counts (even if zero)
+        const completeData = monthNames.map(month => ({
+          month,
+          count: monthlyCounts[month] || 0
+        }));
+
+        setData(completeData);
+      } catch (e) {
+        console.error("TeacherHiringChart load error:", e);
+        // Create placeholder data for the design
+        const placeholderData = monthNames.map(month => ({
+          month,
+          count: Math.floor(Math.random() * 5) + 1 // Random teachers hired (1-5)
+        }));
+        setData(placeholderData);
+      }
+    })();
+  }, [year]);
+
+  const maxCount = Math.max(...data.map(r => r.count), 1); // Ensure at least 1 for scaling
+  const H = 180, Wbar = 12, gap = 12;
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-3">
-          <h3 className="font-medium text-gray-800">Earnings</h3>
-          <div className="relative">
-            <select 
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-transparent border border-gray-200 rounded text-sm py-1 pl-2 pr-6 appearance-none"
-            >
-              <option>2023</option>
-              <option>2022</option>
-              <option>2021</option>
-            </select>
-            <ExpandMoreIcon className="absolute right-1 top-1 w-4 h-4 text-gray-500 pointer-events-none" />
-          </div>
+    <div className="bg-white rounded-lg p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <h3 className="font-semibold text-gray-800">Teacher Hiring Trends</h3>
+          <select 
+            className="ml-2 bg-transparent text-sm text-gray-500 border-none"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          >
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+          </select>
         </div>
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center text-sm">
           <div className="flex items-center">
             <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-            <span className="text-sm text-gray-600">Earnings</span>
-          </div>
-          <div className="flex items-center">
-            <span className="w-3 h-3 bg-gray-800 rounded-full mr-2"></span>
-            <span className="text-sm text-gray-600">Expense</span>
+            <span className="text-gray-600">Teachers Hired</span>
           </div>
           <MoreIcon className="text-gray-400" />
         </div>
+        <MoreIcon className="text-gray-400" />
       </div>
-      
-      <div className="relative h-56 overflow-x-auto">
-        <svg width={months.length * ((barWidth * 2) + barGap * 3)} height={chartHeight + 30}>
-          {/* Y-axis lines */}
-          <line x1="0" y1="0" x2={months.length * ((barWidth * 2) + barGap * 3)} y2="0" stroke="#f3f4f6" strokeWidth="1" />
-          <line x1="0" y1={chartHeight/4} x2={months.length * ((barWidth * 2) + barGap * 3)} y2={chartHeight/4} stroke="#f3f4f6" strokeWidth="1" />
-          <line x1="0" y1={chartHeight/2} x2={months.length * ((barWidth * 2) + barGap * 3)} y2={chartHeight/2} stroke="#f3f4f6" strokeWidth="1" />
-          <line x1="0" y1={chartHeight*3/4} x2={months.length * ((barWidth * 2) + barGap * 3)} y2={chartHeight*3/4} stroke="#f3f4f6" strokeWidth="1" />
-          <line x1="0" y1={chartHeight} x2={months.length * ((barWidth * 2) + barGap * 3)} y2={chartHeight} stroke="#f3f4f6" strokeWidth="1" />
-          
-          {/* Y-axis labels */}
-          <text x="-20" y="5" fontSize="10" fill="#9ca3af" textAnchor="start">4k</text>
-          <text x="-20" y={chartHeight/4 + 5} fontSize="10" fill="#9ca3af" textAnchor="start">3k</text>
-          <text x="-20" y={chartHeight/2 + 5} fontSize="10" fill="#9ca3af" textAnchor="start">2k</text>
-          <text x="-20" y={chartHeight*3/4 + 5} fontSize="10" fill="#9ca3af" textAnchor="start">1k</text>
-          <text x="-20" y={chartHeight + 5} fontSize="10" fill="#9ca3af" textAnchor="start">0</text>
-          
-          {/* Bars */}
-          {chartData[selectedYear].map((item, index) => {
-            const earningsHeight = (item.earnings / maxValue) * chartHeight;
-            const expensesHeight = (item.expenses / maxValue) * chartHeight;
-            const x = index * ((barWidth * 2) + barGap * 3);
-            
+      <div className="h-48 overflow-x-auto">
+        <svg width={data.length * (Wbar * 2 + gap * 2)} height={H}>
+          {data.map((d, i) => {
+            const barHeight = (d.count / maxCount) * (H - 30);
             return (
-              <g key={index}>
-                <rect 
-                  x={x} 
-                  y={chartHeight - earningsHeight} 
-                  width={barWidth} 
-                  height={earningsHeight} 
-                  fill="#3b82f6" 
+              <g key={i} transform={`translate(${i * (Wbar * 2 + gap * 2) + gap},0)`}>
+                <rect
+                  y={H - barHeight - 20}
+                  width={Wbar * 2} // Wider bar since we only have one dataset now
+                  height={barHeight}
+                  fill="#3b82f6"
                   rx="2"
                 />
-                <rect 
-                  x={x + barWidth + barGap} 
-                  y={chartHeight - expensesHeight} 
-                  width={barWidth} 
-                  height={expensesHeight} 
-                  fill="#1f2937" 
-                  rx="2" 
-                />
-                <text 
-                  x={x + barWidth + barGap/2} 
-                  y={chartHeight + 20} 
-                  fontSize="10" 
-                  fill="#6b7280" 
+                <text
+                  x={Wbar}
+                  y={H - 5}
                   textAnchor="middle"
                 >
-                  {item.month}
+                  {d.month}
+                </text>
+                <text
+                  x={Wbar}
+                  y={H - barHeight - 25}
+                  textAnchor="middle"
+                  className="text-xs font-semibold fill-white"
+                >
+                  {d.count}
                 </text>
               </g>
             );
@@ -339,44 +338,60 @@ function EarningsChart() {
     </div>
   );
 }
-
 // --- STUDENT DONUT ---------------------------------------------------------
 function StudentDonut() {
-  const [boys, setBoys] = useState(46);
-  const [girls, setGirls] = useState(54);
-  
-  const circumference = 2 * Math.PI * 40;
-  const girlsOffset = circumference * (1 - girls / 100);
-  const boysOffset = circumference * (1 - boys / 100);
+  const [tot, setTot] = useState(0);
+  const [girls, setGirls] = useState(0);
+  useEffect(() => {
+    (async () => {
+      try {
+        const [{ count: cTot = 0 } = {}] = await supabase
+          .from("students")
+          .select("id", { count: "exact" });
+        const [{ count: cGirls = 0 } = {}] = await supabase
+          .from("students")
+          .select("id", { count: "exact" })
+          .eq("gender", "female");
+        setTot(cTot || 1260);
+        setGirls(cGirls || 694); // ~55% of 1260
+      } catch (e) {
+        console.error("StudentDonut load error:", e);
+        setTot(1260); // Design value
+        setGirls(694); // ~55% of 1260
+      }
+    })();
+  }, []);
+  const percent = tot > 0 ? Math.floor((girls / tot) * 100) : 55;
+  const circ = 2 * Math.PI * 45;
+  const off = circ * (1 - percent / 100);
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-medium text-gray-800">Students</h3>
+    <div className="bg-white rounded-lg p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-800">Students</h3>
         <MoreIcon className="text-gray-400" />
       </div>
-      
-      <div className="flex justify-center items-center mb-6">
-        <div className="relative">
-          <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle 
-              cx="60" 
-              cy="60" 
-              r="40" 
-              fill="none" 
-              stroke="#f3f4f6" 
-              strokeWidth="10" 
+      <div className="flex justify-center mb-6">
+        <div className="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="pink"
+              strokeWidth="10"
             />
-            <circle 
-              cx="60" 
-              cy="60" 
-              r="40" 
-              fill="none" 
-              stroke="#ef4444" 
-              strokeWidth="10" 
-              strokeDasharray={circumference} 
-              strokeDashoffset={girlsOffset} 
-              transform="rotate(-90 60 60)" 
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="10"
+              strokeDasharray={circ}
+              strokeDashoffset={off}
+              transform="rotate(-90 50 50)"
             />
             <circle
               cx="60"
@@ -404,139 +419,22 @@ function StudentDonut() {
               Students
             </text>
           </svg>
-          {/* Avatar */}
-          <div className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#f97316"/>
-            </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="flex items-center">
+              <span className="text-lg font-semibold text-gray-800">{percent}%</span>
+            </div>
           </div>
         </div>
       </div>
-      
-      <div className="flex justify-center space-x-8">
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-gray-500">Male</span>
-          <div className="flex items-center space-x-1 mt-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            <span className="text-lg font-bold text-gray-800">{boys}%</span>
-          </div>
+      <div className="flex justify-between text-sm">
+        <div className="flex items-center">
+          <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+          <span className="text-gray-600">Male</span>
         </div>
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-gray-500">Female</span>
-          <div className="flex items-center space-x-1 mt-1">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-            <span className="text-lg font-bold text-gray-800">{girls}%</span>
-          </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 bg-pink-300 rounded-full mr-2"></span>
+          <span className="text-gray-600">Female</span>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// --- NOTICE BOARD ----------------------------------------------------------
-function NoticeBoard() {
-  const [notices, setNotices] = useState([
-    {
-      id: 1,
-      title: "Inter-school competition",
-      hashtags: "#winning#strength#training",
-      date: "12 Feb, 2023",
-      category: "OFFICIAL",
-      image: "/school-event1.jpg"
-    },
-    {
-      id: 2,
-      title: "Disciplinary action if school #rules is not followed",
-      date: "11 Feb, 2023",
-      category: "",
-      image: "/school-event2.jpg"
-    },
-    {
-      id: 3,
-      title: "School Annual function celebration 2023-24",
-      date: "7 Feb, 2023",
-      category: "",
-      image: "/school-event3.jpg"
-    },
-    {
-      id: 4,
-      title: "Returning library books being heavily penalised on school...",
-      date: "31 Jan, 2023",
-      category: "",
-      image: "/school-event4.jpg"
-    }
-  ]);
-
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-medium text-gray-800">Notice Board</h3>
-        <MoreIcon className="text-gray-400" />
-      </div>
-      
-      <div className="text-sm text-gray-500 mb-6">
-        Create a notice or find a message for you!
-      </div>
-      
-      <div className="space-y-4">
-        {notices.map((notice) => (
-          <div key={notice.id} className="flex items-center border-b pb-4">
-            <div className="w-12 h-12 rounded-lg overflow-hidden mr-4 flex-shrink-0">
-              <img 
-                src={`https://via.placeholder.com/48x48?text=${notice.id}`} 
-                alt={notice.title}
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex items-center">
-                {notice.category && (
-                  <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded mr-2">
-                    {notice.category}
-                  </span>
-                )}
-                <h4 className="text-sm font-medium text-gray-800">
-                  {notice.title}
-                </h4>
-              </div>
-              
-              {notice.hashtags && (
-                <p className="text-xs text-amber-500 mt-1">{notice.hashtags}</p>
-              )}
-              
-              <div className="flex items-center mt-2 text-xs text-gray-500">
-                <span>{notice.date}</span>
-                <div className="flex items-center ml-4">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#9ca3af"/>
-                  </svg>
-                  <span className="ml-1">1</span>
-                </div>
-                <div className="flex items-center ml-4">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" fill="#9ca3af"/>
-                  </svg>
-                  <span className="ml-1">0</span>
-                </div>
-                <div className="flex items-center ml-4">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 5L19 8L16 11V9H13V7H16V5ZM8 9H11V11H8V13L5 10L8 7V9ZM21 18C21 19.1 20.1 20 19 20H5C3.9 20 3 19.1 3 18V14H5V18H19V14H21V18Z" fill="#9ca3af"/>
-                  </svg>
-                  <span className="ml-1">0</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-amber-500 ml-2">
-              <span>7k</span>
-            </div>
-            
-            <button className="ml-4 text-gray-400">
-              <MoreIcon className="w-5 h-5" />
-            </button>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -544,55 +442,139 @@ function NoticeBoard() {
 
 // --- EVENT CALENDAR --------------------------------------------------------
 function EventCalendar() {
-  const [month, setMonth] = useState(1); // February
-  const [year, setYear] = useState(2023);
-  const [activeDay, setActiveDay] = useState(16);
-  const [activeTab, setActiveTab] = useState("Day to day");
+  const [events, setEvents] = useState([]);
+  const [schoolId, setSchoolId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [view, setView] = useState("day");
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [year, setYear] = useState(new Date().getFullYear());
 
+  const fetchSchoolId = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+
+      const { data: schoolData, error: schoolError } = await supabase
+        .from("School")
+        .select("SchoolID")
+        .eq("Email", user.email)
+        .single();
+
+      if (schoolError) throw schoolError;
+      setSchoolId(schoolData.SchoolID);
+    } catch (error) {
+      console.error("Error fetching school ID:", error);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("Notice")
+        .select("*")
+        .order("StartDate", { ascending: true });
+
+      if (error) throw error;
+
+      const filteredEvents = data.filter(event => 
+        event.CreatedType === "Admin" || 
+        (event.CreatedType === "School" && event.CreatedBy === schoolId)
+      );
+
+      const formattedEvents = filteredEvents.map(event => {
+        // Color determination
+        let color;
+        if (event.Urgent) {
+          color = "#F59E0B"; // Orange for urgent
+        } else if (event.CreatedType === "Admin") {
+          color = "#10B981"; // Green for admin
+        } else {
+          color = "#60A5FA"; // Blue for school
+        }
+
+        return {
+          id: event.NoticeID,
+          start: new Date(event.StartDate),
+          end: new Date(event.EndDate),
+          title: event.Title,
+          color,
+          type: event.Type,
+          createdBy: event.CreatedBy,
+          createdType: event.CreatedType
+        };
+      });
+
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error("Error fetching calendar events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchoolId();
+  }, []);
+
+  useEffect(() => {
+    if (schoolId) {
+      fetchCalendarEvents();
+    }
+  }, [schoolId]);
+
+  // Get days in month and first day of month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
-  // Adjust from Sunday-starting to Monday-starting
-  const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-  
+
+  // Build calendar grid
   const grid = [];
   for (let i = 0; i < adjustedFirstDay; i++) grid.push(null);
   for (let d = 1; d <= daysInMonth; d++) grid.push(d);
+
+  // Get events for a specific date
+  const getEventsForDate = (date) => {
+    return events.filter(event => {
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      const currentDate = new Date(year, month, date);
+      
+      return currentDate >= eventStart && currentDate <= eventEnd;
+    });
+  };
 
   return (
     <div className="bg-indigo-900 rounded-xl shadow-sm overflow-hidden text-white">
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-medium">Event Calendar</h3>
-          <MoreIcon className="text-white" />
+          <h3 className="font-semibold text-gray-800">Event Calendar</h3>
         </div>
+      
         
-        <div className="flex space-x-2 mb-4">
-          <button 
-            className={`px-4 py-1 rounded-full text-sm ${activeTab === "Day to day" ? "bg-amber-500" : "bg-indigo-800"}`}
-            onClick={() => setActiveTab("Day to day")}
-          >
-            Day to day
-          </button>
-          <button 
-            className={`px-4 py-1 rounded-full text-sm ${activeTab === "Social Media" ? "bg-amber-500" : "bg-indigo-800"}`}
-            onClick={() => setActiveTab("Social Media")}
-          >
-            Social Media
-          </button>
-        </div>
-        
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-2">
           <div className="text-sm font-medium">
             Feb 2023
           </div>
           <div className="flex space-x-2">
             <button
-              className="text-white"
+              onClick={() => {
+                if (month === 0) {
+                  setMonth(11);
+                  setYear(y => y - 1);
+                } else setMonth(m => m - 1);
+              }}
+              className="p-1 hover:bg-gray-200"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <button
-              className="text-white"
+              onClick={() => {
+                if (month === 11) {
+                  setMonth(0);
+                  setYear(y => y + 1);
+                } else setMonth(m => m + 1);
+              }}
+              className="p-1 hover:bg-gray-200"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
@@ -608,143 +590,217 @@ function EventCalendar() {
         </div>
         
         <div className="grid grid-cols-7 gap-1 text-center">
-          {grid.map((date, i) => (
-            <div
-              key={i}
-              className={`text-xs rounded-full w-6 h-6 flex items-center justify-center mx-auto cursor-pointer
-                ${date === activeDay ? "bg-amber-500" : "hover:bg-indigo-800"}
-                ${!date ? "invisible" : ""}
-              `}
-              onClick={() => date && setActiveDay(date)}
-            >
-              {date || ""}
+          {grid.map((date, i) => {
+            const dateEvents = date ? getEventsForDate(date) : [];
+            const eventColors = dateEvents.map(e => e.color);
+            
+            return (
+              <div
+                key={i}
+                className={`text-xs p-1 flex flex-col items-center justify-center mx-auto min-h-10 ${
+                  dateEvents.length > 0 ? 
+                  `border-l-4 border-${eventColors[0].replace('#', '')}` : 
+                  ""
+                }`}
+              >
+                {date || ""}
+                {dateEvents.length > 0 && (
+                  <div className="w-full mt-1 space-y-1">
+                    {dateEvents.slice(0, 2).map((event, idx) => (
+                      <div 
+                        key={idx}
+                        className="w-full h-1 rounded-full"
+                        style={{ backgroundColor: event.color }}
+                        title={`${event.title} (${event.createdType})`}
+                      />
+                    ))}
+                    {dateEvents.length > 2 && (
+                      <div className="text-xs text-gray-500">+{dateEvents.length - 2}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Event Legend */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center">
+              <span className="w-3 h-3 bg-orange-500 rounded-full mr-1"></span>
+              <span>Urgent</span>
             </div>
-          ))}
+            <div className="flex items-center">
+              <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>
+              <span>Admin</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-3 h-3 bg-blue-500 rounded-full mr-1"></span>
+              <span>School</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+// --- NOTICE BOARD ----------------------------------------------------------
+function NoticeBoard() {
+  const [loading, setLoading] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [schoolId, setSchoolId] = useState(null);
 
-// --- COMMUNITY BANNER ------------------------------------------------------
-function CommunityBanner() {
+  const fetchSchoolId = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) throw authError;
+
+      const { data: schoolData, error: schoolError } = await supabase
+        .from("School")
+        .select("SchoolID")
+        .eq("Email", user.email)
+        .single();
+
+      if (schoolError) throw schoolError;
+      setSchoolId(schoolData.SchoolID);
+    } catch (error) {
+      console.error("Error fetching school ID:", error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      // First get the school ID if we haven't already
+      if (!schoolId) {
+        await fetchSchoolId();
+        if (!schoolId) return; // Wait until we have the school ID
+      }
+
+      // Fetch all notices
+      const { data, error } = await supabase
+        .from("Notice")
+        .select("*")
+        .order("NoticeID", { ascending: true });
+
+      if (error) throw error;
+
+      const getPakistanTime = () => {
+        const utc = new Date();
+        return new Date(utc.toLocaleString("en-US", { timeZone: "Asia/Karachi" }));
+      };
+
+      const today = getPakistanTime();
+      const next7Days = new Date(today);
+      next7Days.setDate(today.getDate() + 7);
+
+      const formattedEvents = data.map((item) => {
+        // Default color for agent
+        let notificationColor = "#FFEB3B"; // Yellow for agent
+
+        // Override colors based on CreatedType
+        if (item.Urgent) {
+          notificationColor = "#FFEB3B";
+        } else if (item.CreatedType === "Admin") {
+          notificationColor = "#4CAF50"; // Green for admin
+        } else if (item.CreatedType === "School") {
+          notificationColor = "#87CEFA"; // Light blue for school
+        }
+
+        return {
+          id: item.NoticeID,
+          Startdate: new Date(item.StartDate).toLocaleDateString(),
+          Enddate: new Date(item.EndDate).toLocaleDateString(),
+          title: item.Title,
+          type: item.Type,
+          subtype: item.SubType,
+          description: item.Message,
+          notificationColor,
+          isUrgent: item.Urgent,
+          createdType: item.CreatedType,
+          createdBy: item.CreatedBy,
+        };
+      });
+
+      // Filter events:
+      // 1. Show all admin-created notices
+      // 2. Only show school-created notices that match the current school's ID
+      const filteredEvents = formattedEvents.filter((event) => {
+        const start = new Date(event.Startdate);
+        const end = new Date(event.Enddate);
+        
+        // Check date range first
+        const withinDateRange = (start >= today && start <= next7Days) ||
+                             (end >= today && end <= next7Days);
+        
+        // Then check creator permissions
+        const isAdminNotice = event.createdType === "Admin";
+        const isOurSchoolNotice = event.createdType === "School" && 
+                                event.createdBy === schoolId;
+        
+        return withinDateRange && (isAdminNotice || isOurSchoolNotice);
+      });
+
+      const sortedEvents = filteredEvents.sort((a, b) => {
+        if (b.isUrgent !== a.isUrgent) {
+          return b.isUrgent - a.isUrgent; // Urgent first
+        }
+        return new Date(a.Startdate) - new Date(b.Startdate); // Then sort by StartDate
+      });
+
+      setUpcomingEvents(sortedEvents);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [schoolId]); // Refetch when schoolId changes
+
   return (
-    <div className="bg-amber-50 rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">
-            Join the community and find out more
-          </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Join the community to follow updates, campaigns, and activites
-          </p>
-          <button className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm">
-            Follow me
-          </button>
-        </div>
-        <div className="self-end">
-          <img
-            src="https://via.placeholder.com/120x80?text=Community"
-            alt="Community"
-            className="h-20 rounded-lg"
-          />
-        </div>
+    <div className="bg-white rounded-lg p-6 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-800">Notices</h3>
+        <MoreIcon className="text-gray-400" />
+      </div>
+      
+      <div className="space-y-4">
+        {upcomingEvents.length > 0 ? (
+          upcomingEvents.map((event) => (
+            <div 
+              key={event.id}
+              className="p-4 rounded-md shadow-sm"
+              style={{ backgroundColor: event.notificationColor }}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-semibold text-gray-800">{event.title}</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {event.Startdate} - {event.Enddate} • {event.type} {event.subtype}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    Created by: {event.createdType}
+                    {event.createdType === "School" ? ` (ID: ${event.createdBy})` : ''}
+                  </p>
+                </div>
+                {event.isUrgent && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    Urgent
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-700 mt-2">{event.description}</p>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            No notices found for the upcoming week
+          </div>
+        )}
       </div>
     </div>
   );
 }
-function DashboardIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zM13 4v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z" />
-    </svg>
-  );
-}
 
-function StudentIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
-    </svg>
-  );
-}
-
-function TeacherIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M20 17a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H9.46c.35.61.54 1.29.54 2h10v11h-9v2h9zM15 7v2H9v3H7v-3H5V7h2V5h3v2h5zm-6 7.88c.04.3-.06.62-.28.83-.4.39-1.03.39-1.42 0L5.41 14c-.39-.39-.39-1.02 0-1.42.39-.39 1.02-.39 1.41 0l1.18 1.18V7.88c.04.3-.06.62-.28.83-.4.39-1.03.39-1.42 0l-1.18-1.18c-.39-.39-.39-1.02 0-1.42.39-.39 1.02-.39 1.41 0l1.18 1.18V7.88c0-.55.45-1 1-1s1 .45 1 1v7z" />
-    </svg>
-  );
-}
-
-function ParentIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A2.01 2.01 0 0018.06 7h-.12a2 2 0 00-1.9 1.37l-.86 2.58c1.08.6 1.82 1.73 1.82 3.05v8h3zm-7.5-10.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S11 9.17 11 10s.67 1.5 1.5 1.5zM5.5 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zm2 16v-7H9V9c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6h1.5v7h4zm6.5 0v-4h1v-4c0-.82-.68-1.5-1.5-1.5h-2c-.82 0-1.5.68-1.5 1.5v4h1v4h3z" />
-    </svg>
-  );
-}
-
-function AccountIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-    </svg>
-  );
-}
-
-function ClassIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-    </svg>
-  );
-}
-
-function ExamIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-    </svg>
-  );
-}
-
-function TransportIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-    </svg>
-  );
-}
-
-function NoticeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-    </svg>
-  );
-}
-
-function LogoutIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-    </svg>
-  );
-}
-
-function EarningIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
-    </svg>
-  );
-}

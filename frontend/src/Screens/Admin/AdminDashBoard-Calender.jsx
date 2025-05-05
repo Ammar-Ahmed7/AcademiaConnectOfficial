@@ -138,12 +138,6 @@
 //   return <DateCalendarWithEvents />;
 // }
 
-
-
-
-
-
-
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import dayjs from "dayjs";
 import Badge from "@mui/material/Badge";
@@ -163,13 +157,14 @@ function ServerDay(props) {
   );
   const isSelected = !outsideCurrentMonth && eventsForDay.length > 0;
 
-  const tooltipTitle = eventsForDay.length > 0 ? (
-    <div>
-      {eventsForDay.map((e, i) => (
-        <div key={i}>{e.title}</div>
-      ))}
-    </div>
-  ) : null;
+  const tooltipTitle =
+    eventsForDay.length > 0 ? (
+      <div>
+        {eventsForDay.map((e, i) => (
+          <div key={i}>{e.title}</div>
+        ))}
+      </div>
+    ) : null;
 
   const backgroundColor = eventsForDay[0]?.color || undefined;
 
@@ -220,10 +215,10 @@ function DateCalendarWithEvents() {
     if (requestAbortController.current) {
       requestAbortController.current.abort();
     }
-    
+
     const controller = new AbortController();
     requestAbortController.current = controller;
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -233,19 +228,19 @@ function DateCalendarWithEvents() {
         .order("NoticeID", { ascending: true })
         .abortSignal(controller.signal);
 
-        console.log("i am claneder", data);
+      console.log("i am claneder", data);
 
       if (error) throw error;
 
       const processedEvents = data.map((event) => {
         const start = dayjs(event.StartDate);
         const end = dayjs(event.EndDate);
-        let color = "#8A2BE2"; // Default pink color
+        let color = "#DAB1DA"; // Default pink color
 
         if (event.Urgent) {
-          color = "#ffeb3b"; // Yellow
+          color = "#fae955"; // Yellow
         } else if (event.SubType === "Holiday") {
-          color = "#006400"; // Purple
+          color = "#88E788"; // Purple
         }
 
         return {
@@ -258,7 +253,7 @@ function DateCalendarWithEvents() {
 
       setEvents(processedEvents);
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      if (error.name !== "AbortError") {
         console.error("Failed to fetch events:", error);
       }
     } finally {

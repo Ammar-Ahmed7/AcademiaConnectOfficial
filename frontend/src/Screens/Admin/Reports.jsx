@@ -1,104 +1,957 @@
-import React, { useState, useEffect } from 'react';
+// // import React, { useState, useEffect } from "react";
+// // import {
+// //   Box,
+// //   Card,
+// //   CardContent,
+// //   Typography,
+// //   Table,
+// //   TableBody,
+// //   TableCell,
+// //   TableContainer,
+// //   TableHead,
+// //   TableRow,
+// //   Paper,
+// //   CircularProgress,
+// //   Snackbar,
+// //   Alert,
+// //   Button,
+// // } from "@mui/material";
+// // import { supabase } from "../../../supabase-client";
+
+// // const Reports = () => {
+// //   const [reports, setReports] = useState([]);
+// //   const [isLoading, setIsLoading] = useState(false);
+// //   const [alert, setAlert] = useState({
+// //     open: false,
+// //     message: "",
+// //     severity: "info",
+// //   });
+
+// //   const monthNames = [
+// //     "January",
+// //     "February",
+// //     "March",
+// //     "April",
+// //     "May",
+// //     "June",
+// //     "July",
+// //     "August",
+// //     "September",
+// //     "October",
+// //     "November",
+// //     "December",
+// //   ];
+
+// //   const handleCloseAlert = () => setAlert({ ...alert, open: false });
+
+// //   useEffect(() => {
+// //     fetchReports();
+// //   }, []);
+
+// //   const fetchReports = async () => {
+// //     setIsLoading(true);
+// //     try {
+// //       const { data, error } = await supabase.from("SendedReports").select("*");
+// //       if (error) throw error;
+// //       setReports(data);
+// //     } catch (error) {
+// //       console.error("Error fetching reports:", error);
+// //       setAlert({
+// //         open: true,
+// //         message: "Error fetching reports: " + error.message,
+// //         severity: "error",
+// //       });
+// //     } finally {
+// //       setIsLoading(false);
+// //     }
+// //   };
+
+// //   const formatDate = (dateString) => {
+// //     return new Date(dateString).toLocaleString();
+// //   };
+
+// //   const getMonthName = (monthIndex) => {
+// //     return monthNames[monthIndex] || "Unknown Month";
+// //   };
+
+// //   const handleDownload = async (report) => {
+// //     try {
+// //       setIsLoading(true);
+
+// //       if (!report.FilePath) {
+// //         throw new Error("No file path available for download");
+// //       }
+
+// //       // Check if the URL is valid
+// //       if (!report.FilePath.startsWith("http")) {
+// //         throw new Error("Invalid file URL");
+// //       }
+
+// //       // Create a hidden anchor tag for direct download
+// //       const a = document.createElement("a");
+// //       a.href = report.FilePath;
+// //       a.target = "_blank"; // Open in new tab as fallback
+// //       a.rel = "noopener noreferrer";
+
+// //       // Set an appropriate filename
+// //       const defaultName = `report_${getMonthName(report.Month)}_${
+// //         report.Year
+// //       }.zip`;
+// //       a.download = report.FileName || defaultName;
+
+// //       // Trigger the download
+// //       document.body.appendChild(a);
+// //       a.click();
+// //       document.body.removeChild(a);
+
+// //       // Fallback method if the direct download doesn't work
+// //       setTimeout(async () => {
+// //         try {
+// //           const response = await fetch(report.FilePath, {
+// //             mode: "cors",
+// //             cache: "no-cache",
+// //           });
+
+// //           if (!response.ok) throw new Error("Failed to fetch file");
+
+// //           const blob = await response.blob();
+// //           const blobUrl = URL.createObjectURL(blob);
+
+// //           const fallbackLink = document.createElement("a");
+// //           fallbackLink.href = blobUrl;
+// //           fallbackLink.download = a.download;
+// //           document.body.appendChild(fallbackLink);
+// //           fallbackLink.click();
+// //           document.body.removeChild(fallbackLink);
+// //           URL.revokeObjectURL(blobUrl);
+
+// //           setAlert({
+// //             open: true,
+// //             message: "Report downloaded successfully!",
+// //             severity: "success",
+// //           });
+// //         } catch (fallbackError) {
+// //           console.error("Fallback download failed:", fallbackError);
+// //           setAlert({
+// //             open: true,
+// //             message: `Download failed. Try opening in new tab.`,
+// //             severity: "error",
+// //           });
+// //           // Open in new tab as last resort
+// //           window.open(report.FilePath, "_blank");
+// //         }
+// //       }, 2000); // Wait 2 seconds before trying fallback
+// //     } catch (error) {
+// //       console.error("Download error:", error);
+// //       setAlert({
+// //         open: true,
+// //         message: `Download failed: ${error.message}`,
+// //         severity: "error",
+// //       });
+// //     } finally {
+// //       setIsLoading(false);
+// //     }
+// //   };
+
+// //   return (
+// //     <Box
+// //       display="flex"
+// //       justifyContent="center"
+// //       alignItems="center"
+// //       bgcolor="#f5f5f5"
+// //       p={4}
+// //     >
+// //       <Card
+// //         sx={{
+// //           width: "100%",
+// //           maxWidth: 1200,
+// //           padding: 4,
+// //           boxShadow: 6,
+// //           borderRadius: 2,
+// //         }}
+// //       >
+// //         <CardContent>
+// //           <Typography
+// //             variant="h4"
+// //             gutterBottom
+// //             sx={{ fontWeight: "bold", color: "#3f51b5", mb: 3 }}
+// //           >
+// //             All Reports
+// //           </Typography>
+// //           {isLoading ? (
+// //             <Box
+// //               display="flex"
+// //               justifyContent="center"
+// //               alignItems="center"
+// //               py={3}
+// //             >
+// //               <CircularProgress />
+// //             </Box>
+// //           ) : (
+// //             <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+// //               <Table>
+// //                 <TableHead>
+// //                   <TableRow sx={{ bgcolor: "#e0e0e0" }}>
+// //                     <TableCell>
+// //                       <strong>Sender ID</strong>
+// //                     </TableCell>
+// //                     <TableCell>
+// //                       <strong>Sender Name</strong>
+// //                     </TableCell>
+// //                     <TableCell>
+// //                       <strong>Month</strong>
+// //                     </TableCell>
+// //                     <TableCell>
+// //                       <strong>Year</strong>
+// //                     </TableCell>
+// //                     <TableCell>
+// //                       <strong>Sent At</strong>
+// //                     </TableCell>
+// //                     <TableCell>
+// //                       <strong>Actions</strong>
+// //                     </TableCell>
+// //                   </TableRow>
+// //                 </TableHead>
+// //                 <TableBody>
+// //                   {reports.length > 0 ? (
+// //                     reports.map((report) => (
+// //                       <TableRow key={report.id}>
+// //                         <TableCell>{report.Sender}</TableCell>
+// //                         <TableCell>{report.Sender}</TableCell>
+// //                         <TableCell>{getMonthName(report.Month)}</TableCell>
+// //                         <TableCell>{report.Year}</TableCell>
+// //                         <TableCell>{formatDate(report.created_at)}</TableCell>
+// //                         <TableCell>
+// //                           <Button
+// //                             variant="contained"
+// //                             color="primary"
+// //                             onClick={() => handleDownload(report)}
+// //                           >
+// //                             Download
+// //                           </Button>
+// //                         </TableCell>
+// //                       </TableRow>
+// //                     ))
+// //                   ) : (
+// //                     <TableRow>
+// //                       <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+// //                         {isLoading ? "Loading reports..." : "No reports found."}
+// //                       </TableCell>
+// //                     </TableRow>
+// //                   )}
+// //                 </TableBody>
+// //               </Table>
+// //             </TableContainer>
+// //           )}
+// //         </CardContent>
+// //       </Card>
+
+// //       {/* Snackbar */}
+// //       <Snackbar
+// //         open={alert.open}
+// //         autoHideDuration={6000}
+// //         onClose={handleCloseAlert}
+// //       >
+// //         <Alert onClose={handleCloseAlert} severity={alert.severity}>
+// //           {alert.message}
+// //         </Alert>
+// //       </Snackbar>
+// //     </Box>
+// //   );
+// // };
+
+// // export default Reports;
+
+
+
+
+// import React, { useState, useEffect } from "react";
+// import {
+//   Box,
+//   Card,
+//   CardContent,
+//   Typography,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Paper,
+//   CircularProgress,
+//   Snackbar,
+//   Alert,
+//   Button,
+// } from "@mui/material";
+// import { supabase } from "../../../supabase-client";
+
+// const Reports = () => {
+//   const [reports, setReports] = useState([]);
+//   const [schools, setSchools] = useState({}); // Store schools as { user_id: {SchoolName, SchoolID} }
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [alert, setAlert] = useState({
+//     open: false,
+//     message: "",
+//     severity: "info",
+//   });
+
+//   const monthNames = [
+//     "January",
+//     "February",
+//     "March",
+//     "April",
+//     "May",
+//     "June",
+//     "July",
+//     "August",
+//     "September",
+//     "October",
+//     "November",
+//     "December",
+//   ];
+
+//   const handleCloseAlert = () => setAlert({ ...alert, open: false });
+
+//   useEffect(() => {
+//     fetchReports();
+//   }, []);
+
+//   const fetchReports = async () => {
+//     setIsLoading(true);
+//     try {
+//       // Fetch reports
+//       const { data: reportsData, error: reportsError } = await supabase
+//         .from("SendedReports")
+//         .select("*");
+//       if (reportsError) throw reportsError;
+
+//       // Get unique sender IDs from reports
+//       const senderIds = [...new Set(reportsData.map(report => report.Sender))];
+
+//       // Fetch schools that match the sender IDs (using user_id for matching)
+//       const { data: schoolsData, error: schoolsError } = await supabase
+//         .from("School")
+//         .select("user_id, SchoolID, SchoolName")
+//         .in("user_id", senderIds);
+//       if (schoolsError) throw schoolsError;
+
+//       // Convert schools array to object with user_id as key for easy lookup
+//       const schoolsMap = {};
+//       schoolsData.forEach(school => {
+//         schoolsMap[school.user_id] = {
+//           SchoolID: school.SchoolID,
+//           SchoolName: school.SchoolName
+//         };
+//       });
+
+//       setSchools(schoolsMap);
+//       setReports(reportsData);
+//     } catch (error) {
+//       console.error("Error fetching data:", error);
+//       setAlert({
+//         open: true,
+//         message: "Error fetching data: " + error.message,
+//         severity: "error",
+//       });
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const formatDate = (dateString) => {
+//     return new Date(dateString).toLocaleString();
+//   };
+
+//   const getMonthName = (monthIndex) => {
+//     return monthNames[monthIndex] || "Unknown Month";
+//   };
+
+//   const handleDownload = async (report) => {
+//     try {
+//       setIsLoading(true);
+
+//       if (!report.FilePath) {
+//         throw new Error("No file path available for download");
+//       }
+
+//       // Check if the URL is valid
+//       if (!report.FilePath.startsWith("http")) {
+//         throw new Error("Invalid file URL");
+//       }
+
+//       // Create a hidden anchor tag for direct download
+//       const a = document.createElement("a");
+//       a.href = report.FilePath;
+//       a.target = "_blank"; // Open in new tab as fallback
+//       a.rel = "noopener noreferrer";
+
+//       // Set an appropriate filename
+//       const defaultName = `report_${getMonthName(report.Month)}_${
+//         report.Year
+//       }.zip`;
+//       a.download = report.FileName || defaultName;
+
+//       // Trigger the download
+//       document.body.appendChild(a);
+//       a.click();
+//       document.body.removeChild(a);
+
+//       // Fallback method if the direct download doesn't work
+//       setTimeout(async () => {
+//         try {
+//           const response = await fetch(report.FilePath, {
+//             mode: "cors",
+//             cache: "no-cache",
+//           });
+
+//           if (!response.ok) throw new Error("Failed to fetch file");
+
+//           const blob = await response.blob();
+//           const blobUrl = URL.createObjectURL(blob);
+
+//           const fallbackLink = document.createElement("a");
+//           fallbackLink.href = blobUrl;
+//           fallbackLink.download = a.download;
+//           document.body.appendChild(fallbackLink);
+//           fallbackLink.click();
+//           document.body.removeChild(fallbackLink);
+//           URL.revokeObjectURL(blobUrl);
+
+//           setAlert({
+//             open: true,
+//             message: "Report downloaded successfully!",
+//             severity: "success",
+//           });
+//         } catch (fallbackError) {
+//           console.error("Fallback download failed:", fallbackError);
+//           setAlert({
+//             open: true,
+//             message: `Download failed. Try opening in new tab.`,
+//             severity: "error",
+//           });
+//           // Open in new tab as last resort
+//           window.open(report.FilePath, "_blank");
+//         }
+//       }, 2000); // Wait 2 seconds before trying fallback
+//     } catch (error) {
+//       console.error("Download error:", error);
+//       setAlert({
+//         open: true,
+//         message: `Download failed: ${error.message}`,
+//         severity: "error",
+//       });
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   return (
+//     <Box
+//       display="flex"
+//       justifyContent="center"
+//       alignItems="center"
+//       bgcolor="#f5f5f5"
+//       p={4}
+//     >
+//       <Card
+//         sx={{
+//           width: "100%",
+//           maxWidth: 1200,
+//           padding: 4,
+//           boxShadow: 6,
+//           borderRadius: 2,
+//         }}
+//       >
+//         <CardContent>
+//           <Typography
+//             variant="h4"
+//             gutterBottom
+//             sx={{ fontWeight: "bold", color: "#3f51b5", mb: 3 }}
+//           >
+//             All Reports
+//           </Typography>
+//           {isLoading ? (
+//             <Box
+//               display="flex"
+//               justifyContent="center"
+//               alignItems="center"
+//               py={3}
+//             >
+//               <CircularProgress />
+//             </Box>
+//           ) : (
+//             <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+//               <Table>
+//                 <TableHead>
+//                   <TableRow sx={{ bgcolor: "#e0e0e0" }}>
+//                     <TableCell>
+//                       <strong>Sender ID</strong>
+//                     </TableCell>
+//                     <TableCell>
+//                       <strong>Sender Name</strong>
+//                     </TableCell>
+//                     <TableCell>
+//                       <strong>Month</strong>
+//                     </TableCell>
+//                     <TableCell>
+//                       <strong>Year</strong>
+//                     </TableCell>
+//                     <TableCell>
+//                       <strong>Sent At</strong>
+//                     </TableCell>
+//                     <TableCell>
+//                       <strong>Actions</strong>
+//                     </TableCell>
+//                   </TableRow>
+//                 </TableHead>
+//                 <TableBody>
+//                   {reports.length > 0 ? (
+//                     reports.map((report) => {
+//                       const school = schools[report.Sender] || {};
+//                       return (
+//                         <TableRow key={report.id}>
+//                           <TableCell>{school.SchoolID || "N/A"}</TableCell>
+//                           <TableCell>{school.SchoolName || "Unknown School"}</TableCell>
+//                           <TableCell>{getMonthName(report.Month)}</TableCell>
+//                           <TableCell>{report.Year}</TableCell>
+//                           <TableCell>{formatDate(report.created_at)}</TableCell>
+//                           <TableCell>
+//                             <Button
+//                               variant="contained"
+//                               color="primary"
+//                               onClick={() => handleDownload(report)}
+//                             >
+//                               Download
+//                             </Button>
+//                           </TableCell>
+//                         </TableRow>
+//                       );
+//                     })
+//                   ) : (
+//                     <TableRow>
+//                       <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+//                         {isLoading ? "Loading reports..." : "No reports found."}
+//                       </TableCell>
+//                     </TableRow>
+//                   )}
+//                 </TableBody>
+//               </Table>
+//             </TableContainer>
+//           )}
+//         </CardContent>
+//       </Card>
+
+//       {/* Snackbar */}
+//       <Snackbar
+//         open={alert.open}
+//         autoHideDuration={6000}
+//         onClose={handleCloseAlert}
+//       >
+//         <Alert onClose={handleCloseAlert} severity={alert.severity}>
+//           {alert.message}
+//         </Alert>
+//       </Snackbar>
+//     </Box>
+//   );
+// };
+
+// export default Reports;
+
+
+
+import React, { useState, useEffect } from "react";
 import {
-  Box, Card, CardContent, Typography, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, CircularProgress, Snackbar, Alert, Button
-} from '@mui/material';
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Button,
+  TablePagination,
+  TextField,
+  InputAdornment,
+  MenuItem,
+  Grid,
+} from "@mui/material";
+import { Search } from "@mui/icons-material";
+import { supabase } from "../../../supabase-client";
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [filteredReports, setFilteredReports] = useState([]);
+  const [schools, setSchools] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [alert, setAlert] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterField, setFilterField] = useState("SchoolName"); // default filter by SchoolName
 
-  useEffect(() => {
-    // Using dummy data instead of fetching from an API
-    setReports(dummyReports);
-  }, []);
-
-  const dummyReports = [
-    {
-      _id: "1",
-      schoolName: "ABC School",
-      status: "Approved"
-    },
-    {
-      _id: "2",
-      schoolName: "XYZ School",
-      status: "Pending"
-    },
-    {
-      _id: "3",
-      schoolName: "Sunrise Academy",
-      status: "Completed"
-    },
-    {
-      _id: "4",
-      schoolName: "Greenfield International",
-      status: "Approved"
-    },
-    {
-      _id: "5",
-      schoolName: "Mountain High School",
-      status: "In Review"
-    }
+  const filterOptions = [
+    { value: "SchoolID", label: "School ID" },
+    { value: "SchoolName", label: "School Name" },
+    { value: "Month", label: "Month" },
+    { value: "Year", label: "Year" },
   ];
 
-  const handleDownload = (reportId) => {
-    // Here, you would trigger the download logic (e.g., fetching a report file)
-    // Example:
-    console.log(`Downloading report with ID: ${reportId}`);
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const handleCloseAlert = () => setAlert({ ...alert, open: false });
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm === "") {
+      setFilteredReports(reports);
+    } else {
+      const filtered = reports.filter((report) => {
+        const school = schools[report.Sender] || {};
+        
+        // Handle different filter fields
+        switch(filterField) {
+          case "SchoolID":
+            return (school.SchoolID?.toString().toLowerCase() || "").includes(searchTerm.toLowerCase());
+          case "SchoolName":
+            return (school.SchoolName?.toString().toLowerCase() || "").includes(searchTerm.toLowerCase());
+          case "Month":
+            return getMonthName(report.Month).toLowerCase().includes(searchTerm.toLowerCase());
+          case "Year":
+            return report.Year.toString().toLowerCase().includes(searchTerm.toLowerCase());
+          default:
+            return true;
+        }
+      });
+      setFilteredReports(filtered);
+    }
+    setPage(0); // Reset to first page when filtering
+  }, [searchTerm, filterField, reports, schools]);
+
+  const fetchReports = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch reports
+      const { data: reportsData, error: reportsError } = await supabase
+        .from("SendedReports")
+        .select("*");
+      if (reportsError) throw reportsError;
+
+      // Get unique sender IDs from reports
+      const senderIds = [...new Set(reportsData.map(report => report.Sender))];
+
+      // Fetch schools that match the sender IDs (using user_id for matching)
+      const { data: schoolsData, error: schoolsError } = await supabase
+        .from("School")
+        .select("user_id, SchoolID, SchoolName")
+        .in("user_id", senderIds);
+      if (schoolsError) throw schoolsError;
+
+      // Convert schools array to object with user_id as key for easy lookup
+      const schoolsMap = {};
+      schoolsData.forEach(school => {
+        schoolsMap[school.user_id] = {
+          SchoolID: school.SchoolID,
+          SchoolName: school.SchoolName
+        };
+      });
+
+      setSchools(schoolsMap);
+      setReports(reportsData);
+      setFilteredReports(reportsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setAlert({
+        open: true,
+        message: "Error fetching data: " + error.message,
+        severity: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getMonthName = (monthIndex) => {
+    return monthNames[monthIndex] || "Unknown Month";
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleDownload = async (report) => {
+    try {
+      setIsLoading(true);
+
+      if (!report.FilePath) {
+        throw new Error("No file path available for download");
+      }
+
+      // Check if the URL is valid
+      if (!report.FilePath.startsWith("http")) {
+        throw new Error("Invalid file URL");
+      }
+
+      // Create a hidden anchor tag for direct download
+      const a = document.createElement("a");
+      a.href = report.FilePath;
+      a.target = "_blank"; // Open in new tab as fallback
+      a.rel = "noopener noreferrer";
+
+      // Set an appropriate filename
+      const defaultName = `report_${getMonthName(report.Month)}_${
+        report.Year
+      }.zip`;
+      a.download = report.FileName || defaultName;
+
+      // Trigger the download
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Fallback method if the direct download doesn't work
+      setTimeout(async () => {
+        try {
+          const response = await fetch(report.FilePath, {
+            mode: "cors",
+            cache: "no-cache",
+          });
+
+          if (!response.ok) throw new Error("Failed to fetch file");
+
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const fallbackLink = document.createElement("a");
+          fallbackLink.href = blobUrl;
+          fallbackLink.download = a.download;
+          document.body.appendChild(fallbackLink);
+          fallbackLink.click();
+          document.body.removeChild(fallbackLink);
+          URL.revokeObjectURL(blobUrl);
+
+          setAlert({
+            open: true,
+            message: "Report downloaded successfully!",
+            severity: "success",
+          });
+        } catch (fallbackError) {
+          console.error("Fallback download failed:", fallbackError);
+          setAlert({
+            open: true,
+            message: `Download failed. Try opening in new tab.`,
+            severity: "error",
+          });
+          // Open in new tab as last resort
+          window.open(report.FilePath, "_blank");
+        }
+      }, 2000); // Wait 2 seconds before trying fallback
+    } catch (error) {
+      console.error("Download error:", error);
+      setAlert({
+        open: true,
+        message: `Download failed: ${error.message}`,
+        severity: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" bgcolor="#f5f5f5" p={4}>
-      <Card sx={{ width: '100%', maxWidth: 1200, padding: 4, boxShadow: 6, borderRadius: 2 }}>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      bgcolor="#f5f5f5"
+      p={4}
+    >
+      <Card
+        sx={{
+          width: "100%",
+          maxWidth: 1200,
+          padding: 4,
+          boxShadow: 6,
+          borderRadius: 2,
+        }}
+      >
         <CardContent>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#3f51b5', mb: 3 }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontWeight: "bold", color: "#3f51b5", mb: 3 }}
+          >
             All Reports
           </Typography>
-          {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" py={3}>
+
+          {/* Search and Filter Controls */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={8}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder={`Search by ${
+                  filterOptions.find((f) => f.value === filterField)?.label
+                }...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                select
+                fullWidth
+                variant="outlined"
+                label="Filter By"
+                value={filterField}
+                onChange={(e) => setFilterField(e.target.value)}
+              >
+                {filterOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+
+          {isLoading ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              py={3}
+            >
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#e0e0e0' }}>
-                    <TableCell><strong>Report ID</strong></TableCell>
-                    <TableCell><strong>School Name</strong></TableCell>
-                    <TableCell><strong>Status</strong></TableCell>
-                    <TableCell><strong>Download</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report._id}>
-                      <TableCell>{report._id}</TableCell>
-                      <TableCell>{report.schoolName}</TableCell>
-                      <TableCell>{report.status}</TableCell>
+            <>
+              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: "#e0e0e0" }}>
                       <TableCell>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => handleDownload(report._id)}
-                        >
-                          Download
-                        </Button>
+                        <strong>Sender ID</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Sender Name</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Month</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Year</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Sent At</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Actions</strong>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {filteredReports.length > 0 ? (
+                      filteredReports
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
+                        .map((report) => {
+                          const school = schools[report.Sender] || {};
+                          return (
+                            <TableRow key={report.id}>
+                              <TableCell>{school.SchoolID || "N/A"}</TableCell>
+                              <TableCell>{school.SchoolName || "Unknown School"}</TableCell>
+                              <TableCell>{getMonthName(report.Month)}</TableCell>
+                              <TableCell>{report.Year}</TableCell>
+                              <TableCell>{formatDate(report.created_at)}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={() => handleDownload(report)}
+                                >
+                                  Download
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                          {isLoading ? "Loading reports..." : "No reports found."}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50]}
+                component="div"
+                count={filteredReports.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Snackbar */}
-      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
-        <Alert onClose={() => setOpenSnackbar(false)} severity="error" sx={{ width: '100%' }}>
-          {errorMessage}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={6000}
+        onClose={handleCloseAlert}
+      >
+        <Alert onClose={handleCloseAlert} severity={alert.severity}>
+          {alert.message}
         </Alert>
       </Snackbar>
     </Box>
