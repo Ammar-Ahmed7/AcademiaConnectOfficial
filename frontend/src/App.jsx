@@ -40,7 +40,6 @@ import TeacherLogin from "../src/Screens/Teacher/Components/TeacherLogin"
 import AdminLogin from "../src/Screens/Admin/AdminLogin"
 import SchoolLogin from "../src/Screens/School/SchoolLogin"
 import AdminTemplate from "./Screens/Admin/AdminTemplate";
-import TeacherNotifications from "./Screens/Teacher/Pages/TeacherNotifications";
 // Import our protected route components
 import { TeacherRoute, AdminRoute, SchoolRoute } from "./ProtectedRoutes";
 
@@ -75,7 +74,6 @@ function App() {
 
         <Route element={<TeacherRoute />}>
         <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-        <Route path="/teacher/notifications" element={<TeacherNotifications />} />
         <Route path="/teacher/class-management" element={<ClassManagement />} />
 
         <Route path="/supabase-crud" element={<SupabaseCrudPage />} />

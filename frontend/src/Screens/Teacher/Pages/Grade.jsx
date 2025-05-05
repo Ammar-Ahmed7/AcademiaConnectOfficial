@@ -75,6 +75,7 @@ const Grade = () => {
   useEffect(() => {
     if (classInfo) {
       console.log('Received Class Info in Grade:', classInfo);
+      console.log('Available subjects:', classInfo.allSubjects);
       fetchStudents();
       fetchAssignments();
     }
@@ -117,6 +118,7 @@ const Grade = () => {
   const [formData, setFormData] = useState({ 
     name: "", 
     subject: classInfo?.subjects?.subject_name || "", 
+    subject_id: classInfo?.subject_id || null,
     description: "", 
     file: null 
   });
@@ -127,7 +129,37 @@ const Grade = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    
+    // If the subject is being changed, also update the subject_id
+    if (name === 'subject') {
+      // Find the subject in allSubjects array to get its ID
+      let newSubjectId = classInfo.subject_id; // Default to current subject_id
+      
+      // If it's the current subject from classInfo
+      if (value === classInfo.subjects?.subject_name) {
+        newSubjectId = classInfo.subject_id;
+      } 
+      // Otherwise search in allSubjects
+      else if (classInfo.allSubjects) {
+        const foundSubject = classInfo.allSubjects.find(subject => subject.name === value);
+        if (foundSubject && foundSubject.rawData) {
+          // Try to get subject_id from different possible properties
+          newSubjectId = foundSubject.rawData.subject_id || 
+                         foundSubject.rawData.id || 
+                         null;
+          
+          console.log('Selected subject:', value, 'with ID:', newSubjectId);
+        }
+      }
+      
+      setFormData({ 
+        ...formData, 
+        [name]: value,
+        subject_id: newSubjectId
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleFileChange = (e) => {
@@ -151,9 +183,9 @@ const Grade = () => {
           subject_name
         )
       `)
+      .eq('teacher_id', classInfo.TeacherID)
       .eq('class_id', classInfo.sections.class_id)
       .eq('section_id', classInfo.section_id)
-      .eq('subject_id', classInfo.subject_id)
       .order('created_at', { ascending: false });  // Newest first
     
       if (error) {
@@ -354,7 +386,7 @@ const Grade = () => {
         .from('assignments_quizzes')
         .insert([{
           name: formData.name,
-          subject_id: classInfo.subject_id,
+          subject_id: formData.subject_id, // Use the selected subject_id
           description: formData.description || null,
           file_url: fileUrl || null,
           teacher_id: classInfo.TeacherID,
@@ -362,8 +394,12 @@ const Grade = () => {
           section_id: classInfo.section_id,
         }]);
 
-      if (error) throw error;
-
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Inserted assignment with subject_id:', formData.subject_id);
       await fetchAssignments();
       showSnackbar('Assignment created successfully!', 'success'); // Added snackbar
 
@@ -799,6 +835,18 @@ const Grade = () => {
                       {classInfo.subjects.subject_name}
                     </MenuItem>
                   )}
+
+                   {/* Display all other subjects from allSubjects array */}
+                  {classInfo && classInfo.allSubjects && 
+                    classInfo.allSubjects.map((subject, index) => (
+                      // Only display subjects that are different from the current one
+                      subject.name !== classInfo.subjects?.subject_name && (
+                        <MenuItem key={index} value={subject.name}>
+                          {subject.name}
+                        </MenuItem>
+                      )
+                    ))
+                  }
                 </Select>
               </FormControl>
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
