@@ -426,6 +426,8 @@ const handleBlur = (e) => {
   const handleSubmit = async e => {
     e.preventDefault()
     setIsSubmitting(true)
+    console.log('🚀 handleSubmit fired', { formData });
+
     const errs = {}
 
     // REQUIRED FIELDS
@@ -434,7 +436,7 @@ const handleBlur = (e) => {
       'fatherCnic','fatherName','fatherContact','motherName',
       'admissionSchool','admissionClass','admissionDate',
       'emergencyContact','studentEmail','studentPassword',
-      'declaration','quota'
+      'declaration','quota','bFormNo'
     ].forEach(f => {
       if (!formData[f]) errs[f] = 'Required'
     })
@@ -678,7 +680,7 @@ const handleBlur = (e) => {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="B-Form No"
+              label="B-Form No *"
               name="bFormNo"
               onBlur={async (e) => {
               handleBlur(e)             // your existing format–onBlur logic
@@ -1394,7 +1396,6 @@ const handleBlur = (e) => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-
     </Container>
   )
 }

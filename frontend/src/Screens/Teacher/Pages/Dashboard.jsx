@@ -190,6 +190,7 @@ useEffect(() => {
             classID: cls.sections.class_id, // Fetch the class ID
             section: cls.sections.section_name, // Fetch the section name
             subject: cls.subjects.subject_name, // Fetch the subject name
+            subjectId: cls.subject_id, // Store the subject ID
             day: cls.day_of_week, // Directly use day_of_week from database
             time: `${formatTime(cls.start_time)} - ${formatTime(cls.end_time)}`, // Format times
             period: cls.period, // Period
@@ -197,7 +198,40 @@ useEffect(() => {
           };
         });
 
-        setAssignedClasses(formattedClasses);
+        // Group classes by className and section
+        const groupedClasses = [];
+        const classMap = {};
+
+        formattedClasses.forEach(cls => {
+          const key = `${cls.className}-${cls.section}`;
+          
+          if (!classMap[key]) {
+            // Create a new entry with the first subject
+            const newEntry = {
+              ...cls,
+              subjects: [{ 
+                name: cls.subject, 
+                id: cls.subjectId, 
+                rawData: cls.rawData 
+              }],
+              // Store the original subject in the subjects array but keep the displayed one
+              displaySubjects: cls.subject
+            };
+            classMap[key] = newEntry;
+            groupedClasses.push(newEntry);
+          } else {
+            // Add this subject to existing entry
+            classMap[key].subjects.push({ 
+              name: cls.subject, 
+              id: cls.subjectId, 
+              rawData: cls.rawData 
+            });
+            // Update the displayed subjects
+            classMap[key].displaySubjects = classMap[key].subjects.map(s => s.name).join(', ');
+          }
+        });
+
+        setAssignedClasses(groupedClasses);
       } catch (err) {
         console.error('Error fetching assigned classes:', err);
         setError('Failed to load assigned classes');
@@ -221,7 +255,26 @@ useEffect(() => {
   };
 
   const handleManageClick = (classInfo) => {
-    navigate('/teacher/class-management', { state: { classInfo } });
+    // For grouped classes with multiple subjects
+    if (classInfo.subjects && classInfo.subjects.length > 0) {
+      // Take the first subject's rawData as the base
+      const baseData = classInfo.subjects[0].rawData;
+      
+      // Create a modified version that includes all subjects
+      const enhancedData = {
+        ...baseData,
+        // Add a new property that contains all subjects
+        allSubjects: classInfo.subjects.map(subj => ({
+          name: subj.name,
+          rawData: subj.rawData
+        }))
+      };
+      
+      navigate('/teacher/class-management', { state: { classInfo: enhancedData } });
+    } else {
+      // Original behavior for non-grouped classes
+      navigate('/teacher/class-management', { state: { classInfo: classInfo.rawData } });
+    }
   };
 
   const formatDate = (dateStr) => {
@@ -481,7 +534,7 @@ useEffect(() => {
                           {class_.className} - {class_.section}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {class_.subject}
+                          {class_.displaySubjects || class_.subject}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {class_.day} | {class_.time}
@@ -490,7 +543,7 @@ useEffect(() => {
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleManageClick(class_.rawData)}
+                        onClick={() => handleManageClick(class_)}
                         sx={{
                           backgroundColor: '#4ade80',
                           '&:hover': {

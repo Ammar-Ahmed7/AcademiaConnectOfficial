@@ -67,7 +67,7 @@ const StudyMaterial = () => {
         .eq('teacher_id', classInfo.TeacherID)
         .eq('class_id', classInfo.sections.class_id)
         .eq('section_id', classInfo.section_id)
-        .eq('subject_id', classInfo.subject_id)
+        // .eq('subject_id', classInfo.subject_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
