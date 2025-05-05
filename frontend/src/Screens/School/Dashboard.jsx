@@ -6,11 +6,11 @@ import {
   MoreHoriz as MoreIcon,
   NotificationsNone as Notifications,
   Search as SearchIcon,
-  ExpandMore as ExpandMoreIcon,
-  Add as AddIcon,
-  Message as MessageIcon,
+  ArrowForwardIos as ArrowForward,
 } from "@mui/icons-material";
 import { supabase } from "./supabaseClient";
+import SchoolDashBoardNotices from "./SchoolDashboard-Notice";
+import SchoolDashBoardCalender from "./SchoolDashboard-Calender";
 
 // --- UTILS ------------------------------------------------------------------
 const monthNames = [
@@ -27,7 +27,7 @@ const monthNames = [
   "Nov",
   "Dec",
 ];
-const weekdays = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
 // --- MAIN COMPONENT ---------------------------------------------------------
 export default function Dashboard() {
@@ -298,7 +298,6 @@ function TeacherHiringChart() {
             <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
             <span className="text-gray-600">Teachers Hired</span>
           </div>
-          <MoreIcon className="text-gray-400" />
         </div>
         <MoreIcon className="text-gray-400" />
       </div>
@@ -319,6 +318,7 @@ function TeacherHiringChart() {
                   x={Wbar}
                   y={H - 5}
                   textAnchor="middle"
+                  className="text-xs text-gray-500"
                 >
                   {d.month}
                 </text>
@@ -393,31 +393,6 @@ function StudentDonut() {
               strokeDashoffset={off}
               transform="rotate(-90 50 50)"
             />
-            <circle
-              cx="60"
-              cy="60"
-              r="30"
-              fill="#fff"
-            />
-            <text
-              x="60"
-              y="55"
-              fontSize="16"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#374151"
-            >
-              100%
-            </text>
-            <text
-              x="60"
-              y="70"
-              fontSize="10"
-              textAnchor="middle"
-              fill="#6b7280"
-            >
-              Students
-            </text>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="flex items-center">
@@ -529,7 +504,7 @@ function EventCalendar() {
 
   // Build calendar grid
   const grid = [];
-  for (let i = 0; i < adjustedFirstDay; i++) grid.push(null);
+  for (let i = 0; i < firstDay; i++) grid.push(null);
   for (let d = 1; d <= daysInMonth; d++) grid.push(d);
 
   // Get events for a specific date
@@ -544,7 +519,7 @@ function EventCalendar() {
   };
 
   return (
-    <div className="bg-indigo-900 rounded-xl shadow-sm overflow-hidden text-white">
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-gray-800">Event Calendar</h3>
@@ -553,7 +528,7 @@ function EventCalendar() {
         
         <div className="flex justify-between items-center mb-2">
           <div className="text-sm font-medium">
-            Feb 2023
+            {monthNames[month]} {year}
           </div>
           <div className="flex space-x-2">
             <button
@@ -565,7 +540,7 @@ function EventCalendar() {
               }}
               className="p-1 hover:bg-gray-200"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 text-gray-600" />
             </button>
             <button
               onClick={() => {
@@ -576,14 +551,14 @@ function EventCalendar() {
               }}
               className="p-1 hover:bg-gray-200"
             >
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 text-gray-600" />
             </button>
           </div>
         </div>
         
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
           {weekdays.map((wd, i) => (
-            <div key={i} className="text-xs text-indigo-300">
+            <div key={i} className="text-xs text-gray-500">
               {wd}
             </div>
           ))}
