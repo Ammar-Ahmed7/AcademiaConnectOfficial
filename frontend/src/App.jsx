@@ -8,7 +8,6 @@ import ChoseRole from "./Screens/ChoseRole";
 import AdminDashboard from "./Screens/Admin/AdminTemplate";
 import TeacherDashboard from './Screens/Teacher/Pages/Dashboard'
 import ClassManagement from './Screens/Teacher/Pages/Management'
-import SupabaseCrudPage from "./Screens/Teacher/Pages/SupabaseCRUD";
 import StudyMaterial from "./Screens/Teacher/Pages/UploadStudyMaterials";
 import Attendance from "./Screens/Teacher/Pages/Attendance";
 import AssignmentQuizPage from "./Screens/Teacher/Pages/Grade";
@@ -41,6 +40,7 @@ import AdminLogin from "../src/Screens/Admin/AdminLogin"
 import SchoolLogin from "../src/Screens/School/SchoolLogin"
 import AdminTemplate from "./Screens/Admin/AdminTemplate";
 import TeacherNotifications from "./Screens/Teacher/Pages/TeacherNotifications";
+import Profile from "./Screens/Teacher/Pages/Profile";
 // Import our protected route components
 import { TeacherRoute, AdminRoute, SchoolRoute } from "./ProtectedRoutes";
 
@@ -77,8 +77,8 @@ function App() {
         <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/class-management" element={<ClassManagement />} />
         <Route path="/teacher/notifications" element={<TeacherNotifications />} />
-
-        <Route path="/supabase-crud" element={<SupabaseCrudPage />} />
+        <Route path="/teacher/profile" element={<Profile />} />
+        
 
         <Route path="/teacher/study-material" element={<StudyMaterial />} />
         <Route path="/teacher/attendance" element={<Attendance />} />
