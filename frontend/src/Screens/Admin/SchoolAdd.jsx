@@ -886,7 +886,7 @@ const SchoolManagement = () => {
                   onChange={handleInputChange}
                 >
                   <MenuItem value="Primary">Primary</MenuItem>
-                  <MenuItem value="Middle">Middle</MenuItem>
+                  <MenuItem value="Middle">Secondary</MenuItem>
                   <MenuItem value="High">High</MenuItem>
                 </Select>
               </FormControl>

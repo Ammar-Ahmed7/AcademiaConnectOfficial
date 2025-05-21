@@ -65,19 +65,17 @@ const Schools = () => {
   const fetchSchools = async () => {
     setLoading(true);
     try {
-
       console.log("Fetching schools...");
       const { data: sessionData } = await supabase.auth.getSession();
       // console.log("Current session before fetch:", sessionData);
       // console.log("Current session before fetch:.... user", sessionData.user.id);
       // console.log("Current session before fetch:.... user", sessionData.session.user.id);
 
-
       const { data, error } = await supabase
         .from("School")
         .select("*")
         .order("SchoolID", { ascending: true });
-        console.log("Supabase response:", { data, error });
+      console.log("Supabase response:", { data, error });
       if (error) {
         setErrorMessage("An error occurred while fetching schools", error);
         throw error;

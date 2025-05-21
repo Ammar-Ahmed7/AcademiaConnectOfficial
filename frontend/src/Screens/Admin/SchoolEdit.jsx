@@ -811,7 +811,7 @@ const EditSchool = () => {
                     label="School Level *"
                   >
                     <MenuItem value="Primary">Primary</MenuItem>
-                    <MenuItem value="Middle">Middle</MenuItem>
+                    <MenuItem value="Secondary">Secondary</MenuItem>
                     <MenuItem value="High">High</MenuItem>
                   </Select>
                 </FormControl>
