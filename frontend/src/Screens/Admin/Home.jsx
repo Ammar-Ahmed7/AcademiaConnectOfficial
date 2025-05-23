@@ -777,30 +777,36 @@
 
 // export default Home
 
-
-
-
-import React, { useState, useEffect } from "react"
-import { Card, Typography, Box, Grid, Paper, Skeleton, alpha } from "@mui/material"
-import { Link } from "react-router-dom"
-import supabase from "../../../supabase-client"
-import AdminSidebarCalender from "./AdminDashBoard-Calender"
-import AdminDashBoardNotices from "./AdminDashBoard-Notices"
-import AdminDashBoardMiniChart from "./AdminDashBoard-MiniChart"
-import AdminDashBoardGrowthChart from "./AdminDashBoard-GrowthChart"
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Typography,
+  Box,
+  Grid,
+  Paper,
+  Skeleton,
+  alpha,
+} from "@mui/material";
+import { Link } from "react-router-dom";
+import supabase from "../../../supabase-client";
+import AdminSidebarCalender from "./AdminDashBoard-Calender";
+import AdminDashBoardNotices from "./AdminDashBoard-Notices";
+import AdminDashBoardMiniChart from "./AdminDashBoard-MiniChart";
+import AdminDashBoardGrowthChart from "./AdminDashBoard-GrowthChart";
+import AdminDashBoardSchoolsChart from "./AdminDashBoard-SchoolsChart";
 
 // Icons
-import SchoolIcon from "@mui/icons-material/School"
-import PersonIcon from "@mui/icons-material/Person"
-import ChildCareIcon from "@mui/icons-material/ChildCare"
+import SchoolIcon from "@mui/icons-material/School";
+import PersonIcon from "@mui/icons-material/Person";
+import ChildCareIcon from "@mui/icons-material/ChildCare";
 
 const Home = () => {
   const [data, setData] = useState({
     totalSchools: 0,
     totalStudents: 0,
     totalTeachers: 0,
-  })
-  const [loading, setLoading] = useState(true)
+  });
+  const [loading, setLoading] = useState(true);
   const [growthData, setGrowthData] = useState([
     {
       year: "2000",
@@ -988,12 +994,12 @@ const Home = () => {
       students: 0,
       teachers: 0,
     },
-  ])
+  ]);
 
-  const [schools, setSchools] = useState([])
-  const [students, setStudents] = useState([])
-  const [teachers, setTeachers] = useState([])
-  const [upcomingEvents, setUpcomingEvents] = useState([])
+  const [schools, setSchools] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   // Card configuration - removed growth card
   const cardConfig = [
@@ -1021,14 +1027,14 @@ const Home = () => {
       lightColor: "rgba(50, 205, 50, 0.1)",
       path: "/admin/all-students",
     },
-  ]
+  ];
 
   // Chart colors
   const chartColors = {
     schools: "#F28A30",
     teachers: "#1E90FF",
     students: "#32CD32",
-  }
+  };
 
   // Custom tooltip for charts
   const CustomTooltip = ({ active, payload, label }) => {
@@ -1039,11 +1045,16 @@ const Home = () => {
             backgroundColor: "white",
             padding: "12px",
             borderRadius: "8px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            boxShadow:
+              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
             border: "1px solid #e2e8f0",
           }}
         >
-          <Typography variant="subtitle2" fontWeight="600" sx={{ marginBottom: "8px" }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="600"
+            sx={{ marginBottom: "8px" }}
+          >
             {label}
           </Typography>
           {payload.map((entry, index) => (
@@ -1064,16 +1075,19 @@ const Home = () => {
                   marginRight: "8px",
                 }}
               />
-              <Typography variant="body2" sx={{ color: "#64748b", textTransform: "capitalize" }}>
+              <Typography
+                variant="body2"
+                sx={{ color: "#64748b", textTransform: "capitalize" }}
+              >
                 {entry.name}: {entry.value}
               </Typography>
             </Box>
           ))}
         </Box>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   // Generate mini chart data
   const generateMiniChartData = (category) => {
@@ -1082,104 +1096,114 @@ const Home = () => {
       .map((item) => ({
         year: item.year,
         [category]: item[category],
-      }))
-  }
+      }));
+  };
 
   // Fetch and update functions
   const fetchSchools = async () => {
     try {
-      setLoading(true)
-      const { data, error } = await supabase.from("School").select("*").order("SchoolID", { ascending: true })
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("School")
+        .select("*")
+        .order("SchoolID", { ascending: true });
 
-      setSchools(data)
+      setSchools(data);
 
-      const totalSchools = data.length
+      const totalSchools = data.length;
       setData((prevState) => ({
         ...prevState,
         totalSchools,
-      }))
+      }));
 
       const yearCounts = data.reduce((acc, school) => {
-        const year = school.EstablishedYear
-        if (year) acc[year] = (acc[year] || 0) + 1
-        return acc
-      }, {})
+        const year = school.EstablishedYear;
+        if (year) acc[year] = (acc[year] || 0) + 1;
+        return acc;
+      }, {});
 
       setGrowthData((prevData) =>
         prevData.map((item) => ({
           ...item,
           schools: yearCounts[item.year] || item.schools,
-        })),
-      )
+        }))
+      );
     } catch (error) {
-      console.error("Error fetching schools:", error)
+      console.error("Error fetching schools:", error);
     }
-  }
+  };
 
   const fetchTeachers = async () => {
     try {
-      const { data, error } = await supabase.from("Teacher").select("*").order("TeacherID", { ascending: true })
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .order("TeacherID", { ascending: true });
 
-      setTeachers(data)
+      setTeachers(data);
 
-      const totalTeachers = data.length
+      const totalTeachers = data.length;
       setData((prevState) => ({
         ...prevState,
         totalTeachers,
-      }))
+      }));
 
       const yearCounts = data.reduce((acc, teacher) => {
-        const hireYear = new Date(teacher.HireDate).getFullYear()
-        if (hireYear) acc[hireYear] = (acc[hireYear] || 0) + 1
-        return acc
-      }, {})
+        const hireYear = new Date(teacher.HireDate).getFullYear();
+        if (hireYear) acc[hireYear] = (acc[hireYear] || 0) + 1;
+        return acc;
+      }, {});
 
       setGrowthData((prevData) =>
         prevData.map((item) => ({
           ...item,
           teachers: yearCounts[item.year] || item.teachers,
-        })),
-      )
+        }))
+      );
     } catch (error) {
-      console.error("Error fetching teachers:", error)
+      console.error("Error fetching teachers:", error);
     }
-  }
+  };
 
   const fetchStudents = async () => {
     try {
-      const { data, error } = await supabase.from("students").select("*").order("id", { ascending: true })
-      setStudents(data)
+      const { data, error } = await supabase
+        .from("students")
+        .select("*")
+        .order("id", { ascending: true });
+      setStudents(data);
 
-      const totalStudents = data.length
+      const totalStudents = data.length;
       setData((prevState) => ({
         ...prevState,
         totalStudents,
-      }))
+      }));
 
       const yearCounts = data.reduce((acc, student) => {
-        const enrollmentYear = new Date(student.admission_date).getFullYear()
-        if (enrollmentYear) acc[enrollmentYear] = (acc[enrollmentYear] || 0) + 1
-        return acc
-      }, {})
+        const enrollmentYear = new Date(student.admission_date).getFullYear();
+        if (enrollmentYear)
+          acc[enrollmentYear] = (acc[enrollmentYear] || 0) + 1;
+        return acc;
+      }, {});
 
       setGrowthData((prevData) =>
         prevData.map((item) => ({
           ...item,
           students: yearCounts[item.year] || item.students,
-        })),
-      )
-      setLoading(false)
+        }))
+      );
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching students:", error)
-      setLoading(false)
+      console.error("Error fetching students:", error);
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchSchools()
-    fetchTeachers()
-    fetchStudents()
-  }, [])
+    fetchSchools();
+    fetchTeachers();
+    fetchStudents();
+  }, []);
 
   return (
     <>
@@ -1232,11 +1256,14 @@ const Home = () => {
                     overflow: "hidden",
                     height: "100%",
                     border: "1px solid #e2e8f0", // Added border
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                    boxShadow:
+                      "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    transition:
+                      "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                      boxShadow:
+                        "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                     },
                   }}
                 >
@@ -1296,7 +1323,12 @@ const Home = () => {
                     </Box>
 
                     {loading ? (
-                      <Skeleton variant="rectangular" width="60%" height={60} sx={{ borderRadius: 1 }} />
+                      <Skeleton
+                        variant="rectangular"
+                        width="60%"
+                        height={60}
+                        sx={{ borderRadius: 1 }}
+                      />
                     ) : (
                       <Typography
                         variant="h3"
@@ -1313,7 +1345,9 @@ const Home = () => {
 
                     {/* Mini chart - Now using the MiniChart component */}
                     <AdminDashBoardMiniChart
-                      data={generateMiniChartData(card.category.replace("total", "").toLowerCase())}
+                      data={generateMiniChartData(
+                        card.category.replace("total", "").toLowerCase()
+                      )}
                       dataKey={card.category.replace("total", "").toLowerCase()}
                       color={card.color}
                       category={card.category}
@@ -1334,7 +1368,8 @@ const Home = () => {
                 borderRadius: "16px",
                 overflow: "hidden",
                 border: "1px solid #e2e8f0", // Added border
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               }}
             >
               <AdminDashBoardGrowthChart
@@ -1343,6 +1378,23 @@ const Home = () => {
                 loading={loading}
                 CustomTooltip={CustomTooltip}
               />
+            </Paper>
+          </Grid>
+        </Grid>
+        <Grid container spacing={3} mb={4}>
+          {/* Main Chart - Now using the MainSchoolCHart component */}
+          <Grid item xs={12}>
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: "16px",
+                overflow: "hidden",
+                border: "1px solid #e2e8f0", // Added border
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              }}
+            >
+              <AdminDashBoardSchoolsChart />
             </Paper>
           </Grid>
         </Grid>
@@ -1357,7 +1409,8 @@ const Home = () => {
                 overflow: "hidden",
                 height: "100%",
                 border: "1px solid #e2e8f0", // Added border
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               }}
             >
               <Box
@@ -1389,7 +1442,8 @@ const Home = () => {
                 overflow: "hidden",
                 height: "100%",
                 border: "1px solid #e2e8f0", // Added border
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               }}
             >
               <Box
@@ -1414,7 +1468,7 @@ const Home = () => {
         </Grid>
       </Box>
     </>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

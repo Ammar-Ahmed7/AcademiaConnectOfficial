@@ -395,10 +395,16 @@ const TeacherListPage = () => {
   const fetchTeachers = async () => {
     setLoading(true);
     try {
+      // const { data, error } = await supabase
+      //   .from("Teacher")
+      //   .select("*")
+      //   .order("TeacherID", { ascending: true });
+
       const { data, error } = await supabase
         .from("Teacher")
-        .select("*")
+        .select("*, School:SchoolID(SchoolName)")
         .order("TeacherID", { ascending: true });
+
       if (error) {
         setErrorMessage("An error occurred while fetching the data.");
         throw error;
@@ -548,6 +554,9 @@ const TeacherListPage = () => {
                         <strong>School ID</strong>
                       </TableCell>
                       <TableCell>
+                        <strong>School Name</strong>
+                      </TableCell>
+                      <TableCell>
                         <strong>Hire Date</strong>
                       </TableCell>
                       <TableCell>
@@ -568,8 +577,12 @@ const TeacherListPage = () => {
                       <TableCell>
                         <strong>BPS</strong>
                       </TableCell>
-                     
-                     
+                      <TableCell>
+                        <strong>Transffered School</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Transfferred Date</strong>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -612,6 +625,8 @@ const TeacherListPage = () => {
                           <TableCell>{teacher.Qualification}</TableCell>
                           <TableCell>{teacher.ExperienceYear} years</TableCell>
                           <TableCell>{teacher.SchoolID}</TableCell>
+                          <TableCell>{teacher.School?.SchoolName || teacher.SchoolID}</TableCell>
+
                           <TableCell>
                             {new Date(teacher.HireDate).toLocaleDateString()}
                           </TableCell>
@@ -621,6 +636,8 @@ const TeacherListPage = () => {
                           <TableCell>{teacher.Post || "-"}</TableCell>
                           <TableCell>{teacher.TeacherSubject || "-"}</TableCell>
                           <TableCell>{teacher.BPS || "-"}</TableCell>
+                          <TableCell>{teacher.TransferedSchool || "-"}</TableCell>
+                          <TableCell>{teacher.TransferDate || "-"}</TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

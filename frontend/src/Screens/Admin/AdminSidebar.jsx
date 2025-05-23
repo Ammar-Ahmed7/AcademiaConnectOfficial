@@ -830,6 +830,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PendingIcon from "@mui/icons-material/Pending";
 import TaskIcon from "@mui/icons-material/Task";
+import TransferWithinAStationIcon from '@mui/icons-material/TransferWithinAStation';
 
 import supabase from "../../../supabase-client";
 
@@ -917,6 +918,15 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           icon: <EditIcon />,
           label: "Edit a Teacher",
           path: "/admin/edit-teacher",
+        },
+        {
+          icon: <DeleteIcon />,
+          label: "Delete Teacher",
+          path: "/admin/delete-teacher",
+        }, {
+          icon: <TransferWithinAStationIcon />,
+          label: "Transfer Teacher",
+          path: "/admin/transfer-teacher",
         },
       ],
     },

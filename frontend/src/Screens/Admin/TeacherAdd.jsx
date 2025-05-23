@@ -1802,7 +1802,7 @@ const TeacherAdd = () => {
                 color="primary"
                 fullWidth
               >
-                Submit
+                Add a Teacher
               </Button>
             </Grid>
           </Grid>

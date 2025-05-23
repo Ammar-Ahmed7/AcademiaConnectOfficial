@@ -59,9 +59,9 @@ const AdminDashBoardSchoolsChart = () => {
 
           // Fetch staff count (assuming you have a Staff table)
           const { count: staffCount } = await supabase
-            .from("Staff") // Adjust table name if different
+            .from("staff") // Adjust table name if different
             .select("*", { count: "exact", head: true })
-            .eq("SchoolID", school.SchoolID);
+            .eq("school_id", school.SchoolID);
 
           return {
             id: school.SchoolID,

@@ -93,6 +93,8 @@ import ReceivedReports from "./ReportsReceived"
 import PendingReports from "./ReportsPending"
 import SchoolStudentDetailsPage from "./SchoolStudentDetailsPage"
 import SchoolTeacherDetailsPage from "./SchoolTeacherDetailsPage"
+import TeacherDelete from "./TeacherDelete"
+import TransferTeacher from "./TeacherTransfer"
 
 const AdminTemplate = () => {
   const [collapsed, setCollapsed] = useState(false)
@@ -148,6 +150,9 @@ const AdminTemplate = () => {
             <Route path="/pending-reports" element={<PendingReports />} />
             <Route path="/school-student-details" element={<SchoolStudentDetailsPage />} />
             <Route path="/school-teacher-details" element={<SchoolTeacherDetailsPage />} />
+            <Route path="/transfer-teacher" element={<TransferTeacher />} />
+            <Route path="/delete-teacher" element={<TeacherDelete />} />
+
           </Routes>
         </div>
       </div>
