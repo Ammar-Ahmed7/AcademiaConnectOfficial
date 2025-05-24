@@ -560,15 +560,8 @@
 
 // export default SchoolTeacherDetailsPage
 
-
-
-
-
-
-
-
-import React, { useState, useEffect } from "react"
-import { useLocation } from "react-router-dom"
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Card,
@@ -594,7 +587,7 @@ import {
   Divider,
   Avatar,
   Tooltip,
-} from "@mui/material"
+} from "@mui/material";
 import {
   Search,
   ArrowBack,
@@ -612,62 +605,60 @@ import {
   AccountBalance,
   Class,
   Engineering,
-} from "@mui/icons-material"
-import ApartmentIcon from "@mui/icons-material/Apartment"
-import supabase from "../../../supabase-client"
-import { useNavigate } from "react-router-dom"
+} from "@mui/icons-material";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import supabase from "../../../supabase-client";
+import { useNavigate } from "react-router-dom";
 
 const SchoolStaffDetailsPage = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [staffMembers, setStaffMembers] = useState([])
-  const [filteredStaffMembers, setFilteredStaffMembers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [schoolInfo, setSchoolInfo] = useState(null)
-  const [expandedRows, setExpandedRows] = useState({})
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [staffMembers, setStaffMembers] = useState([]);
+  const [filteredStaffMembers, setFilteredStaffMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [schoolInfo, setSchoolInfo] = useState(null);
+  const [expandedRows, setExpandedRows] = useState({});
 
   // Get schoolId from URL query params
-  const queryParams = new URLSearchParams(location.search)
-  const schoolId = queryParams.get("schoolId")
+  const queryParams = new URLSearchParams(location.search);
+  const schoolId = queryParams.get("schoolId");
 
   useEffect(() => {
     if (schoolId) {
-      fetchAllStaff()
-      fetchSchoolInfo()
+      fetchAllStaff();
+      fetchSchoolInfo();
     } else {
-      setError("No school ID provided")
+      setError("No school ID provided");
     }
-  }, [schoolId])
+  }, [schoolId]);
 
   const fetchAllStaff = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Fetch teachers
       const { data: teacherData, error: teacherError } = await supabase
         .from("Teacher")
         .select("*")
         .eq("SchoolID", schoolId)
-        .order("HireDate", { ascending: false })
+        .order("HireDate", { ascending: false });
 
-      if (teacherError) throw teacherError
-      console.log("i am staff dtaa",teacherData, schoolId)
+      if (teacherError) throw teacherError;
 
       // Fetch staff
       const { data: staffData, error: staffError } = await supabase
         .from("staff")
         .select("*")
         .eq("school_id", schoolId)
-        .order("joining_date", { ascending: false })
-        console.log("i am staff dtaa",staffData)
+        .order("joining_date", { ascending: false });
 
-      if (staffError) throw staffError
+      if (staffError) throw staffError;
 
       // Transform teacher data to match the combined format
-      const transformedTeachers = teacherData.map(teacher => ({
+      const transformedTeachers = teacherData.map((teacher) => ({
         id: teacher.TeacherID, // Using TeacherID as unique identifier
         staffId: teacher.TeacherID,
         fullName: teacher.Name,
@@ -683,14 +674,15 @@ const SchoolStaffDetailsPage = () => {
         bps: teacher.BPS,
         joiningDate: teacher.HireDate,
         status: teacher.EmployementStatus,
+        employeetype: teacher.EmployeeType,
         disability: teacher.Disability,
         disabilityDetails: teacher.DisabilityDetails,
         staffType: "teacher", // Flag to identify as teacher
-        originalData: teacher // Keep original data for reference
-      }))
+        originalData: teacher, // Keep original data for reference
+      }));
 
       // Transform staff data to match the combined format
-      const transformedStaff = staffData.map(staff => ({
+      const transformedStaff = staffData.map((staff) => ({
         id: staff.id, // Using UUID as unique identifier
         staffId: staff.employee_id,
         fullName: staff.full_name,
@@ -713,19 +705,20 @@ const SchoolStaffDetailsPage = () => {
         disability: staff.disability,
         disabilityDetails: staff.disability_details,
         staffType: "staff", // Flag to identify as non-teaching staff
-        originalData: staff // Keep original data for reference
-      }))
+        originalData: staff, // Keep original data for reference
+      }));
 
       // Combine both datasets
-      const combinedStaff = [...transformedTeachers, ...transformedStaff]
-      setStaffMembers(combinedStaff)
-      setFilteredStaffMembers(combinedStaff)
+      const combinedStaff = [...transformedTeachers, ...transformedStaff];
+      console.log("Combined staff data:", combinedStaff);
+      setStaffMembers(combinedStaff);
+      setFilteredStaffMembers(combinedStaff);
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchSchoolInfo = async () => {
     try {
@@ -733,21 +726,21 @@ const SchoolStaffDetailsPage = () => {
         .from("School")
         .select("SchoolName, SchoolLevel")
         .eq("SchoolID", schoolId)
-        .single()
+        .single();
 
-      if (error) throw error
-      setSchoolInfo(data)
+      if (error) throw error;
+      setSchoolInfo(data);
     } catch (err) {
-      console.error("Error fetching school info:", err)
+      console.error("Error fetching school info:", err);
     }
-  }
+  };
 
   useEffect(() => {
     if (searchTerm === "") {
-      setFilteredStaffMembers(staffMembers)
+      setFilteredStaffMembers(staffMembers);
     } else {
       const filtered = staffMembers.filter((staff) => {
-        const searchLower = searchTerm.toLowerCase()
+        const searchLower = searchTerm.toLowerCase();
         return (
           staff.fullName?.toLowerCase().includes(searchLower) ||
           staff.staffId?.toLowerCase().includes(searchLower) ||
@@ -756,49 +749,49 @@ const SchoolStaffDetailsPage = () => {
           staff.phoneNumber?.toString().includes(searchTerm) ||
           staff.position?.toLowerCase().includes(searchLower) ||
           staff.department?.toLowerCase().includes(searchLower)
-        )
-      })
-      setFilteredStaffMembers(filtered)
+        );
+      });
+      setFilteredStaffMembers(filtered);
     }
-    setPage(0)
-  }, [searchTerm, staffMembers])
+    setPage(0);
+  }, [searchTerm, staffMembers]);
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage)
-  }
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(Number.parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const toggleRowExpansion = (id) => {
     setExpandedRows((prev) => ({
       ...prev,
       [id]: !prev[id],
-    }))
-  }
+    }));
+  };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "-"
-    const date = new Date(dateString)
-    return date.toLocaleDateString()
-  }
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
 
   // Get initials for avatar
   const getInitials = (name) => {
-    if (!name) return "?"
+    if (!name) return "?";
     return name
       .split(" ")
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .substring(0, 2)
-  }
+      .substring(0, 2);
+  };
 
   // Get color based on name (for consistent avatar colors)
   const getAvatarColor = (name) => {
-    if (!name) return "#757575"
+    if (!name) return "#757575";
     const colors = [
       "#1976d2",
       "#388e3c",
@@ -812,15 +805,15 @@ const SchoolStaffDetailsPage = () => {
       "#ef6c00",
       "#6d4c41",
       "#455a64",
-    ]
-    const charCode = name.charCodeAt(0) || 0
-    return colors[charCode % colors.length]
-  }
+    ];
+    const charCode = name.charCodeAt(0) || 0;
+    return colors[charCode % colors.length];
+  };
 
   // Get staff type chip color
   const getStaffTypeColor = (staffType) => {
-    return staffType === "teacher" ? "primary" : "secondary"
-  }
+    return staffType === "teacher" ? "primary" : "secondary";
+  };
 
   if (error) {
     return (
@@ -889,7 +882,7 @@ const SchoolStaffDetailsPage = () => {
           </Button>
         </Paper>
       </Box>
-    )
+    );
   }
 
   return (
@@ -905,10 +898,20 @@ const SchoolStaffDetailsPage = () => {
             gap={2}
           >
             <Box>
-              <Typography variant="h4" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography
+                variant="h4"
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              >
                 Staff for {schoolInfo ? schoolInfo.SchoolName : "School"}
               </Typography>
-              {schoolInfo && <Chip label={schoolInfo.SchoolLevel} color="primary" size="small" sx={{ mt: 1 }} />}
+              {schoolInfo && (
+                <Chip
+                  label={schoolInfo.SchoolLevel}
+                  color="primary"
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              )}
             </Box>
             <Button
               startIcon={<ArrowBack />}
@@ -953,10 +956,19 @@ const SchoolStaffDetailsPage = () => {
           ) : (
             <>
               <Box sx={{ borderRadius: "8px", overflow: "hidden" }}>
-                <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #e0e0e0" }}>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  sx={{ border: "1px solid #e0e0e0" }}
+                >
                   <Table>
                     <TableHead>
-                      <TableRow sx={{ bgcolor: "primary.light", "& th": { color: "primary.contrastText" } }}>
+                      <TableRow
+                        sx={{
+                          bgcolor: "primary.light",
+                          "& th": { color: "primary.contrastText" },
+                        }}
+                      >
                         <TableCell width="50px"></TableCell>
                         <TableCell>
                           <strong>Staff ID</strong>
@@ -980,193 +992,423 @@ const SchoolStaffDetailsPage = () => {
                     </TableHead>
                     <TableBody>
                       {filteredStaffMembers.length > 0 ? (
-                        filteredStaffMembers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((staff) => (
-                          <React.Fragment key={staff.id}>
-                            <TableRow
-                              hover
-                              sx={{
-                                "&:hover": {
-                                  bgcolor: "action.hover",
-                                  cursor: "pointer",
-                                },
-                              }}
-                              onClick={() => toggleRowExpansion(staff.id)}
-                            >
-                              <TableCell>
-                                <IconButton size="small" color="primary">
-                                  {expandedRows[staff.id] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                                </IconButton>
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {staff.staffId}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                  <Avatar
+                        filteredStaffMembers
+                          .slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage
+                          )
+                          .map((staff) => (
+                            <React.Fragment key={staff.id}>
+                              <TableRow
+                                hover
+                                sx={{
+                                  "&:hover": {
+                                    bgcolor: "action.hover",
+                                    cursor: "pointer",
+                                  },
+                                }}
+                                onClick={() => toggleRowExpansion(staff.id)}
+                              >
+                                <TableCell>
+                                  <IconButton size="small" color="primary">
+                                    {expandedRows[staff.id] ? (
+                                      <KeyboardArrowUp />
+                                    ) : (
+                                      <KeyboardArrowDown />
+                                    )}
+                                  </IconButton>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="medium"
+                                  >
+                                    {staff.staffId}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Box
                                     sx={{
-                                      width: 32,
-                                      height: 32,
-                                      bgcolor: getAvatarColor(staff.fullName),
-                                      fontSize: "0.875rem",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
                                     }}
                                   >
-                                    {getInitials(staff.fullName)}
-                                  </Avatar>
-                                  <Box>
-                                    <Typography variant="body2">{staff.fullName}</Typography>
-                                    <Chip 
-                                      label={staff.staffType === "teacher" ? "Teaching" : "Non-Teaching"} 
-                                      size="small" 
-                                      color={getStaffTypeColor(staff.staffType)}
-                                      sx={{ height: 20, fontSize: '0.6rem', mt: 0.5 }}
-                                    />
+                                    <Avatar
+                                      sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: getAvatarColor(staff.fullName),
+                                        fontSize: "0.875rem",
+                                      }}
+                                    >
+                                      {getInitials(staff.fullName)}
+                                    </Avatar>
+                                    <Box>
+                                      <Typography variant="body2">
+                                        {staff.fullName}
+                                      </Typography>
+                                      <Chip
+                                        label={
+                                          // staff.staffType === "teacher"
+                                          //   ? {staff.employeetype==="Teacher"? "Teaching": "Non-Teaching"}
+                                          //   : "Non-Teaching"
+                                          staff.staffType === "teacher"
+                                            ? staff.employeetype === "Teacher"
+                                              ? "Teaching"
+                                              : "Non-Teaching"
+                                            : "Non-Teaching"
+                                        }
+                                        size="small"
+                                        // color={getStaffTypeColor(
+                                        //   staff.staffType
+                                        // )}
+                                        sx={{
+                                          height: 20,
+                                          fontSize: "0.6rem",
+                                          mt: 0.5,
+                                        }}
+                                      />
+                                    </Box>
                                   </Box>
-                                </Box>
-                              </TableCell>
-                              <TableCell>{staff.cnic}</TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={staff.position}
-                                  size="small"
-                                  variant="outlined"
-                                  color="info"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 0.5,
-                                  }}
-                                >
-                                  <Phone fontSize="small" color="action" />
-                                  {staff.phoneNumber || "-"}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={staff.status}
-                                  color={
-                                    staff.status === "active"
-                                      ? "success"
-                                      : staff.status === "on leave"
+                                </TableCell>
+                                <TableCell>{staff.cnic}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={
+                                      staff.staffType === "teacher"
+                                        ? staff.employeetype === "Teacher"
+                                          ? staff.position
+                                          : staff.employeetype
+                                        : staff.position
+                                    }
+                                    size="small"
+                                    variant="outlined"
+                                    color="info"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <Phone fontSize="small" color="action" />
+                                    {staff.phoneNumber || "-"}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={staff.status}
+                                    color={
+                                      staff.staffType === "teacher"
+                                        ? staff.status === "Working"
+                                          ? "success"
+                                          : "error"
+                                        : staff.status === "active"
+                                        ? "success"
+                                        : staff.status === "on leave"
                                         ? "warning"
                                         : "error"
-                                  }
-                                  size="small"
-                                  sx={{ textTransform: "capitalize" }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-                                <Collapse in={expandedRows[staff.id]} timeout="auto" unmountOnExit>
-                                  <Box sx={{ margin: 2, p: 2, bgcolor: "#f8f9fa", borderRadius: "8px" }}>
-                                    <Typography
-                                      variant="h6"
-                                      gutterBottom
-                                      color="primary"
-                                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                                    }
+                                    size="small"
+                                    sx={{ textTransform: "capitalize" }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell
+                                  style={{ paddingBottom: 0, paddingTop: 0 }}
+                                  colSpan={7}
+                                >
+                                  <Collapse
+                                    in={expandedRows[staff.id]}
+                                    timeout="auto"
+                                    unmountOnExit
+                                  >
+                                    <Box
+                                      sx={{
+                                        margin: 2,
+                                        p: 2,
+                                        bgcolor: "#f8f9fa",
+                                        borderRadius: "8px",
+                                      }}
                                     >
-                                      <Badge /> Staff Details
-                                    </Typography>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={3}>
-                                      <Grid item xs={12} md={6}>
-                                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Cake fontSize="small" color="action" />
-                                            <strong>Date of Birth:</strong> {formatDate(staff.dateOfBirth)}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Wc fontSize="small" color="action" />
-                                            <strong>Gender:</strong> {staff.gender || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Person fontSize="small" color="action" />
-                                            <strong>Father Name:</strong> {staff.fatherName || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Work fontSize="small" color="action" />
-                                            <strong>Qualification:</strong> {staff.qualification || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <AccountBalance fontSize="small" color="action" />
-                                            <strong>BPS:</strong> {staff.bps || "-"}
-                                          </Typography>
-                                          {staff.staffType === "staff" && (
-                                            <>
-                                              <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <Engineering fontSize="small" color="action" />
-                                                <strong>Department:</strong> {staff.department || "-"}
-                                              </Typography>
-                                              <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <Work fontSize="small" color="action" />
-                                                <strong>Employment Type:</strong> {staff.employmentType || "-"}
-                                              </Typography>
-                                              <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <Work fontSize="small" color="action" />
-                                                <strong>Duty Hours:</strong> {staff.dutyHours || "-"}
-                                              </Typography>
-                                              <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <AccountBalance fontSize="small" color="action" />
-                                                <strong>Salary:</strong> {staff.salary ? `Rs. ${staff.salary}` : "-"}
-                                              </Typography>
-                                            </>
-                                          )}
-                                        </Box>
-                                      </Grid>
-                                      <Grid item xs={12} md={6}>
-                                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Home fontSize="small" color="action" />
-                                            <strong>Address:</strong> {staff.address || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Phone fontSize="small" color="action" />
-                                            <strong>Phone:</strong> {staff.phoneNumber || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <School fontSize="small" color="action" />
-                                            <strong>Email:</strong> {staff.email || "-"}
-                                          </Typography>
-                                          <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Class fontSize="small" color="action" />
-                                            <strong>Joining Date:</strong> {formatDate(staff.joiningDate)}
-                                          </Typography>
-                                          {staff.disability === "Yes" && (
-                                            <Tooltip title={staff.disabilityDetails || "No details provided"}>
-                                              <Chip
-                                                icon={<MedicalInformation />}
-                                                label={`Details: ${staff.disabilityDetails || "Not specified"}`}
-                                                variant="outlined"
-                                                color="warning"
+                                      <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        color="primary"
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                        }}
+                                      >
+                                        <Badge /> Staff Details
+                                      </Typography>
+                                      <Divider sx={{ mb: 2 }} />
+                                      <Grid container spacing={3}>
+                                        <Grid item xs={12} md={6}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              gap: 1.5,
+                                            }}
+                                          >
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Cake
+                                                fontSize="small"
+                                                color="action"
                                               />
-                                            </Tooltip>
-                                          )}
-                                        </Box>
+                                              <strong>Date of Birth:</strong>{" "}
+                                              {formatDate(staff.dateOfBirth)}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Wc
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Gender:</strong>{" "}
+                                              {staff.gender || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Person
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Father Name:</strong>{" "}
+                                              {staff.fatherName || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Work
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Qualification:</strong>{" "}
+                                              {staff.qualification || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <AccountBalance
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>BPS:</strong>{" "}
+                                              {staff.bps || "-"}
+                                            </Typography>
+                                            {staff.staffType === "staff" && (
+                                              <>
+                                                <Typography
+                                                  sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                  }}
+                                                >
+                                                  <Engineering
+                                                    fontSize="small"
+                                                    color="action"
+                                                  />
+                                                  <strong>Department:</strong>{" "}
+                                                  {staff.department || "-"}
+                                                </Typography>
+                                                <Typography
+                                                  sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                  }}
+                                                >
+                                                  <Work
+                                                    fontSize="small"
+                                                    color="action"
+                                                  />
+                                                  <strong>
+                                                    Employment Type:
+                                                  </strong>{" "}
+                                                  {staff.employmentType || "-"}
+                                                </Typography>
+                                                <Typography
+                                                  sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                  }}
+                                                >
+                                                  <Work
+                                                    fontSize="small"
+                                                    color="action"
+                                                  />
+                                                  <strong>Duty Hours:</strong>{" "}
+                                                  {staff.dutyHours || "-"}
+                                                </Typography>
+                                                <Typography
+                                                  sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1,
+                                                  }}
+                                                >
+                                                  <AccountBalance
+                                                    fontSize="small"
+                                                    color="action"
+                                                  />
+                                                  <strong>Salary:</strong>{" "}
+                                                  {staff.salary
+                                                    ? `Rs. ${staff.salary}`
+                                                    : "-"}
+                                                </Typography>
+                                              </>
+                                            )}
+                                          </Box>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              gap: 1.5,
+                                            }}
+                                          >
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Home
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Address:</strong>{" "}
+                                              {staff.address || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Phone
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Phone:</strong>{" "}
+                                              {staff.phoneNumber || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <School
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Email:</strong>{" "}
+                                              {staff.email || "-"}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Class
+                                                fontSize="small"
+                                                color="action"
+                                              />
+                                              <strong>Joining Date:</strong>{" "}
+                                              {formatDate(staff.joiningDate)}
+                                            </Typography>
+                                            {staff.disability === "Yes" && (
+                                              <Tooltip
+                                                title={
+                                                  staff.disabilityDetails ||
+                                                  "No details provided"
+                                                }
+                                              >
+                                                <Chip
+                                                  icon={<MedicalInformation />}
+                                                  label={`Details: ${
+                                                    staff.disabilityDetails ||
+                                                    "Not specified"
+                                                  }`}
+                                                  variant="outlined"
+                                                  color="warning"
+                                                />
+                                              </Tooltip>
+                                            )}
+                                          </Box>
+                                        </Grid>
                                       </Grid>
-                                    </Grid>
-                                  </Box>
-                                </Collapse>
-                              </TableCell>
-                            </TableRow>
-                          </React.Fragment>
-                        ))
+                                    </Box>
+                                  </Collapse>
+                                </TableCell>
+                              </TableRow>
+                            </React.Fragment>
+                          ))
                       ) : (
                         <TableRow>
                           <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                              <Person sx={{ fontSize: 48, color: "text.disabled" }} />
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 2,
+                              }}
+                            >
+                              <Person
+                                sx={{ fontSize: 48, color: "text.disabled" }}
+                              />
                               <Typography variant="h6" color="text.secondary">
                                 No staff members found
                               </Typography>
                               {searchTerm && (
-                                <Button variant="outlined" size="small" onClick={() => setSearchTerm("")}>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => setSearchTerm("")}
+                                >
                                   Clear Search
                                 </Button>
                               )}
@@ -1188,9 +1430,10 @@ const SchoolStaffDetailsPage = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 sx={{
                   borderTop: "none",
-                  ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows": {
-                    margin: 0,
-                  },
+                  ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                    {
+                      margin: 0,
+                    },
                 }}
               />
             </>
@@ -1198,7 +1441,7 @@ const SchoolStaffDetailsPage = () => {
         </CardContent>
       </Card>
     </Box>
-  )
-}
+  );
+};
 
-export default SchoolStaffDetailsPage
+export default SchoolStaffDetailsPage;

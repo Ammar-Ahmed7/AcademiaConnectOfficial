@@ -10,6 +10,10 @@ import {
   Button,
   Typography,
   Box,
+  Card,
+  IconButton,
+  Collapse,
+  Grid,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -19,11 +23,17 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import {
+  KeyboardArrowDown as ExpandMoreIcon,
+  KeyboardArrowUp as ExpandLessIcon,
+} from "@mui/icons-material";
 import supabase from "../../../supabase-client";
 
 function SchoolDelete() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedRows, setExpandedRows] = useState({});
+
   const [openDialog, setOpenDialog] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState(null);
   const [alert, setAlert] = useState({
@@ -74,6 +84,12 @@ function SchoolDelete() {
     }
   };
 
+  const toggleRow = (id) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
   const handleDeleteClick = (school) => {
     setSchoolToDelete(school);
     setOpenDialog(true);
@@ -143,59 +159,157 @@ function SchoolDelete() {
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Delete Schools
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-        Only schools not assigned to any teachers can be deleted
-      </Typography>
+      <Card
+        sx={{
+          width: "100%",
+          maxWidth: 1200,
+          padding: 4,
+          boxShadow: 6,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h4" gutterBottom>
+          Delete Schools
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+          Only schools not assigned to any teachers can be deleted
+        </Typography>
 
-      {loading && schools.length === 0 ? (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="200px"
-        >
-          <CircularProgress />
-        </Box>
-      ) : schools.length === 0 ? (
-        <Typography variant="body1">No deletable schools found</Typography>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>School Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {schools.map((school) => (
-                <TableRow key={school.SchoolID}>
-                  <TableCell>{school.SchoolID}</TableCell>
-                  <TableCell>{school.SchoolName}</TableCell>
-                  <TableCell>{school.Email}</TableCell>
-                  <TableCell>{school.PhoneNumber}</TableCell>
+        {loading && schools.length === 0 ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight="200px"
+          >
+            <CircularProgress />
+          </Box>
+        ) : schools.length === 0 ? (
+          <Typography variant="body1">No deletable schools found</Typography>
+        ) : (
+          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "#e0e0e0" }}>
+                  <TableCell />
+
                   <TableCell>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleDeleteClick(school)}
-                      disabled={loading}
-                    >
-                      Delete
-                    </Button>
+                    {" "}
+                    <strong>ID</strong>
+                  </TableCell>
+                  <TableCell>
+                    {" "}
+                    <strong> School Name</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Email</strong>
+                  </TableCell>
+                  <TableCell>
+                    {" "}
+                    <strong>Phone</strong>
+                  </TableCell>
+
+                  <TableCell>
+                    <strong>Actions</strong>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {schools.map((school) => (
+                  <React.Fragment key={school.SchoolID}>
+                    <TableRow>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => toggleRow(school.SchoolID)}
+                        >
+                          {expandedRows[school.SchoolID] ? (
+                            <ExpandLessIcon />
+                          ) : (
+                            <ExpandMoreIcon />
+                          )}
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>{school.SchoolID}</TableCell>
+                      <TableCell>{school.SchoolName}</TableCell>
+                      <TableCell>{school.Email}</TableCell>
+                      <TableCell>{school.PhoneNumber}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleDeleteClick(school)}
+                          disabled={loading}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell
+                        style={{ paddingBottom: 0, paddingTop: 0 }}
+                        colSpan={7}
+                      >
+                        <Collapse
+                          in={expandedRows[school.SchoolID]}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                          <Box margin={2}>
+                            <Grid container spacing={2}>
+                              <Grid item xs={12} md={6}>
+                                <Typography>
+                                  <strong>School Level:</strong>{" "}
+                                  {school.SchoolLevel}
+                                </Typography>
+                                <Typography>
+                                  <strong>Address:</strong>{" "}
+                                  {school.Address || "-"}
+                                </Typography>
+                                <Typography>
+                                  <strong>Established Year:</strong>{" "}
+                                  {school.EstablishedYear}
+                                </Typography>
+
+                                <Typography>
+                                  <strong>Recognized by Board:</strong>{" "}
+                                  {school.Recognizedbyboard || "-"}
+                                </Typography>
+                                <Typography>
+                                  <strong>Board Attestation id:</strong>{" "}
+                                  {school.BoardattestationId || "-"}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <Typography>
+                                  <strong>Library:</strong>{" "}
+                                  {school.Library ? "Yes" : "No"}
+                                </Typography>
+                                <Typography>
+                                  <strong>Sports Ground:</strong>{" "}
+                                  {school.SportsGround ? "Yes" : "No"}
+                                </Typography>
+                                <Typography>
+                                  <strong>Computer Lab:</strong>{" "}
+                                  {school.ComputerLab ? "Yes" : "No"}
+                                </Typography>
+                                <Typography>
+                                  <strong>Science Lab:</strong>{" "}
+                                  {school.ScienceLab ? "Yes" : "No"}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Card>
 
       {/* Confirmation Dialog */}
       <Dialog
