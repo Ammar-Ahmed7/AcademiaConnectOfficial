@@ -49,8 +49,9 @@ export default function StudentListPage() {
     { value: "father_name", label: "Father’s Name" },
     { value: "gender", label: "Gender" },
     { value: "city", label: "City" },
-    { value: "admission_class", label: "Admission Class" },
     { value: "registration_no", label: "Reg. No" },
+    { value: "school_id", label: "School ID" }, // ✅ NEW
+    { value: "School.SchoolName", label: "School Name" }, // ✅ NEW
     // add more as desired
   ];
 
@@ -64,7 +65,14 @@ export default function StudentListPage() {
     try {
       const { data, error } = await supabase
         .from("students")
-        .select("*")               // select all fields
+        .select(
+          `
+        *,
+        School:school_id (
+          SchoolName
+        )
+      `
+        )
         .order("full_name", { ascending: true });
 
       if (error) throw error;
@@ -87,7 +95,14 @@ export default function StudentListPage() {
     }
     const term = searchTerm.toLowerCase();
     const filteredList = students.filter((stu) => {
-      const fieldVal = (stu[filterField] || "").toString().toLowerCase();
+      // const fieldVal = (stu[filterField] || "").toString().toLowerCase();
+      let fieldVal = "";
+      if (filterField === "School.SchoolName") {
+        fieldVal = (stu.School?.SchoolName || "").toLowerCase();
+      } else {
+        fieldVal = (stu[filterField] || "").toString().toLowerCase();
+      }
+
       return fieldVal.includes(term);
     });
     setFiltered(filteredList);
@@ -173,130 +188,182 @@ export default function StudentListPage() {
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: "#e0e0e0" }}>
-                      <TableCell><strong>B-Form No</strong></TableCell>
-                      <TableCell><strong>Full Name</strong></TableCell>
-                      <TableCell><strong>DOB</strong></TableCell>
-                      <TableCell><strong>Gender</strong></TableCell>
-                      <TableCell><strong>Religion</strong></TableCell>
-                      <TableCell><strong>Res. Address</strong></TableCell>
-                      <TableCell><strong>City</strong></TableCell>
-                      <TableCell><strong>State</strong></TableCell>
-                      <TableCell><strong>Postal Code</strong></TableCell>
-                      <TableCell><strong>Postal Address</strong></TableCell>
-                      <TableCell><strong>Father’s Name</strong></TableCell>
-                      <TableCell><strong>Father CNIC</strong></TableCell>
-                      <TableCell><strong>Father Occupation</strong></TableCell>
-                      <TableCell><strong>Father Contact</strong></TableCell>
-                      <TableCell><strong>Father Email</strong></TableCell>
-                      <TableCell><strong>Mother Name</strong></TableCell>
-                      <TableCell><strong>Family Income</strong></TableCell>
-                      <TableCell><strong>Last School</strong></TableCell>
-                      <TableCell><strong>Leaving Reason</strong></TableCell>
-                      <TableCell><strong>Last Class</strong></TableCell>
-                      <TableCell><strong>Admission School</strong></TableCell>
-                      <TableCell><strong>Admission Class</strong></TableCell>
-                      <TableCell><strong>Academic Year</strong></TableCell>
-                      <TableCell><strong>Reg. No</strong></TableCell>
-                      <TableCell><strong>Admission Date</strong></TableCell>
-                      <TableCell><strong>Second Lang</strong></TableCell>
-                      <TableCell><strong>Sibling</strong></TableCell>
-                      <TableCell><strong>Sibling Name</strong></TableCell>
-                      <TableCell><strong>Blood Group</strong></TableCell>
-                      <TableCell><strong>Major Disability</strong></TableCell>
-                      <TableCell><strong>Other Disability</strong></TableCell>
-                      <TableCell><strong>Disability Cert #</strong></TableCell>
-                      <TableCell><strong>Allergies</strong></TableCell>
-                      <TableCell><strong>Emergency Contact</strong></TableCell>
-                      <TableCell><strong>Documents</strong></TableCell>
-                      <TableCell><strong>Declaration</strong></TableCell>
-                      <TableCell><strong>Declaration Date</strong></TableCell>
-                      <TableCell><strong>App #</strong></TableCell>
-                      <TableCell><strong>Approved</strong></TableCell>
-                      <TableCell><strong>Rejection Reason</strong></TableCell>
-                      <TableCell><strong>Class Allotted</strong></TableCell>
-                      <TableCell><strong>Principal</strong></TableCell>
-                      <TableCell><strong>Role</strong></TableCell>
-                      <TableCell><strong>Status</strong></TableCell>
-                      <TableCell><strong>Resignated?</strong></TableCell>
-                      <TableCell><strong>Resign Reason</strong></TableCell>
-                      <TableCell><strong>Resign Date</strong></TableCell>
-                      <TableCell><strong>Rusticated?</strong></TableCell>
-                      <TableCell><strong>Rust. Reason</strong></TableCell>
-                      <TableCell><strong>Rust. Date</strong></TableCell>
-                      <TableCell><strong>School ID</strong></TableCell>
-                      <TableCell><strong>Elective Group</strong></TableCell>
-                      <TableCell><strong>Quota</strong></TableCell>
-                      <TableCell><strong>Transport</strong></TableCell>
-                      <TableCell><strong>Route</strong></TableCell>
-                      <TableCell><strong>Created At</strong></TableCell>
-                      {/* add more if needed */}
+                      <TableCell>
+                        <strong>B-Form No</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Full Name</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>School ID</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>School Name</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>DOB</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Gender</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Religion</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Father’s Name</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Father CNIC</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Father Occupation</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Father Contact</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Father Email</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Mother Name</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Res. Address</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>City</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>State</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Postal Code</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Postal Address</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Admission Class</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Academic Year</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Reg. No</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Admission Date</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Sibling</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Blood Group</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Major Disability</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Other Disability</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Disability Cert #</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Allergies</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Emergency Contact</strong>
+                      </TableCell>
+
+                      <TableCell>
+                        <strong>Class Allotted</strong>
+                      </TableCell>
+
+                      <TableCell>
+                        <strong>Status</strong>
+                      </TableCell>
+
+                      <TableCell>
+                        <strong>Rusticated</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Rust. Reason</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Rust. Date</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Elective Group</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Quota</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Transport</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Route</strong>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
+
                   <TableBody>
                     {filtered
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
                       .map((stu) => (
                         <TableRow key={stu.id}>
                           <TableCell>{stu.b_form_no}</TableCell>
                           <TableCell>{stu.full_name}</TableCell>
+                          <TableCell>{stu.school_id}</TableCell>
+                          <TableCell>
+                            {stu.School?.SchoolName || "N/A"}
+                          </TableCell>
+
                           <TableCell>{stu.dob}</TableCell>
                           <TableCell>{stu.gender}</TableCell>
                           <TableCell>{stu.religion}</TableCell>
-                          <TableCell>{stu.residential_address}</TableCell>
-                          <TableCell>{stu.city}</TableCell>
-                          <TableCell>{stu.state}</TableCell>
-                          <TableCell>{stu.postal_code}</TableCell>
-                          <TableCell>{stu.postal_address}</TableCell>
                           <TableCell>{stu.father_name}</TableCell>
                           <TableCell>{stu.father_cnic}</TableCell>
                           <TableCell>{stu.father_occupation}</TableCell>
                           <TableCell>{stu.father_contact}</TableCell>
                           <TableCell>{stu.father_email}</TableCell>
                           <TableCell>{stu.mother_name}</TableCell>
-                          <TableCell>{stu.family_income}</TableCell>
-                          <TableCell>{stu.last_school}</TableCell>
-                          <TableCell>{stu.leaving_reason}</TableCell>
-                          <TableCell>{stu.last_class}</TableCell>
-                          <TableCell>{stu.admission_school}</TableCell>
+
+                          <TableCell>{stu.residential_address}</TableCell>
+                          <TableCell>{stu.city}</TableCell>
+                          <TableCell>{stu.state}</TableCell>
+                          <TableCell>{stu.postal_code}</TableCell>
+                          <TableCell>{stu.postal_address}</TableCell>
                           <TableCell>{stu.admission_class}</TableCell>
                           <TableCell>{stu.academic_year}</TableCell>
                           <TableCell>{stu.registration_no}</TableCell>
                           <TableCell>{stu.admission_date}</TableCell>
-                          <TableCell>{stu.second_language}</TableCell>
                           <TableCell>{stu.sibling}</TableCell>
-                          <TableCell>{stu.sibling_name}</TableCell>
                           <TableCell>{stu.blood_group}</TableCell>
                           <TableCell>{stu.major_disability}</TableCell>
                           <TableCell>{stu.other_disability}</TableCell>
                           <TableCell>{stu.disability_cert_no}</TableCell>
                           <TableCell>{stu.allergies}</TableCell>
                           <TableCell>{stu.emergency_contact}</TableCell>
-                          <TableCell>
-                            {JSON.stringify(stu.documents) || "-"}
-                          </TableCell>
-                          <TableCell>{stu.declaration ? "Yes" : "No"}</TableCell>
-                          <TableCell>{stu.declaration_date}</TableCell>
-                          <TableCell>{stu.application_number}</TableCell>
-                          <TableCell>{stu.admission_approved}</TableCell>
-                          <TableCell>{stu.rejection_reason}</TableCell>
+
                           <TableCell>{stu.class_allotted}</TableCell>
-                          <TableCell>{stu.principal_name}</TableCell>
-                          <TableCell>{stu.role}</TableCell>
+
                           <TableCell>{stu.status}</TableCell>
-                          <TableCell>{stu.is_resignated ? "Yes" : "No"}</TableCell>
-                          <TableCell>{stu.resignation_reason}</TableCell>
-                          <TableCell>{stu.resignation_date}</TableCell>
-                          <TableCell>{stu.is_rusticated ? "Yes" : "No"}</TableCell>
+
+                          <TableCell>
+                            {stu.is_rusticated ? "Yes" : "No"}
+                          </TableCell>
                           <TableCell>{stu.rusticate_reason}</TableCell>
                           <TableCell>{stu.rustication_date}</TableCell>
-                          <TableCell>{stu.school_id}</TableCell>
+
                           <TableCell>{stu.elective_group}</TableCell>
                           <TableCell>{stu.quota}</TableCell>
                           <TableCell>{stu.transport ? "Yes" : "No"}</TableCell>
                           <TableCell>{stu.route}</TableCell>
-                          <TableCell>
-                            {new Date(stu.created_at).toLocaleString()}
-                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

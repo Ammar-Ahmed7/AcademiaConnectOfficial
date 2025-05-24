@@ -820,6 +820,7 @@
 // };
 
 // export default TeacherAdd;
+
 import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -836,7 +837,13 @@ import {
   Typography,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
+import InputMask from "react-input-mask";
 import supabase from "../../../supabase-client";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -848,9 +855,10 @@ const TeacherAdd = () => {
     message: "",
     severity: "",
   });
-
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
   useEffect(() => {
     fetchSchools();
@@ -869,36 +877,6 @@ const TeacherAdd = () => {
       showAlert("Failed to load schools!", "error");
     }
   };
-  // const generateTeacherID = async (schoolId) => {
-  //   if (!schoolId) return;
-
-  //   const formattedSchoolId = schoolId.replace(/-/g, ""); // S-B-01 -> SB01
-  //   const prefix = `T-${formattedSchoolId}-`;
-
-  //   try {
-  //     const { data, error } = await supabase
-  //       .from("Teacher")
-  //       .select("TeacherID")
-  //       .like("TeacherID", `${prefix}%`);
-
-  //     if (error) throw error;
-
-  //     const existingIds = data.map((entry) =>
-  //       parseInt(entry.TeacherID.split("-").pop(), 10)
-  //     );
-  //     console.log("i am prefix", prefix, schoolId);
-
-  //     const nextNumber = (Math.max(...existingIds, 0) + 1)
-  //       .toString()
-  //       .padStart(2, "0");
-
-  //     const newId = `${prefix}${nextNumber}`;
-  //     formik.setFieldValue("ID", newId);
-  //   } catch (err) {
-  //     console.error("Failed to generate Teacher ID:", err);
-  //     showAlert("Failed to generate Teacher ID", "error");
-  //   }
-  // };
 
   const generateTeacherID = async (schoolId) => {
     if (!schoolId) return;
@@ -945,31 +923,89 @@ const TeacherAdd = () => {
       .matches(/^[A-Za-z\s]+$/, "Only alphabets and spaces are allowed")
       .required("Name is required"),
 
+    // cnic: Yup.string()
+    //   .matches(/^\d{13}$/, "CNIC must be 13 digits and contain only numbers")
+    //   .required("CNIC is required")
+    //   .test(
+    //     "unique-cnic",
+    //     "This CNIC is already registered with another teacher",
+    //     async function (value) {
+    //       if (!value) return true;
+    //       const { TeacherID } = this.parent;
+    //       if (!TeacherID) return true;
+
+    //       try {
+    //         const { data, error } = await supabase
+    //           .from("Teacher")
+    //           .select("CNIC")
+    //           .eq("CNIC", value)
+    //           .neq("TeacherID", TeacherID);
+
+    //         if (error) throw error;
+    //         return data.length === 0; // true = valid (no other teacher has this CNIC)
+    //       } catch (error) {
+    //         console.error("Error checking CNIC:", error);
+    //         return this.createError({
+    //           message: "Could not validate CNIC",
+    //         });
+    //       }
+    //     }
+    //   ),
+    //   cnic: Yup.string()
+    // // .matches(
+    // //   /^\d{5}-\d{7}-\d{1}$/,
+    // //   "CNIC must be in format 31102-5522345-9 (13 digits with 2 dashes)"
+    // // )
+    // .required("CNIC is required")
+    // .test(
+    //   "unique-cnic",
+    //   "This CNIC is already registered with another teacher",
+    //   async function (value) {
+    //     if (!value) return true;
+
+    //     // Remove dashes for the database check
+    //     const rawCNIC = value.replace(/\D/g, '');
+    //     const { TeacherID } = this.parent;
+
+    //     try {
+    //       const { data, error } = await supabase
+    //         .from("Teacher")
+    //         .select("CNIC")
+    //         .eq("CNIC", rawCNIC)
+    //         .neq("TeacherID", TeacherID || "");
+
+    //       if (error) throw error;
+    //       return data.length === 0;
+    //     } catch (error) {
+    //       console.error("Error checking CNIC:", error);
+    //       return this.createError({
+    //         message: "Could not validate CNIC uniqueness",
+    //       });
+    //     }
+    //   }
+    // ),
+
     cnic: Yup.string()
-      .matches(/^\d{13}$/, "CNIC must be 13 digits and contain only numbers")
       .required("CNIC is required")
+      .matches(
+        /^\d{5}-\d{7}-\d{1}$/, // Validates XXXXX-XXXXXXX-X format
+        "CNIC must be in format 31102-1234567-9 (13 digits with dashes)"
+      )
       .test(
         "unique-cnic",
-        "This CNIC is already registered with another teacher",
+        "This CNIC is already registered",
         async function (value) {
           if (!value) return true;
-          const { TeacherID } = this.parent;
-          if (!TeacherID) return true;
-
           try {
             const { data, error } = await supabase
               .from("Teacher")
               .select("CNIC")
-              .eq("CNIC", value)
-              .neq("TeacherID", TeacherID);
-
+              .eq("CNIC", value); // Checks exact formatted CNIC (with dashes)
             if (error) throw error;
-            return data.length === 0; // true = valid (no other teacher has this CNIC)
+            return data.length === 0; // True if CNIC doesn't exist
           } catch (error) {
-            console.error("Error checking CNIC:", error);
-            return this.createError({
-              message: "Could not validate CNIC",
-            });
+            console.error("CNIC validation error:", error);
+            return false;
           }
         }
       ),
@@ -1026,7 +1062,8 @@ const TeacherAdd = () => {
             const { data, error } = await supabase
               .from("Teacher")
               .select("PhoneNumber")
-              .eq("PhoneNumber", value);
+              .eq("PhoneNumber", value)
+              ;
 
             if (error) throw error;
 
@@ -1101,7 +1138,9 @@ const TeacherAdd = () => {
               .from("Teacher")
               .select("*")
               .eq("SchoolID", SchoolId)
-              .eq("EmployeeType", "Principal");
+              .eq("EmployeeType", "Principal")
+              .neq("EmployementStatus", "Transferred")
+              ;
 
             if (error) throw error;
             return data.length === 0; // true = valid (no existing principal)
@@ -1122,8 +1161,27 @@ const TeacherAdd = () => {
       .required("FatherName is required"),
     domicile: Yup.string().required("Domicile is required"),
     bps: Yup.string().required("BPS is required"),
-    teachersubject: Yup.string().required("Teacher subject is required"),
-    post: Yup.string().required("Post is required"),
+
+    teachersubject: Yup.string().when(
+      "employeetype",
+      (employeetype, schema) => {
+        const type = Array.isArray(employeetype)
+          ? employeetype[0]
+          : employeetype;
+
+        return typeof type === "string" &&
+          type.trim().toLowerCase() === "teacher"
+          ? schema.required("Teacher subject is required")
+          : schema;
+      }
+    ),
+    post: Yup.string().when("employeetype", (employeetype, schema) => {
+      const type = Array.isArray(employeetype) ? employeetype[0] : employeetype;
+
+      return typeof type === "string" && type.trim().toLowerCase() === "teacher"
+        ? schema.required("Post  is required")
+        : schema;
+    }),
   });
 
   const calculateAge = (dob) => {
@@ -1164,13 +1222,27 @@ const TeacherAdd = () => {
       post: "",
     },
     validationSchema,
+
     onSubmit: async (values) => {
+      setLoading(true);
       try {
         if (!values.email || !values.password) {
           showAlert("Email and Password are required.", "error");
           return;
         }
 
+        // STEP 1: Store current admin session BEFORE auth operations
+        const {
+          data: { session: currentAdminSession },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+        if (sessionError || !currentAdminSession) {
+          showAlert("Admin session not found. Please login again.", "error");
+          return;
+        }
+        console.log("Admin session stored successfully");
+
+        // STEP 2: Create the auth user (this will change the current session)
         const { data: authData, error: authError } = await supabase.auth.signUp(
           {
             email: values.email,
@@ -1180,7 +1252,7 @@ const TeacherAdd = () => {
 
         if (authError) {
           console.error("Auth Error:", authError.message);
-          showAlert("Failed to create auth user. Try again!", "error");
+          showAlert("User Already exist aginst email. Try again!", "error");
           return;
         }
 
@@ -1196,7 +1268,22 @@ const TeacherAdd = () => {
         }
 
         const user = authData.user;
+        console.log("Auth user created successfully");
 
+        // STEP 3: IMMEDIATELY restore the admin session
+        const { error: restoreError } = await supabase.auth.setSession({
+          access_token: currentAdminSession.access_token,
+          refresh_token: currentAdminSession.refresh_token,
+        });
+
+        if (restoreError) {
+          console.error("Failed to restore admin session:", restoreError);
+          showAlert("Session restore failed. Please try again.", "error");
+          return;
+        }
+        console.log("Admin session restored successfully");
+
+        // STEP 4: Now insert teacher data with restored admin session
         const { error: teacherError } = await supabase.from("Teacher").insert([
           {
             TeacherID: values.ID,
@@ -1230,6 +1317,15 @@ const TeacherAdd = () => {
         if (teacherError) {
           console.error("Error adding Teacher:", teacherError.message);
           showAlert("Failed to add teacher. Try again!", "error");
+
+          // Optional: Clean up the auth user if teacher creation failed
+          // Note: This requires admin privileges
+          try {
+            await supabase.auth.admin?.deleteUser(user.id);
+            console.log("Cleaned up auth user due to teacher creation failure");
+          } catch (cleanupError) {
+            console.warn("Could not clean up auth user:", cleanupError);
+          }
         } else {
           showAlert("Teacher added successfully!", "success");
           formik.resetForm({
@@ -1242,6 +1338,29 @@ const TeacherAdd = () => {
       } catch (error) {
         console.error("Error in form submission:", error);
         showAlert("An unexpected error occurred", "error");
+
+        // Try to restore admin session in case of any error
+        try {
+          const {
+            data: { session: fallbackSession },
+          } = await supabase.auth.getSession();
+          if (!fallbackSession) {
+            console.warn(
+              "No session found after error - admin may need to re-login"
+            );
+            showAlert(
+              "Session lost. Please refresh and login again.",
+              "warning"
+            );
+          }
+        } catch (sessionCheckError) {
+          console.error(
+            "Failed to check session after error:",
+            sessionCheckError
+          );
+        }
+      } finally {
+        setLoading(false); // Re-enable button when done (success or error)
       }
     },
   });
@@ -1273,6 +1392,22 @@ const TeacherAdd = () => {
       }
     }
   }, [formik.values.employeetype, formik.values.post]);
+
+  const handleSubmitClick = () => {
+    console.log("Validating form...");
+    formik.validateForm().then((errors) => {
+      console.log("Validating form...", errors);
+
+      if (Object.keys(errors).length === 0) {
+        setOpenConfirmDialog(true); // Open dialog if no errors
+      }
+    });
+  };
+
+  const handleConfirmSubmit = () => {
+    setOpenConfirmDialog(false);
+    formik.handleSubmit(); // Proceed with submission
+  };
 
   return (
     <Box
@@ -1336,17 +1471,27 @@ const TeacherAdd = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="CNIC"
-                fullWidth
-                name="cnic"
+              <InputMask
+                mask="99999-9999999-9" // Forces XXXXX-XXXXXXX-X format
                 value={formik.values.cnic}
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  formik.setFieldValue("cnic", e.target.value); // Stores with dashes
+                }}
                 onBlur={formik.handleBlur}
-                error={formik.touched.cnic && Boolean(formik.errors.cnic)}
-                helperText={formik.touched.cnic && formik.errors.cnic}
-                required
-              />
+              >
+                {(inputProps) => (
+                  <TextField
+                    {...inputProps}
+                    label="CNIC"
+                    fullWidth
+                    name="cnic"
+                    error={formik.touched.cnic && Boolean(formik.errors.cnic)}
+                    helperText={formik.touched.cnic && formik.errors.cnic}
+                    required
+                    placeholder="31102-1234567-9"
+                  />
+                )}
+              </InputMask>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -1436,6 +1581,9 @@ const TeacherAdd = () => {
                 helperText={
                   formik.touched.dateOfBirth && formik.errors.dateOfBirth
                 }
+                inputProps={{
+                  max: new Date().toISOString().split("T")[0], // Sets max date to today
+                }}
                 required
               />
             </Grid>
@@ -1796,13 +1944,33 @@ const TeacherAdd = () => {
             </Grid>
             {/* Submit Button */}
             <Grid item xs={12}>
-              <Button
+              {/* <Button
                 type="submit"
                 variant="contained"
                 color="primary"
                 fullWidth
               >
                 Add a Teacher
+              </Button> */}
+
+              {/* <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={loading} // Disable when loading
+              >
+                {loading ? "Adding..." : "Add a Teacher"}
+              </Button> */}
+
+              <Button
+                onClick={handleSubmitClick} // Not formik.handleSubmit
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={loading}
+              >
+                {loading ? "Adding..." : "Add Teacher"}
               </Button>
             </Grid>
           </Grid>
@@ -1818,6 +1986,41 @@ const TeacherAdd = () => {
           {alert.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+      >
+        <DialogTitle>Confirm Teacher Registration</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to add this teacher?
+            <br />
+            <br />
+            <strong>Name:</strong> {formik.values.name}
+            <br />
+            <strong>CNIC:</strong> {formik.values.cnic}
+            <br />
+            <strong>School:</strong>{" "}
+            {
+              schools.find((s) => s.SchoolID === formik.values.SchoolId)
+                ?.SchoolName
+            }
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmSubmit}
+            color="primary"
+            variant="contained"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

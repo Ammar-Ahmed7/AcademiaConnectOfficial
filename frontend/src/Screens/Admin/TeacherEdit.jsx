@@ -813,6 +813,7 @@
 // };
 
 // export default EditTeacher;
+
 import React, { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -830,8 +831,14 @@ import {
   Alert,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import supabase from "../../../supabase-client";
+import InputMask from "react-input-mask";
 
 const EditTeacher = () => {
   const [schoolList, setSchoolList] = useState([]);
@@ -844,29 +851,42 @@ const EditTeacher = () => {
     message: "",
     severity: "",
   });
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
   // Validation Schema with unique CNIC validation
   const validationSchema = Yup.object().shape({
     CNIC: Yup.string()
-      .matches(/^\d{13}$/, "CNIC must be 13 digits and contain only numbers")
+      // .matches(/^\d{13}$/, "CNIC must be 13 digits and contain only numbers")
+      .matches(
+        /^\d{5}-\d{7}-\d{1}$/, // Validates XXXXX-XXXXXXX-X format
+        "CNIC must be in format 31102-1234567-9 (13 digits with dashes)"
+      )
       .required("CNIC is required")
       .test(
         "unique-cnic",
         "This CNIC is already registered with another teacher",
         async function (value) {
           if (!value) return true;
-          const { TeacherID } = this.parent;
+          const { TeacherID, DateOfBirth } = this.parent;
           if (!TeacherID) return true;
 
           try {
             const { data, error } = await supabase
               .from("Teacher")
-              .select("CNIC")
+              .select("CNIC, DateOfBirth")
               .eq("CNIC", value)
+              .neq("EmployementStatus", "Transferred")
+
               .neq("TeacherID", TeacherID);
 
             if (error) throw error;
-            return data.length === 0; // true = valid (no other teacher has this CNIC)
+
+            // Filter out entries with the same dateOfBirth
+            const trulyDifferent = data.filter(
+              (rec) => rec.DateOfBirth !== DateOfBirth
+            );
+
+            return trulyDifferent.length === 0;
           } catch (error) {
             console.error("Error checking CNIC:", error);
             return this.createError({
@@ -875,6 +895,34 @@ const EditTeacher = () => {
           }
         }
       ),
+    //   }
+    // ),
+
+    // .test(
+    //   "unique-cnic",
+    //   "This CNIC is already registered with another teacher",
+    //   async function (value) {
+    //     if (!value) return true;
+    //     const { TeacherID } = this.parent;
+    //     if (!TeacherID) return true;
+
+    //     try {
+    //       const { data, error } = await supabase
+    //         .from("Teacher")
+    //         .select("CNIC")
+    //         .eq("CNIC", value)
+    //         .neq("TeacherID", TeacherID);
+
+    //       if (error) throw error;
+    //       return data.length === 0; // true = valid (no other teacher has this CNIC)
+    //     } catch (error) {
+    //       console.error("Error checking CNIC:", error);
+    //       return this.createError({
+    //         message: "Could not validate CNIC",
+    //       });
+    //     }
+    //   }
+    // ),
     Name: Yup.string()
       .matches(/^[A-Za-z\s]+$/, "Only alphabets and spaces are allowed")
       .required("Name is required"),
@@ -889,19 +937,30 @@ const EditTeacher = () => {
         "unique-phone",
         "This Phone Number is already registered with another teacher",
         async function (value) {
-          if (!value) return true;
-          const { TeacherID } = this.parent;
-          if (!TeacherID) return true;
+          if (!value) return true; // empty → skip
+          const { TeacherID, DateOfBirth } = this.parent;
+          if (!TeacherID) return true; // no ID yet → skip
 
           try {
+            // fetch any OTHER teachers with this phone number
             const { data, error } = await supabase
               .from("Teacher")
-              .select("PhoneNumber")
+              .select("PhoneNumber, DateOfBirth")
               .eq("PhoneNumber", value)
+              .neq("EmployementStatus", "Transferred")
+
               .neq("TeacherID", TeacherID);
 
             if (error) throw error;
-            return data.length === 0; // true = valid (no other teacher has this CNIC)
+
+            // filter out any that actually have the same dateOfBirth:
+            const trulyDifferent = data.filter(
+              (rec) => rec.DateOfBirth !== DateOfBirth
+            );
+
+            // if there's at least one record that has the same phone
+            // but a *different* date → fail
+            return trulyDifferent.length === 0;
           } catch (error) {
             console.error("Error checking Phone Number:", error);
             return this.createError({
@@ -910,6 +969,32 @@ const EditTeacher = () => {
           }
         }
       ),
+
+    // .test(
+    //   "unique-phone",
+    //   "This Phone Number is already registered with another teacher",
+    //   async function (value) {
+    //     if (!value) return true;
+    //     const { TeacherID } = this.parent;
+    //     if (!TeacherID) return true;
+
+    //     try {
+    //       const { data, error } = await supabase
+    //         .from("Teacher")
+    //         .select("PhoneNumber")
+    //         .eq("PhoneNumber", value)
+    //         .neq("TeacherID", TeacherID);
+
+    //       if (error) throw error;
+    //       return data.length === 0; // true = valid (no other teacher has this CNIC)
+    //     } catch (error) {
+    //       console.error("Error checking Phone Number:", error);
+    //       return this.createError({
+    //         message: "Could not validate Phone Number",
+    //       });
+    //     }
+    //   }
+    // ),
     Gender: Yup.string().required("Gender is required"),
     DateOfBirth: Yup.string().required("Date of birth is required"),
     Disability: Yup.string().required("Disability status is required"),
@@ -962,7 +1047,9 @@ const EditTeacher = () => {
               .select("*")
               .eq("SchoolID", SchoolID)
               .eq("EmployeeType", "Principal")
-              .neq("TeacherID", TeacherID);
+              .neq("TeacherID", TeacherID)
+              .neq("EmployementStatus", "Transferred")
+              ;
 
             if (error) throw error;
             return data.length === 0;
@@ -982,8 +1069,29 @@ const EditTeacher = () => {
       .required("FatherName is required"),
     Domicile: Yup.string().required("Domicile is required"),
     BPS: Yup.string().required("BPS is required"),
-    TeacherSubject: Yup.string().required("Teacher subject is required"),
-    Post: Yup.string().required("Post is required"),
+    // TeacherSubject: Yup.string().required("Teacher subject is required"),
+    // Post: Yup.string().required("Post is required"),
+
+    TeacherSubject: Yup.string().when(
+      "EmployeeType",
+      (EmployeeType, schema) => {
+        const type = Array.isArray(EmployeeType)
+          ? EmployeeType[0]
+          : EmployeeType;
+
+        return typeof type === "string" &&
+          type.trim().toLowerCase() === "teacher"
+          ? schema.required("Teacher subject is required")
+          : schema;
+      }
+    ),
+    Post: Yup.string().when("EmployeeType", (EmployeeType, schema) => {
+      const type = Array.isArray(EmployeeType) ? EmployeeType[0] : EmployeeType;
+
+      return typeof type === "string" && type.trim().toLowerCase() === "teacher"
+        ? schema.required("Post is required")
+        : schema;
+    }),
   });
 
   const calculateAge = (dob) => {
@@ -1016,7 +1124,6 @@ const EditTeacher = () => {
       EmployementStatus: "",
       EmployementType: "",
       Address: "",
-
       FatherName: "",
       Domicile: "",
       BPS: "",
@@ -1061,6 +1168,9 @@ const EditTeacher = () => {
           message: "Teacher updated successfully!",
           severity: "success",
         });
+
+        setSelectedSchool("");
+        setSelectedTeacher("");
 
         // Refresh teacher list for the current school to reflect any changes
         fetchTeachersBySchool();
@@ -1125,9 +1235,17 @@ const EditTeacher = () => {
         .from("Teacher")
         .select("TeacherID, Name")
         .eq("SchoolID", selectedSchool)
+        .neq("EmployementStatus", "Transferred")
         .order("TeacherID", { ascending: true });
 
       if (error) throw error;
+      if (data.length === 0) {
+        setAlert({
+          open: true,
+          message: "No teacher found in that school!",
+          severity: "success",
+        });
+      }
       setTeacherList(data);
     } catch (error) {
       console.error("Error fetching teachers:", error);
@@ -1213,7 +1331,21 @@ const EditTeacher = () => {
       }
     }
   }, [formik.values.EmployeeType, formik.values.Post]);
+  
+  const handleSubmitClick = () => {
+    console.log("Validating form...");
+    formik.validateForm().then((errors) => {
+      console.log("Validating form...", errors);
 
+      if (Object.keys(errors).length === 0) {
+        setOpenConfirmDialog(true); // Open dialog if no errors
+      }
+    });
+  };
+  const handleConfirmSubmit = () => {
+    setOpenConfirmDialog(false);
+    formik.handleSubmit(); // Proceed with submission
+  };
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   return (
@@ -1294,7 +1426,7 @@ const EditTeacher = () => {
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
+                {/* <TextField
                   label="CNIC"
                   fullWidth
                   name="CNIC"
@@ -1304,7 +1436,29 @@ const EditTeacher = () => {
                   error={formik.touched.CNIC && Boolean(formik.errors.CNIC)}
                   helperText={formik.touched.CNIC && formik.errors.CNIC}
                   required
-                />
+                /> */}
+
+                <InputMask
+                  mask="99999-9999999-9" // Forces XXXXX-XXXXXXX-X format
+                  value={formik.values.CNIC}
+                  onChange={(e) => {
+                    formik.setFieldValue("CNIC", e.target.value); // Stores with dashes
+                  }}
+                  onBlur={formik.handleBlur}
+                >
+                  {(inputProps) => (
+                    <TextField
+                      {...inputProps}
+                      label="CNIC"
+                      fullWidth
+                      name="CNIC"
+                      error={formik.touched.CNIC && Boolean(formik.errors.CNIC)}
+                      helperText={formik.touched.CNIC && formik.errors.CNIC}
+                      required
+                      placeholder="31102-1234567-9"
+                    />
+                  )}
+                </InputMask>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -1410,62 +1564,65 @@ const EditTeacher = () => {
                   helperText={
                     formik.touched.DateOfBirth && formik.errors.DateOfBirth
                   }
+                  inputProps={{
+                    max: new Date().toISOString().split("T")[0], // Sets max date to today
+                  }}
                   required
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth required>
-                              <InputLabel>Domicile</InputLabel>
-                              <Select
-                                label="Domicile"
-                                name="Domicile"
-                                value={formik.values.Domicile}
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                error={
-                                  formik.touched.Domicile && Boolean(formik.errors.Domicile)
-                                }
-                              >
-                                <MenuItem value="Attock">Attock</MenuItem>
-                                <MenuItem value="Bahawalnagar">Bahawalnagar</MenuItem>
-                                <MenuItem value="Bahawalpur">Bahawalpur</MenuItem>
-                                <MenuItem value="Bhakkar">Bhakkar</MenuItem>
-                                <MenuItem value="Chakwal">Chakwal</MenuItem>
-                                <MenuItem value="Chiniot">Chiniot</MenuItem>
-                                <MenuItem value="Dera Ghazi Khan">Dera Ghazi Khan</MenuItem>
-                                <MenuItem value="Faisalabad">Faisalabad</MenuItem>
-                                <MenuItem value="Gujranwala">Gujranwala</MenuItem>
-                                <MenuItem value="Gujrat">Gujrat</MenuItem>
-                                <MenuItem value="Hafizabad">Hafizabad</MenuItem>
-                                <MenuItem value="Jhang">Jhang</MenuItem>
-                                <MenuItem value="Jhelum">Jhelum</MenuItem>
-                                <MenuItem value="Kasur">Kasur</MenuItem>
-                                <MenuItem value="Khanewal">Khanewal</MenuItem>
-                                <MenuItem value="Khushab">Khushab</MenuItem>
-                                <MenuItem value="Lahore">Lahore</MenuItem>
-                                <MenuItem value="Layyah">Layyah</MenuItem>
-                                <MenuItem value="Lodhran">Lodhran</MenuItem>
-                                <MenuItem value="Mandi Bahauddin">Mandi Bahauddin</MenuItem>
-                                <MenuItem value="Mianwali">Mianwali</MenuItem>
-                                <MenuItem value="Multan">Multan</MenuItem>
-                                <MenuItem value="Muzaffargarh">Muzaffargarh</MenuItem>
-                                <MenuItem value="Narowal">Narowal</MenuItem>
-                                <MenuItem value="Nankana Sahib">Nankana Sahib</MenuItem>
-                                <MenuItem value="Okara">Okara</MenuItem>
-                                <MenuItem value="Pakpattan">Pakpattan</MenuItem>
-                                <MenuItem value="Rahim Yar Khan">Rahim Yar Khan</MenuItem>
-                                <MenuItem value="Rajanpur">Rajanpur</MenuItem>
-                                <MenuItem value="Rawalpindi">Rawalpindi</MenuItem>
-                                <MenuItem value="Sahiwal">Sahiwal</MenuItem>
-                                <MenuItem value="Sargodha">Sargodha</MenuItem>
-                                <MenuItem value="Sheikhupura">Sheikhupura</MenuItem>
-                                <MenuItem value="Sialkot">Sialkot</MenuItem>
-                                <MenuItem value="Toba Tek Singh">Toba Tek Singh</MenuItem>
-                                <MenuItem value="Vehari">Vehari</MenuItem>
-                              </Select>
-                            </FormControl>
-                          </Grid>
-              
+                <FormControl fullWidth required>
+                  <InputLabel>Domicile</InputLabel>
+                  <Select
+                    label="Domicile"
+                    name="Domicile"
+                    value={formik.values.Domicile}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={
+                      formik.touched.Domicile && Boolean(formik.errors.Domicile)
+                    }
+                  >
+                    <MenuItem value="Attock">Attock</MenuItem>
+                    <MenuItem value="Bahawalnagar">Bahawalnagar</MenuItem>
+                    <MenuItem value="Bahawalpur">Bahawalpur</MenuItem>
+                    <MenuItem value="Bhakkar">Bhakkar</MenuItem>
+                    <MenuItem value="Chakwal">Chakwal</MenuItem>
+                    <MenuItem value="Chiniot">Chiniot</MenuItem>
+                    <MenuItem value="Dera Ghazi Khan">Dera Ghazi Khan</MenuItem>
+                    <MenuItem value="Faisalabad">Faisalabad</MenuItem>
+                    <MenuItem value="Gujranwala">Gujranwala</MenuItem>
+                    <MenuItem value="Gujrat">Gujrat</MenuItem>
+                    <MenuItem value="Hafizabad">Hafizabad</MenuItem>
+                    <MenuItem value="Jhang">Jhang</MenuItem>
+                    <MenuItem value="Jhelum">Jhelum</MenuItem>
+                    <MenuItem value="Kasur">Kasur</MenuItem>
+                    <MenuItem value="Khanewal">Khanewal</MenuItem>
+                    <MenuItem value="Khushab">Khushab</MenuItem>
+                    <MenuItem value="Lahore">Lahore</MenuItem>
+                    <MenuItem value="Layyah">Layyah</MenuItem>
+                    <MenuItem value="Lodhran">Lodhran</MenuItem>
+                    <MenuItem value="Mandi Bahauddin">Mandi Bahauddin</MenuItem>
+                    <MenuItem value="Mianwali">Mianwali</MenuItem>
+                    <MenuItem value="Multan">Multan</MenuItem>
+                    <MenuItem value="Muzaffargarh">Muzaffargarh</MenuItem>
+                    <MenuItem value="Narowal">Narowal</MenuItem>
+                    <MenuItem value="Nankana Sahib">Nankana Sahib</MenuItem>
+                    <MenuItem value="Okara">Okara</MenuItem>
+                    <MenuItem value="Pakpattan">Pakpattan</MenuItem>
+                    <MenuItem value="Rahim Yar Khan">Rahim Yar Khan</MenuItem>
+                    <MenuItem value="Rajanpur">Rajanpur</MenuItem>
+                    <MenuItem value="Rawalpindi">Rawalpindi</MenuItem>
+                    <MenuItem value="Sahiwal">Sahiwal</MenuItem>
+                    <MenuItem value="Sargodha">Sargodha</MenuItem>
+                    <MenuItem value="Sheikhupura">Sheikhupura</MenuItem>
+                    <MenuItem value="Sialkot">Sialkot</MenuItem>
+                    <MenuItem value="Toba Tek Singh">Toba Tek Singh</MenuItem>
+                    <MenuItem value="Vehari">Vehari</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required>
                   <InputLabel>Disability</InputLabel>
@@ -1693,76 +1850,72 @@ const EditTeacher = () => {
                     )}
                 </FormControl>
               </Grid>
-     {formik.values.EmployeeType === "Teacher" && (
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Post</InputLabel>
-                  <Select
-                    label="Post"
-                    name="post"
-                    value={formik.values.Post}
+              {formik.values.EmployeeType === "Teacher" && (
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Post</InputLabel>
+                    <Select
+                      label="Post"
+                      name="Post"
+                      value={formik.values.Post}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      error={formik.touched.Post && Boolean(formik.errors.Post)}
+                      required={formik.values.EmployeeType === "Teacher"}
+                    >
+                      <MenuItem value="Subject Specialist">
+                        Subject Specialist
+                      </MenuItem>
+                      <MenuItem value="S.S.T">S.S.T</MenuItem>
+                      <MenuItem value="S.S.E">S.S.E</MenuItem>
+                      <MenuItem value="Acting Principal">
+                        Acting Principal
+                      </MenuItem>
+                      <MenuItem value="S.S.T(I.T)">S.S.T(I.T)</MenuItem>
+                      <MenuItem value="Arabic Teacher">Arabic Teacher</MenuItem>
+                      <MenuItem value="E.S.T">E.S.T</MenuItem>
+                      <MenuItem value="E.S.E">E.S.E</MenuItem>
+                      <MenuItem value="P.T.I">P.T.I</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+
+              {formik.values.EmployeeType === "Teacher" && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Teacher Subject"
+                    fullWidth
+                    name="TeacherSubject"
+                    value={formik.values.TeacherSubject}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    error={formik.touched.Post && Boolean(formik.errors.Post)}
+                    error={
+                      formik.touched.TeacherSubject &&
+                      Boolean(formik.errors.TeacherSubject)
+                    }
+                    helperText={
+                      formik.touched.TeacherSubject &&
+                      formik.errors.TeacherSubject
+                    }
                     required={formik.values.EmployeeType === "Teacher"}
-                  >
-                    <MenuItem value="Subject Specialist">
-                      Subject Specialist
-                    </MenuItem>
-                    <MenuItem value="S.S.T">S.S.T</MenuItem>
-                    <MenuItem value="S.S.E">S.S.E</MenuItem>
-                    <MenuItem value="Acting Principal">
-                      Acting Principal
-                    </MenuItem>
-                    <MenuItem value="S.S.T(I.T)">S.S.T(I.T)</MenuItem>
-                    <MenuItem value="Arabic Teacher">Arabic Teacher</MenuItem>
-                    <MenuItem value="E.S.T">E.S.T</MenuItem>
-                    <MenuItem value="E.S.E">E.S.E</MenuItem>
-                    <MenuItem value="P.T.I">P.T.I</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            )}
-
-            {formik.values.EmployeeType === "Teacher" && (
+                  />
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Teacher Subject"
+                  label="BPS"
                   fullWidth
-                  name="teachersubject"
-                  value={formik.values.TeacherSubject}
+                  name="BPS"
+                  value={formik.values.BPS}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={
-                    formik.touched.TeacherSubject &&
-                    Boolean(formik.errors.TeacherSubject)
-                  }
-                  helperText={
-                    formik.touched.TeacherSubject &&
-                    formik.errors.TeacherSubject
-                  }
-                  required={formik.values.EmployeeType === "Teacher"}
+                  error={formik.touched.BPS && Boolean(formik.errors.BPS)}
+                  helperText={formik.touched.BPS && formik.errors.BPS}
+                  required
+                  disabled // Make it disabled since it's auto-calculated
                 />
               </Grid>
-            )}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="BPS"
-                fullWidth
-                name="BPS"
-                value={formik.values.BPS}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.BPS && Boolean(formik.errors.BPS)}
-                helperText={formik.touched.BPS && formik.errors.BPS}
-                required
-                disabled // Make it disabled since it's auto-calculated
-              />
-            </Grid>
-
-
-
-
 
               {/* Address Section */}
               <Grid item xs={12}>
@@ -1788,7 +1941,7 @@ const EditTeacher = () => {
 
               {/* Submit Button */}
               <Grid item xs={12}>
-                <Button
+                {/* <Button
                   type="submit"
                   variant="contained"
                   color="primary"
@@ -1796,7 +1949,17 @@ const EditTeacher = () => {
                   disabled={loading}
                 >
                   {loading ? <CircularProgress size={24} /> : "Update Teacher"}
-                </Button>
+                </Button> */}
+
+                 <Button
+                                onClick={handleSubmitClick} // Not formik.handleSubmit
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                disabled={loading}
+                              >
+                                {loading ? "Updating..." : "Update Teacher"}
+                              </Button>
               </Grid>
             </Grid>
           </form>
@@ -1816,6 +1979,38 @@ const EditTeacher = () => {
           {alert.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+      >
+        <DialogTitle>Confirm Teacher Updation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to update details of this teacher?
+            <br />
+            <br />
+            <strong>Name:</strong> {formik.values.Name}
+            <br />
+            <strong>CNIC:</strong> {formik.values.CNIC}
+            <br />
+            <br/>
+            It cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmSubmit}
+            color="primary"
+            variant="contained"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
