@@ -32,7 +32,7 @@ const ReceivedReports = () => {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [isSelectionComplete, setIsSelectionComplete] = useState(false);
-  
+
   // Original states
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
@@ -84,7 +84,7 @@ const ReceivedReports = () => {
 
   useEffect(() => {
     if (!isSelectionComplete) return;
-    
+
     if (searchTerm === "") {
       setFilteredReports(reports);
     } else {
@@ -129,7 +129,7 @@ const ReceivedReports = () => {
       const { data: schoolsData, error: schoolsError } = await supabase
         .from("School")
         .select("user_id, SchoolID, SchoolName");
-        
+
       if (schoolsError) throw schoolsError;
 
       // Convert schools array to object with user_id as key for easy lookup
@@ -157,7 +157,7 @@ const ReceivedReports = () => {
   // Fetch reports based on selected month and year
   const fetchReports = async () => {
     if (!selectedMonth && !selectedYear) return;
-    
+
     setIsLoading(true);
     try {
       // Fetch reports with month and year filter
@@ -166,7 +166,7 @@ const ReceivedReports = () => {
         .select("*")
         .eq("Month", selectedMonth)
         .eq("Year", selectedYear);
-        
+
       if (reportsError) throw reportsError;
 
       setReports(reportsData);
@@ -193,7 +193,7 @@ const ReceivedReports = () => {
       });
       return;
     }
-    
+
     fetchReports();
   };
 
@@ -328,9 +328,23 @@ const ReceivedReports = () => {
           </Typography>
 
           {/* Month and Year Selection UI */}
+
           <Grid container spacing={2} sx={{ mb: 3 }}>
+            {/* Month Select */}
             <Grid item xs={12} md={4}>
-              <FormControl fullWidth variant="outlined">
+              <FormControl
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: "56px",
+                    "& .MuiSelect-select": {
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                  },
+                }}
+              >
                 <InputLabel id="month-select-label">Month</InputLabel>
                 <Select
                   labelId="month-select-label"
@@ -348,8 +362,22 @@ const ReceivedReports = () => {
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Year Select */}
             <Grid item xs={12} md={4}>
-              <FormControl fullWidth variant="outlined">
+              <FormControl
+                fullWidth
+                variant="outlined"
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: "56px",
+                    "& .MuiSelect-select": {
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                  },
+                }}
+              >
                 <InputLabel id="year-select-label">Year</InputLabel>
                 <Select
                   labelId="year-select-label"
@@ -367,7 +395,14 @@ const ReceivedReports = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
+
+            {/* Button */}
+            <Grid
+              item
+              xs={12}
+              md={4}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
               {!isSelectionComplete ? (
                 <Button
                   variant="contained"
@@ -375,6 +410,11 @@ const ReceivedReports = () => {
                   fullWidth
                   onClick={handleViewReports}
                   disabled={selectedMonth === "" || selectedYear === ""}
+                  sx={{
+                    height: "56px",
+                    fontSize: "1rem",
+                    textTransform: "none",
+                  }}
                 >
                   View Reports
                 </Button>
@@ -384,6 +424,11 @@ const ReceivedReports = () => {
                   color="primary"
                   fullWidth
                   onClick={handleResetSelection}
+                  sx={{
+                    height: "56px",
+                    fontSize: "1rem",
+                    textTransform: "none",
+                  }}
                 >
                   Change Selection
                 </Button>
@@ -480,7 +525,9 @@ const ReceivedReports = () => {
                               const school = schools[report.Sender] || {};
                               return (
                                 <TableRow key={report.id}>
-                                  <TableCell>{school.SchoolID || "N/A"}</TableCell>
+                                  <TableCell>
+                                    {school.SchoolID || "N/A"}
+                                  </TableCell>
                                   <TableCell>
                                     {school.SchoolName || "Unknown School"}
                                   </TableCell>

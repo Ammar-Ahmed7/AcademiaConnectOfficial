@@ -55,6 +55,8 @@ const AdminDashBoardSchoolsChart = () => {
           const { count: teachersCount } = await supabase
             .from("Teacher")
             .select("*", { count: "exact", head: true })
+            .neq("EmployementStatus", "Transferred")
+
             .eq("SchoolID", school.SchoolID);
 
           // Fetch staff count (assuming you have a Staff table)
@@ -65,7 +67,7 @@ const AdminDashBoardSchoolsChart = () => {
 
           return {
             id: school.SchoolID,
-            name: school.SchoolName,
+            name: school.SchoolID,
             students: studentsCount || 0,
             teachers: teachersCount || 0,
             staff: staffCount || 0,

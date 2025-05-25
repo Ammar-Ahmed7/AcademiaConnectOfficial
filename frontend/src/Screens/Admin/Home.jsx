@@ -797,8 +797,9 @@ import AdminDashBoardSchoolsChart from "./AdminDashBoard-SchoolsChart";
 
 // Icons
 import SchoolIcon from "@mui/icons-material/School";
-import PersonIcon from "@mui/icons-material/Person";
 import ChildCareIcon from "@mui/icons-material/ChildCare";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+
 
 const Home = () => {
   const [data, setData] = useState({
@@ -1006,7 +1007,7 @@ const Home = () => {
     {
       category: "totalSchools",
       title: "Schools",
-      icon: <SchoolIcon />,
+      icon: <ApartmentIcon />,
       color: "#F28A30",
       lightColor: "rgba(242, 138, 48, 0.1)",
       path: "/admin/all-schools",
@@ -1014,7 +1015,7 @@ const Home = () => {
     {
       category: "totalTeachers",
       title: "Teachers",
-      icon: <PersonIcon />,
+      icon: <SchoolIcon />,
       color: "#1E90FF",
       lightColor: "rgba(30, 144, 255, 0.1)",
       path: "/admin/all-teachers",
@@ -1138,6 +1139,7 @@ const Home = () => {
       const { data, error } = await supabase
         .from("Teacher")
         .select("*")
+        .neq("EmployementStatus", "Transferred")
         .order("TeacherID", { ascending: true });
 
       setTeachers(data);

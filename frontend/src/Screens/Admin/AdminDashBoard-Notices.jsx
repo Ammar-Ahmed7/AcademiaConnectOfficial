@@ -8,54 +8,6 @@ const AdminDashBoardNotices = () => {
 
   const [upcomingEvents, setUpcomingEvents] = useState([]);
 
-  //   const fetchNotifications = async () => {
-  //     try {
-  //       const { data, error } = await supabase
-  //         .from("Notice")
-  //         .select("*")
-  //         .order("NoticeID", { ascending: true });
-
-  //       if (error) throw error;
-  //       console.log(data);
-
-  //       const formattedEvents = data.map((item) => {
-  //         const isUrgent = item.Urgent; // Assuming isUrgent is a boolean field
-  //         let notificationColor = "#F28A30"; // Default color
-
-  //         if (isUrgent) {
-  //           notificationColor = "#FFEB3B"; // Yellow for urgent notifications
-  //         } else {
-  //           // Apply color based on subtype
-  //           if (item.SubType === "Holiday") {
-  //             notificationColor = "#006400"; // Dark Green for holidays
-  //           } else if (item.SubType === "Event") {
-  //             notificationColor = "#8A2BE2"; // Purple for events
-  //           }
-  //         }
-
-  //         return {
-  //           Startdate: item.StartDate,
-  //           Enddate: item.EndDate,
-  //           title: item.Title,
-  //           type: item.Type,
-  //           subtype: item.SubType,
-  //           description: item.Message,
-  //           notificationColor, // Add the color here
-  //           isUrgent: item.Urgent, // Add urgency flag
-  //         };
-  //       });
-
-  //       // Sort notifications: urgent notifications first, then others
-  //       const sortedEvents = formattedEvents.sort((a, b) => {
-  //         return b.isUrgent - a.isUrgent; // This ensures urgent notifications come first
-  //       });
-
-  //       setUpcomingEvents(sortedEvents);
-  //     } catch (error) {
-  //       console.error("Error fetching notifications:", error);
-  //     }
-  //   };
-
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
