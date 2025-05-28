@@ -175,13 +175,13 @@ const StudyMaterial = () => {
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
       <Box component="main" sx={{ flexGrow: 1, p: 3, ml: '240px', height: '100vh', overflowY: 'auto' }}>
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
           <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
   <ArrowBackIcon fontSize="large" />
 </IconButton>
           <Typography variant="h4" sx={{ color: '#1a1a2e' }}>Study Materials</Typography>
           <IconButton
-            sx={{ backgroundColor: '#4ade80', color: 'white', '&:hover': { backgroundColor: '#22c55e' } }}
+            sx={{ backgroundColor: '#4ade80', left:'640px',color: 'white', '&:hover': { backgroundColor: '#22c55e' } }}
             onClick={() => setOpenModal(true)}
           >
             <AddIcon />

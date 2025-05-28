@@ -8,6 +8,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Sidebar from '../Components/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -574,22 +575,19 @@ const Grade = () => {
           {!selectedAssignment ? (
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
-              <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-  <Typography variant="h6" color="primary">
+              <Box sx={{ color: '#1a1a2e', mb: 3 , display: 'flex', alignItems: 'center' }}>
+                 <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
+                  <ArrowBackIcon fontSize="large" />
+                </IconButton>
+  <Typography variant="h4">
     Assignment & Grade Management
   </Typography>
   <Box sx={{ display: 'flex', gap: 1 }}>
     <Button
-      variant="outlined"
-      onClick={() => navigate(-1)}
-    >
-      Back
-    </Button>
-    <Button
       variant="contained"
       startIcon={<AddIcon />}
       onClick={handleOpenModal}
-      sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+      sx={{ backgroundColor: '#4ade80',left:'160px' , '&:hover': { backgroundColor: '#22c55e' } }}
       disabled={uploadingAssignment}
     >
       {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
@@ -597,7 +595,7 @@ const Grade = () => {
    
   </Box>
   
-</Paper>
+</Box>
 
               </Grid>
               <Grid item xs={12}>
