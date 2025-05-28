@@ -1,29 +1,27 @@
-// ManageTeachers.jsx
 import { useState, useEffect, useRef } from 'react';
+import { Search, User, BookOpen, Trash2, Plus, X, Save, AlertTriangle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 export default function ManageTeachers() {
   const [teacherRequests, setTeacherRequests] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [isModalOpen, setIsModalOpen]           = useState(false);
-  const [searchQuery, setSearchQuery]           = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const [classOptions, setClassOptions]         = useState([]);
-  const [classSearch, setClassSearch]           = useState('');
-  const [filteredClasses, setFilteredClasses]   = useState([]);
-  const [selectedClasses, setSelectedClasses]   = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen]     = useState(false);
-
-  const [assignments, setAssignments]           = useState([]);
-  const [subjectsData, setSubjectsData]         = useState([]);
+  const [classOptions, setClassOptions] = useState([]);
+  const [classSearch, setClassSearch] = useState('');
+  const [filteredClasses, setFilteredClasses] = useState([]);
+  const [sectionAssignments, setSectionAssignments] = useState([]); // Group by section
+  const [subjectsData, setSubjectsData] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [allAssignments, setAllAssignments] = useState([]); // For conflict checking
 
   const dropdownRef = useRef(null);
-  const days        = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const [schoolId, setSchoolId] = useState(null);
 
-  //
-  // 1) Fetch logged-in school ID
-  //
+  // Fetch logged-in school ID
   useEffect(() => {
     async function fetchSchoolId() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -39,30 +37,43 @@ export default function ManageTeachers() {
     fetchSchoolId();
   }, []);
 
-  //
-  // 2) Load teachers / sections / subjects once we have schoolId
-  //
+  // Load data once we have schoolId
   useEffect(() => {
     if (!schoolId) return;
     loadTeachers();
     loadSections();
     loadSubjects();
+    loadAllAssignments();
   }, [schoolId]);
 
-  //
-  // 3) Load teachers + existing assignments
-  //
+  // Load all assignments for conflict checking
+  async function loadAllAssignments() {
+    const { data, error } = await supabase
+      .from('teacher_assignments')
+      .select(`
+        *,
+        sections (
+          section_name,
+          classes (class_id, class_name)
+        )
+      `);
+    if (error) console.error('loadAllAssignments error:', error);
+    else setAllAssignments(data || []);
+  }
+
+  // Load teachers with their assignments
   async function loadTeachers() {
+    setLoading(true);
     const { data, error } = await supabase
       .from('Teacher')
       .select(`
         TeacherID,
         Name,
+        Email,
         teacher_assignments (
+          assignment_id,
           section_id,
-          subject_id,
-          day_of_week,
-          period,
+          subjects,
           sections (
             section_name,
             classes (class_id, class_name)
@@ -71,12 +82,11 @@ export default function ManageTeachers() {
       `)
       .eq('SchoolID', schoolId);
     if (error) console.error('loadTeachers error:', error);
-    else setTeacherRequests(data);
+    else setTeacherRequests(data || []);
+    setLoading(false);
   }
 
-  //
-  // 4) Load all sections (shared across schools)
-  //
+  // Load all sections
   async function loadSections() {
     const { data, error } = await supabase
       .from('sections')
@@ -85,78 +95,110 @@ export default function ManageTeachers() {
     else {
       const opts = data.map(i => ({
         section_id: i.section_id,
-        class_id:   i.classes.class_id,
-        label:      `${i.classes.class_name}${i.section_name}`,
+        class_id: i.classes.class_id,
+        label: `${i.classes.class_name}${i.section_name}`,
       }));
       setClassOptions(opts);
       setFilteredClasses(opts);
     }
   }
 
-  //
-  // 5) Load all subjects (shared across schools)
-  //
+  // Load all subjects
   async function loadSubjects() {
     const { data, error } = await supabase
       .from('subjects')
       .select('*');
     if (error) console.error('loadSubjects error:', error);
-    else setSubjectsData(data);
+    else setSubjectsData(data || []);
   }
 
-  //
-  // 6) Open modal & initialize assignment state
-  //
+  // Check if any subject conflicts with existing assignments
+  const checkSectionConflicts = (sectionId, subjectIds, currentTeacherId, excludeAssignmentId = null) => {
+    const conflicts = [];
+    
+    allAssignments.forEach(assignment => {
+      if (assignment.TeacherID !== currentTeacherId && 
+          assignment.section_id === sectionId &&
+          assignment.assignment_id !== excludeAssignmentId) {
+        
+        const conflictingSubjects = subjectIds.filter(subjectId => 
+          assignment.subjects.includes(parseInt(subjectId))
+        );
+        
+        if (conflictingSubjects.length > 0) {
+          const teacher = teacherRequests.find(t => t.TeacherID === assignment.TeacherID);
+          conflicts.push({
+            teacherName: teacher ? teacher.Name : 'Another teacher',
+            subjects: conflictingSubjects
+          });
+        }
+      }
+    });
+    
+    return conflicts;
+  };
+
+  // Open modal & initialize section assignments
   const openModal = teacher => {
     setSelectedTeacher(teacher);
     setIsModalOpen(true);
     setClassSearch('');
     setFilteredClasses(classOptions);
     setIsDropdownOpen(false);
+    setError('');
 
-    // Build initial assignment rows from existing DB entries
+    // Convert existing assignments to section-based structure
     const existing = teacher.teacher_assignments || [];
-    const initial = existing.map(a => ({
+    const sectionGroups = existing.map(assignment => ({
+      assignment_id: assignment.assignment_id,
+      section_id: assignment.section_id,
       selectedClass: {
-        section_id: a.section_id,
-        class_id:   a.sections.classes.class_id,
-        label:      `${a.sections.classes.class_name}${a.sections.section_name}`,
+        section_id: assignment.section_id,
+        class_id: assignment.sections.classes.class_id,
+        label: `${assignment.sections.classes.class_name}${assignment.sections.section_name}`,
       },
-      subject_id:  a.subject_id || '',
-      day_of_week: a.day_of_week || '',
-      period:      a.period || '',
+      subjects: assignment.subjects || [], // Array of subject IDs
+      isExisting: true,
     }));
 
-    setSelectedClasses(initial.map(i => i.selectedClass));
-    setAssignments(initial);
+    setSectionAssignments(sectionGroups);
   };
 
-  //
-  // 7) Close modal & reset local state
-  //
+  // Close modal & reset state
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTeacher(null);
-    setSelectedClasses([]);
-    setAssignments([]);
+    setSectionAssignments([]);
     setIsDropdownOpen(false);
+    setError('');
   };
 
-  //
-  // 8) When clicking a section in the dropdown, ALWAYS append a new assignment row
-  //
-  const handleClassAssignmentChange = opt => {
-    // Append new row
-    setSelectedClasses(prev => [...prev, opt]);
-    setAssignments(prev => [
+  // Add new section assignment
+  const addNewSectionAssignment = (classOption) => {
+    // Check if this section already exists
+    const existingSection = sectionAssignments.find(sa => sa.section_id === classOption.section_id);
+    if (existingSection) {
+      setError(`${classOption.label} is already added. You can add multiple subjects to the existing entry.`);
+      return;
+    }
+
+    setSectionAssignments(prev => [
       ...prev,
-      { selectedClass: opt, subject_id:'', day_of_week:'', period:'' }
+      {
+        assignment_id: null,
+        section_id: classOption.section_id,
+        selectedClass: classOption,
+        subjects: [], // Start with empty subjects array
+        isExisting: false,
+      }
     ]);
+    setClassSearch('');
+    setFilteredClasses(classOptions);
+    setIsDropdownOpen(false);
+    setError('');
   };
 
-  //
-  // 9) Filter dropdown list as user types
-  //
+  // Filter dropdown
   const handleClassSearchChange = e => {
     const v = e.target.value.toLowerCase();
     setClassSearch(v);
@@ -165,60 +207,139 @@ export default function ManageTeachers() {
     );
   };
 
-  const handleClassSelection = opt => {
-    handleClassAssignmentChange(opt);
-    setClassSearch('');
-    setFilteredClasses(classOptions);
-    setIsDropdownOpen(false);
-  };
-
-  //
-  // 10) Update a field on a given assignment row
-  //
-  const updateAssignmentField = (ix, field, value) => {
-    setAssignments(prev => {
+  // Update subjects for a section
+  const updateSectionSubjects = (sectionIndex, subjectIds) => {
+    setSectionAssignments(prev => {
       const copy = [...prev];
-      copy[ix] = { ...copy[ix], [field]: value };
+      copy[sectionIndex] = { ...copy[sectionIndex], subjects: subjectIds };
       return copy;
     });
+    setError('');
   };
 
-  //
-  // 11) Save all rows via upsert, ignoring duplicates
-  //
-  const saveAssignedClasses = async () => {
+  // Remove section assignment
+  const removeSectionAssignment = async (sectionIndex) => {
+    const sectionAssignment = sectionAssignments[sectionIndex];
+    
+    // If it's an existing assignment, delete from database
+    if (sectionAssignment.assignment_id && sectionAssignment.isExisting) {
+      setLoading(true);
+      const { error } = await supabase
+        .from('teacher_assignments')
+        .delete()
+        .eq('assignment_id', sectionAssignment.assignment_id);
+      
+      if (error) {
+        console.error('Delete error:', error);
+        setError('Failed to delete assignment: ' + error.message);
+        setLoading(false);
+        return;
+      }
+      
+      // Update all assignments list
+      setAllAssignments(prev => 
+        prev.filter(a => a.assignment_id !== sectionAssignment.assignment_id)
+      );
+      setLoading(false);
+    }
+
+    // Remove from local state
+    setSectionAssignments(prev => prev.filter((_, i) => i !== sectionIndex));
+  };
+
+  // Save all section assignments
+  const saveSectionAssignments = async () => {
     if (!selectedTeacher) return;
+    
+    // Validate all sections have at least one subject
+    const invalidSections = sectionAssignments.filter(sa => !sa.subjects || sa.subjects.length === 0);
+    
+    if (invalidSections.length > 0) {
+      setError('Please select at least one subject for each section before saving.');
+      return;
+    }
 
-    const payload = assignments.map(a => ({
-      TeacherID:   selectedTeacher.TeacherID,
-      section_id:  a.selectedClass.section_id,
-      subject_id:  parseInt(a.subject_id) || null,
-      day_of_week: a.day_of_week,
-      period:      parseInt(a.period)    || null,
-    }));
+    // Check for conflicts
+    for (const sectionAssignment of sectionAssignments) {
+      if (!sectionAssignment.isExisting || !sectionAssignment.assignment_id) {
+        const conflicts = checkSectionConflicts(
+          sectionAssignment.section_id,
+          sectionAssignment.subjects,
+          selectedTeacher.TeacherID,
+          sectionAssignment.assignment_id
+        );
+        
+        if (conflicts.length > 0) {
+          const conflictMessages = conflicts.map(conflict => {
+            const subjectNames = conflict.subjects.map(subjectId => {
+              const subject = subjectsData.find(s => s.subject_id === parseInt(subjectId));
+              return subject ? subject.subject_name : `Subject ${subjectId}`;
+            });
+            return `${conflict.teacherName} is already teaching ${subjectNames.join(', ')} to ${sectionAssignment.selectedClass.label}`;
+          });
+          
+          setError('Conflicts found:\n' + conflictMessages.join('\n'));
+          return;
+        }
+      }
+    }
 
-    const { error } = await supabase
-      .from('teacher_assignments')
-      .upsert(payload, {
-        onConflict: [
-          'TeacherID',
-          'section_id',
-          'subject_id',
-          'day_of_week',
-          'period'
-        ],
-        ignoreDuplicates: true
-      });
+    setLoading(true);
+    setError('');
 
-    if (error) console.error('saveAssignedClasses error:', error);
-    else await loadTeachers();
+    try {
+      const operations = [];
 
-    closeModal();
+      // Process each section assignment
+      for (const sectionAssignment of sectionAssignments) {
+        if (sectionAssignment.isExisting && sectionAssignment.assignment_id) {
+          // Update existing assignment
+          operations.push(
+            supabase
+              .from('teacher_assignments')
+              .update({
+                subjects: sectionAssignment.subjects,
+                updated_at: new Date().toISOString()
+              })
+              .eq('assignment_id', sectionAssignment.assignment_id)
+          );
+        } else {
+          // Insert new assignment
+          operations.push(
+            supabase
+              .from('teacher_assignments')
+              .insert({
+                TeacherID: selectedTeacher.TeacherID,
+                section_id: sectionAssignment.section_id,
+                subjects: sectionAssignment.subjects
+              })
+          );
+        }
+      }
+
+      // Execute all operations
+      const results = await Promise.all(operations);
+      
+      // Check for errors
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(errors.map(e => e.error.message).join(', '));
+      }
+
+      // Reload data
+      await loadTeachers();
+      await loadAllAssignments();
+      closeModal();
+      
+    } catch (error) {
+      console.error('Save error:', error);
+      setError('Failed to save assignments: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  //
-  // 12) Close dropdown on outside click
-  //
+  // Close dropdown on outside click
   useEffect(() => {
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -229,166 +350,332 @@ export default function ManageTeachers() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  //
-  // 13) Render
-  //
   const filteredTeachers = teacherRequests.filter(t =>
-    t.Name?.toLowerCase().includes(searchQuery.toLowerCase()) 
+    t.Name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Get teacher assignments grouped by class for display
+  const getTeacherAssignmentsByClass = (teacher) => {
+    const assignments = teacher.teacher_assignments || [];
+    const grouped = {};
+    
+    assignments.forEach(assignment => {
+      const classLabel = `${assignment.sections.classes.class_name}${assignment.sections.section_name}`;
+      const subjects = assignment.subjects || [];
+      
+      grouped[classLabel] = subjects.map(subjectId => {
+        const subject = subjectsData.find(s => s.subject_id === subjectId);
+        return subject ? subject.subject_name : `Subject ${subjectId}`;
+      });
+    });
+    
+    return grouped;
+  };
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4">Manage Teachers</h2>
-
-      {/* Search bar */}
-      <input
-        type="text"
-        placeholder="Search by name or subject…"
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        className="w-full p-2 mb-4 border rounded"
-      />
-
-      {/* Teacher list */}
-      <div>
-        {filteredTeachers.map(teacher => (
-          <div
-            key={teacher.TeacherID}
-            className="p-4 mb-2 border rounded cursor-pointer hover:bg-gray-50"
-            onClick={() => openModal(teacher)}
-          >
-            <h3 className="font-semibold">{teacher.Name}</h3>
-            {/*<p className="text-gray-600">Subject: {teacher.subject}</p>*/}
-            {teacher.teacher_assignments?.length > 0 && (
-              <ul className="list-disc ml-4 mt-2">
-                {teacher.teacher_assignments.map((ta, i) => (
-                  <li key={i}>
-                    {ta.sections.classes.class_name}
-                    {ta.sections.section_name} — {ta.day_of_week}, P{ta.period}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Modal */}
-      {isModalOpen && selectedTeacher && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-lg max-h-full overflow-auto">
-            <h2 className="text-xl font-bold mb-2">{selectedTeacher.Name}</h2>
-           {/* <p className="mb-4 text-gray-700">{selectedTeacher.details}</p>*/}
-
-            {/* Section dropdown */}
-            <h3 className="font-semibold mb-2">Assign Classes/Sections</h3>
-            <div className="relative mb-4" ref={dropdownRef}>
-              <input
-                type="text"
-                placeholder="Search classes…"
-                value={classSearch}
-                onChange={handleClassSearchChange}
-                onClick={() => setIsDropdownOpen(o => !o)}
-                className="w-full p-2 border rounded"
-              />
-              {isDropdownOpen && filteredClasses.length > 0 && (
-                <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 max-h-40 overflow-auto">
-                  {filteredClasses.map(opt => (
-                    <div
-                      key={opt.section_id}
-                      className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                        selectedClasses.some(c => c.section_id === opt.section_id)
-                          ? 'bg-blue-100'
-                          : ''
-                      }`}
-                      onClick={() => handleClassSelection(opt)}
-                    >
-                      {opt.label}
-                    </div>
-                  ))}
-                </div>
-              )}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <User className="w-6 h-6 text-blue-600" />
             </div>
+            <h1 className="text-2xl font-bold text-gray-900">Manage Teachers</h1>
+          </div>
+          
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search teachers by name..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+        </div>
 
-            {/* Assignment rows */}
-            {assignments.map((assignment, idx) => {
-              const subs = subjectsData.filter(
-                s => s.class_id === assignment.selectedClass.class_id
-              );
+        {/* Teacher Cards */}
+        <div className="grid gap-4">
+          {loading && teacherRequests.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading teachers...</p>
+            </div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+              <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">No teachers found</p>
+            </div>
+          ) : (
+            filteredTeachers.map(teacher => {
+              const assignmentsByClass = getTeacherAssignmentsByClass(teacher);
+              const totalSubjects = Object.values(assignmentsByClass).reduce((acc, subjects) => acc + subjects.length, 0);
+              
               return (
                 <div
-                  key={`${assignment.selectedClass.section_id}-${idx}`}
-                  className="mb-4 p-3 border rounded"
+                  key={teacher.TeacherID}
+                  className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => openModal(teacher)}
                 >
-                  <p className="font-medium">{assignment.selectedClass.label}</p>
-                  <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Subject */}
-                    <div>
-                      <label className="block text-sm">Subject</label>
-                      <select
-                        value={assignment.subject_id}
-                        onChange={e =>
-                          updateAssignmentField(idx, 'subject_id', e.target.value)
-                        }
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="">Select subject</option>
-                        {subs.map(s => (
-                          <option key={s.subject_id} value={s.subject_id}>
-                            {s.subject_name}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 rounded-full">
+                          <User className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{teacher.Name}</h3>
+                          <p className="text-gray-500">{teacher.Email}</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {Object.keys(assignmentsByClass).length} sections, {totalSubjects} subjects
+                      </div>
                     </div>
-
-                    {/* Day */}
-                    <div>
-                      <label className="block text-sm">Day of Week</label>
-                      <select
-                        value={assignment.day_of_week}
-                        onChange={e =>
-                          updateAssignmentField(idx, 'day_of_week', e.target.value)
-                        }
-                        className="w-full p-2 border rounded"
-                      >
-                        <option value="">Select day</option>
-                        {days.map(d => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Period */}
-                    <div>
-                      <label className="block text-sm">Period</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={assignment.period}
-                        onChange={e =>
-                          updateAssignmentField(idx, 'period', e.target.value)
-                        }
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
+                    
+                    {Object.keys(assignmentsByClass).length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-sm font-medium text-gray-700 mb-3">Current Assignments:</p>
+                        <div className="space-y-2">
+                          {Object.entries(assignmentsByClass).map(([classLabel, subjects]) => (
+                            <div key={classLabel} className="flex items-start gap-2">
+                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                                <BookOpen className="w-3 h-3" />
+                                {classLabel}
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {subjects.map((subject, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs"
+                                  >
+                                    {subject}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
+        </div>
+      </div>
 
-            {/* Buttons */}
-            <div className="flex justify-end space-x-2 mt-4">
-              <button
-                onClick={saveAssignedClasses}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-              >
-                Save
-              </button>
+      {/* Enhanced Modal */}
+      {isModalOpen && selectedTeacher && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">{selectedTeacher.Name}</h2>
+                  <p className="text-sm text-gray-500">{selectedTeacher.Email}</p>
+                </div>
+              </div>
               <button
                 onClick={closeModal}
-                className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Close
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+              {/* Error Message */}
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-700 font-medium">Error</p>
+                    <p className="text-red-600 text-sm whitespace-pre-line">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Add Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Add New Section</h3>
+                <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search and select a section to assign subjects..."
+                      value={classSearch}
+                      onChange={handleClassSearchChange}
+                      onClick={() => setIsDropdownOpen(true)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {isDropdownOpen && filteredClasses.length > 0 && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-auto">
+                      {filteredClasses
+                        .filter(opt => !sectionAssignments.some(sa => sa.section_id === opt.section_id))
+                        .map(opt => (
+                        <div
+                          key={opt.section_id}
+                          className="p-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
+                          onClick={() => addNewSectionAssignment(opt)}
+                        >
+                          <span>{opt.label}</span>
+                          <Plus className="w-4 h-4 text-gray-400" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section Assignments */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Section Assignments ({sectionAssignments.length})
+                </h3>
+                {sectionAssignments.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p>No section assignments yet. Search and select a section above to get started.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {sectionAssignments.map((sectionAssignment, sectionIndex) => {
+                      const availableSubjects = subjectsData.filter(
+                        s => s.class_id === sectionAssignment.selectedClass.class_id
+                      );
+                      
+                      // Check for conflicts
+                      const conflicts = !sectionAssignment.isExisting ? 
+                        checkSectionConflicts(
+                          sectionAssignment.section_id,
+                          sectionAssignment.subjects,
+                          selectedTeacher.TeacherID,
+                          sectionAssignment.assignment_id
+                        ) : [];
+                      
+                      return (
+                        <div
+                          key={`section-${sectionAssignment.section_id}-${sectionIndex}`}
+                          className={`rounded-lg p-6 border-2 ${conflicts.length > 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'}`}
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <BookOpen className="w-5 h-5 text-blue-600" />
+                              <h4 className="text-lg font-semibold text-gray-900">
+                                {sectionAssignment.selectedClass.label}
+                              </h4>
+                              {sectionAssignment.isExisting && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                  Existing
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => removeSectionAssignment(sectionIndex)}
+                              className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-500"
+                              title="Remove section assignment"
+                              disabled={loading}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          {/* Subjects Selection */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                              Select Subjects * (You can select multiple subjects)
+                            </label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {availableSubjects.map(subject => (
+                                <label
+                                  key={subject.subject_id}
+                                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                                    sectionAssignment.subjects.includes(subject.subject_id)
+                                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={sectionAssignment.subjects.includes(subject.subject_id)}
+                                    onChange={(e) => {
+                                      const updatedSubjects = e.target.checked
+                                        ? [...sectionAssignment.subjects, subject.subject_id]
+                                        : sectionAssignment.subjects.filter(id => id !== subject.subject_id);
+                                      updateSectionSubjects(sectionIndex, updatedSubjects);
+                                    }}
+                                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm font-medium">{subject.subject_name}</span>
+                                </label>
+                              ))}
+                            </div>
+                            
+                            {/* Show selected subjects count */}
+                            {sectionAssignment.subjects.length > 0 && (
+                              <p className="mt-2 text-sm text-gray-600">
+                                {sectionAssignment.subjects.length} subject(s) selected
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Conflicts Warning */}
+                          {conflicts.length > 0 && (
+                            <div className="mt-4 p-3 bg-red-100 border border-red-200 rounded-lg">
+                              <p className="text-red-700 font-medium mb-2">⚠️ Conflicts Detected:</p>
+                              {conflicts.map((conflict, idx) => (
+                                <p key={idx} className="text-red-600 text-sm">
+                                  • {conflict.teacherName} is already teaching {
+                                    conflict.subjects.map(subjectId => {
+                                      const subject = subjectsData.find(s => s.subject_id === parseInt(subjectId));
+                                      return subject ? subject.subject_name : `Subject ${subjectId}`;
+                                    }).join(', ')
+                                  }
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveSectionAssignments}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save All Assignments
               </button>
             </div>
           </div>

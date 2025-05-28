@@ -18,8 +18,8 @@ import AddStudent from './Screens/School/AddStudent';
 import ManageTeachers from './Screens/School/ManageTeachers';
 import AddStaff from './Screens/School/AddStaff';
 import PublishNotice from './Screens/School/PublishNotice';
-import UploadClassTimetable from './Screens/School/UploadClassTimetable';
-import UploadExamTimetable from './Screens/School/UploadExamTimetable';
+import UploadTimetables from './Screens/School/UploadTimetables';
+// import UploadExamTimetable from './Screens/School/UploadExamTimetable';
 import UploadBusRoutes from './Screens/School/UploadBusRoutes';
 import Reports from './Screens/School/Reports';
 import EditSchoolDetails from './Screens/School/EditSchoolDetails';
@@ -96,8 +96,8 @@ function App() {
         <Route path="edit-staff/:id"   element={<EditStaffMember />} />
         <Route path="/school/add-staff" element={<AddStaff />} />
         <Route path="/school/publish-notice" element={<PublishNotice />} />
-        <Route path="/school/upload-class-timetable" element={<UploadClassTimetable />} />
-        <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} />
+        <Route path="/school/upload-timetables" element={<UploadTimetables />} />
+        {/* <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} /> */}
         <Route path="/school/upload-bus-routes" element={<UploadBusRoutes />} />
         <Route path="/school/reports" element={<Reports />} />
         <Route path="/school/edit-school-details" element={<EditSchoolDetails />} />
