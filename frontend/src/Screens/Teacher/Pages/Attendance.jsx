@@ -2,10 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, CircularProgress, Snackbar, Alert, TextField } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import Sidebar from '../Components/Sidebar';
 import { supabase } from '../../../../supabase-client';
+import { PhoneEnabled } from '@mui/icons-material';
 
 const Attendance = () => {
   const navigate = useNavigate();
@@ -186,8 +189,14 @@ const Attendance = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
+      
       <Box component="main" sx={{ flexGrow: 1, p: 3, ml: '240px', height: '100vh', overflowY: 'auto' }}>
+        
         <Typography variant="h4" sx={{ color: '#1a1a2e', mb: 3 }}>
+          <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
+  <ArrowBackIcon fontSize="large" />
+</IconButton>
+
           Attendance Management
         </Typography>
 
@@ -262,16 +271,15 @@ const Attendance = () => {
   </TableContainer>
 
   <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-    <Button variant="contained" sx={{ backgroundColor: '#4ade80' }} onClick={() => navigate(-1)}>
-      Back
-    </Button>
+   
     {students.length > 0 && (
-      <Button variant="contained" sx={{ backgroundColor: '#6366f1' }} onClick={handleSubmitAttendance}>
+      <Button variant="contained" sx={{ backgroundColor: '#6366f1'}} className='left-[800px]' onClick={handleSubmitAttendance}>
         {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
       </Button>
     )}
   </Box>
 </Box>
+ 
 
           </>
         )}
