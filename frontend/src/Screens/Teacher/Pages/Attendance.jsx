@@ -1,4 +1,4 @@
-// Updated Attendance.jsx to handle new classInfo structure
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, CircularProgress, Snackbar, Alert, TextField } from '@mui/material';
@@ -17,21 +17,39 @@ const Attendance = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [isExistingAttendance, setIsExistingAttendance] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
-  const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false,
+    }));
+  };
 
   useEffect(() => {
     if (classInfo) {
       fetchStudents();
+      console.log('Class Info:', classInfo); // Log class info to the
     }
   }, [classInfo]);
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const combinedClassSection = `${classInfo.sections?.classes?.class_name}${classInfo.sections?.section_name}`;
+      const combinedClassSection = `${classInfo.sections?.classes?.class_name || ''}${classInfo.sections?.section_name || ''}`;
+
       const { data, error } = await supabase
         .from('students')
         .select('*')
@@ -40,6 +58,7 @@ const Attendance = () => {
       if (error) throw error;
 
       setStudents(data);
+
       const initialAttendance = {};
       data.forEach(student => {
         initialAttendance[student.registration_no] = '';
@@ -58,23 +77,25 @@ const Attendance = () => {
       setIsExistingAttendance(false);
       return;
     }
-
+  
     setSelectedDate(date);
+  
     const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-
+  
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('attendance')
         .select('*')
         .eq('class_id', classInfo.sections.class_id)
-        .eq('section_id', classInfo.section_id)
+        .eq('section_id', classInfo.section_id)  // <-- added section_id
         .eq('date', formattedDate);
-
+  
       if (error) throw error;
-
+  
       if (data.length > 0) {
         setIsExistingAttendance(true);
+  
         const loadedAttendance = {};
         data.forEach(record => {
           loadedAttendance[record.registration_no] = record.attendance_status;
@@ -86,14 +107,17 @@ const Attendance = () => {
           });
           return newState;
         });
+  
         showSnackbar('Existing attendance loaded for update.', 'info');
       } else {
         setIsExistingAttendance(false);
+  
         const resetAttendance = {};
         students.forEach(student => {
           resetAttendance[student.registration_no] = '';
         });
         setAttendanceState(resetAttendance);
+  
         showSnackbar('No attendance found. Ready to submit.', 'info');
       }
     } catch (error) {
@@ -103,14 +127,34 @@ const Attendance = () => {
       setLoading(false);
     }
   };
+  
+
+  const handleAttendanceChange = (studentId, value) => {
+    setAttendanceState(prev => ({
+      ...prev,
+      [studentId]: value,
+    }));
+  };
+
+  const handleSelectAllChange = (value) => {
+    const updatedAttendance = {};
+    students.forEach(student => {
+      updatedAttendance[student.registration_no] = value;
+    });
+    setAttendanceState(updatedAttendance);
+  };
 
   const handleSubmitAttendance = async () => {
-    if (!selectedDate) return showSnackbar('Please select a date.', 'error');
-
+    if (!selectedDate) {
+      showSnackbar('Please select a date.', 'error');
+      return;
+    }
+  
     const formattedDate = `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`;
-
+  
     try {
       setLoading(true);
+  
       const attendanceData = students.map(student => ({
         teacher_id: classInfo.TeacherID,
         class_id: classInfo.sections.class_id,
@@ -120,12 +164,14 @@ const Attendance = () => {
         date: formattedDate,
         attendance_status: attendanceState[student.registration_no] || 'A',
       }));
-
+  
+      // Use upsert instead of delete+insert
       const { error } = await supabase
         .from('attendance')
         .upsert(attendanceData, { onConflict: ['registration_no', 'date'] });
-
+  
       if (error) throw error;
+  
       showSnackbar(isExistingAttendance ? 'Attendance updated successfully!' : 'Attendance submitted successfully!', 'success');
       setIsExistingAttendance(true);
     } catch (error) {
@@ -135,6 +181,7 @@ const Attendance = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
