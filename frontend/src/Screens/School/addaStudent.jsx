@@ -1,6 +1,6 @@
 // src/screens/School/AddaStudent.jsx
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { v4 as uuidv4 } from 'uuid'
 // at the top, alongside your other MUI imports:
@@ -468,15 +468,15 @@ const handleBlur = (e) => {
     }
 
     // 1) Supabase Auth Sign Up
-    const { error: authErr } = await supabase.auth.signUp({
-      email: formData.studentEmail,
-      password: formData.studentPassword,
-    })
-    if (authErr) {
-      setErrors({ studentEmail: authErr.message })
-      setIsSubmitting(false)
-      return
-    }
+    // const { error: authErr } = await supabase.auth.signUp({
+    //   email: formData.studentEmail,
+    //   password: formData.studentPassword,
+    // })
+    // if (authErr) {
+    //   setErrors({ studentEmail: authErr.message })
+    //   setIsSubmitting(false)
+    //   return
+    // }
 
     // 2) Upload Report Card if present
     let reportCardUrl = null
@@ -557,30 +557,59 @@ const handleBlur = (e) => {
       route: formData.transport ? formData.route : null,
     }
 
-        const { error: dbErr } = await supabase
-        .from('students')
-        .insert([payload])
+    const { error: dbErr } = await supabase
+  .from('students')
+  .insert([ payload ])
+  setIsSubmitting(false)
 
-      // **Immediately** turn off loading
-      setIsSubmitting(false)
+if (dbErr) {
+  // show error and stop
+  setSnackbar({ open: true, message: dbErr.message, severity: 'error' })
+  setIsSubmitting(false)
+  return
+}
 
-      // Then show a Snackbar
-      if (dbErr) {
-        setSnackbar({
-          open: true,
-          message: dbErr.message || 'Error adding student',
-          severity: 'error',
-        })
-        return // <— important: exit so you don’t fall through
-      }
+// 2️⃣ now create the Auth user (this will switch the session to the student)
+const { error: authErr } = await supabase.auth.signUp({
+  email: formData.studentEmail,
+  password: formData.studentPassword,
+})
 
-      setSnackbar({
-        open: true,
-        message: 'Student added successfully!',
-        severity: 'success',
-      })
-      // reset form
-      setFormData(initialFormData)
+if (authErr) {
+  // if you like, you could roll back the DB insert here
+  setErrors({ studentEmail: authErr.message })
+  setIsSubmitting(false)
+  return
+}
+
+// success!
+setSnackbar({ open: true, message: 'Student added!', severity: 'success' })
+setFormData(initialFormData)
+
+    //     const { error: dbErr } = await supabase
+    //     .from('students')
+    //     .insert([payload])
+
+    //   // **Immediately** turn off loading
+    //   setIsSubmitting(false)
+
+    //   // Then show a Snackbar
+    //   if (dbErr) {
+    //     setSnackbar({
+    //       open: true,
+    //       message: dbErr.message || 'Error adding student',
+    //       severity: 'error',
+    //     })
+    //     return // <— important: exit so you don’t fall through
+    //   }
+
+    //   setSnackbar({
+    //     open: true,
+    //     message: 'Student added successfully!',
+    //     severity: 'success',
+    //   })
+    //   // reset form
+    //   setFormData(initialFormData)
     }
   // ===================================================================
   // RENDER
