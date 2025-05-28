@@ -8,6 +8,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Sidebar from '../Components/Sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -115,13 +116,14 @@ const Grade = () => {
     }
   };
 
-  const [formData, setFormData] = useState({ 
-    name: "", 
-    subject: classInfo?.subjects?.subject_name || "", 
-    subject_id: classInfo?.subject_id || null,
-    description: "", 
-    file: null 
-  });
+ const [formData, setFormData] = useState({ 
+  name: "", 
+  subject: classInfo?.allSubjects?.[0]?.name || "", 
+  subject_id: classInfo?.allSubjects?.[0]?.rawData?.subjects?.[0] || null,
+  description: "", 
+  file: null 
+});
+
   
 
   const handleOpenModal = () => setOpenModal(true);
@@ -132,32 +134,22 @@ const Grade = () => {
     
     // If the subject is being changed, also update the subject_id
     if (name === 'subject') {
-      // Find the subject in allSubjects array to get its ID
-      let newSubjectId = classInfo.subject_id; // Default to current subject_id
-      
-      // If it's the current subject from classInfo
-      if (value === classInfo.subjects?.subject_name) {
-        newSubjectId = classInfo.subject_id;
-      } 
-      // Otherwise search in allSubjects
-      else if (classInfo.allSubjects) {
-        const foundSubject = classInfo.allSubjects.find(subject => subject.name === value);
-        if (foundSubject && foundSubject.rawData) {
-          // Try to get subject_id from different possible properties
-          newSubjectId = foundSubject.rawData.subject_id || 
-                         foundSubject.rawData.id || 
-                         null;
-          
-          console.log('Selected subject:', value, 'with ID:', newSubjectId);
-        }
-      }
-      
-      setFormData({ 
-        ...formData, 
-        [name]: value,
-        subject_id: newSubjectId
-      });
-    } else {
+  let newSubjectId = null;
+
+  if (classInfo.allSubjects) {
+    const foundSubject = classInfo.allSubjects.find(subject => subject.name === value);
+    if (foundSubject) {
+      newSubjectId = foundSubject.rawData.subjects.find(id => id) || null;
+    }
+  }
+
+  setFormData({ 
+    ...formData, 
+    [name]: value,
+    subject_id: newSubjectId
+  });
+}
+ else {
       setFormData({ ...formData, [name]: value });
     }
   };
@@ -289,9 +281,6 @@ const Grade = () => {
           const fileUrl = assignmentData.file_url;
           console.log('File URL to process:', fileUrl);
           
-          // Extract the path from the URL
-          // Format: https://pabfmpqggljjhncdlzwx.supabase.co/storage/v1/object/public/assessments/upload/1745962092623-717-j1.11.jpg
-          // We need just the "upload/1745962092623-717-j1.11.jpg" part
           
           let filePath;
           
@@ -586,22 +575,19 @@ const Grade = () => {
           {!selectedAssignment ? (
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
-              <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-  <Typography variant="h6" color="primary">
+              <Box sx={{ color: '#1a1a2e', mb: 3 , display: 'flex', alignItems: 'center' }}>
+                 <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
+                  <ArrowBackIcon fontSize="large" />
+                </IconButton>
+  <Typography variant="h4">
     Assignment & Grade Management
   </Typography>
   <Box sx={{ display: 'flex', gap: 1 }}>
     <Button
-      variant="outlined"
-      onClick={() => navigate(-1)}
-    >
-      Back
-    </Button>
-    <Button
       variant="contained"
       startIcon={<AddIcon />}
       onClick={handleOpenModal}
-      sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+      sx={{ backgroundColor: '#4ade80',left:'160px' , '&:hover': { backgroundColor: '#22c55e' } }}
       disabled={uploadingAssignment}
     >
       {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
@@ -609,7 +595,7 @@ const Grade = () => {
    
   </Box>
   
-</Paper>
+</Box>
 
               </Grid>
               <Grid item xs={12}>
@@ -837,16 +823,12 @@ const Grade = () => {
                   )}
 
                    {/* Display all other subjects from allSubjects array */}
-                  {classInfo && classInfo.allSubjects && 
-                    classInfo.allSubjects.map((subject, index) => (
-                      // Only display subjects that are different from the current one
-                      subject.name !== classInfo.subjects?.subject_name && (
-                        <MenuItem key={index} value={subject.name}>
-                          {subject.name}
-                        </MenuItem>
-                      )
-                    ))
-                  }
+                  {classInfo?.allSubjects?.map((subject, index) => (
+  <MenuItem key={index} value={subject.name}>
+    {subject.name}
+  </MenuItem>
+))}
+
                 </Select>
               </FormControl>
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
