@@ -115,13 +115,14 @@ const Grade = () => {
     }
   };
 
-  const [formData, setFormData] = useState({ 
-    name: "", 
-    subject: classInfo?.subjects?.subject_name || "", 
-    subject_id: classInfo?.subject_id || null,
-    description: "", 
-    file: null 
-  });
+ const [formData, setFormData] = useState({ 
+  name: "", 
+  subject: classInfo?.allSubjects?.[0]?.name || "", 
+  subject_id: classInfo?.allSubjects?.[0]?.rawData?.subjects?.[0] || null,
+  description: "", 
+  file: null 
+});
+
   
 
   const handleOpenModal = () => setOpenModal(true);
@@ -132,32 +133,22 @@ const Grade = () => {
     
     // If the subject is being changed, also update the subject_id
     if (name === 'subject') {
-      // Find the subject in allSubjects array to get its ID
-      let newSubjectId = classInfo.subject_id; // Default to current subject_id
-      
-      // If it's the current subject from classInfo
-      if (value === classInfo.subjects?.subject_name) {
-        newSubjectId = classInfo.subject_id;
-      } 
-      // Otherwise search in allSubjects
-      else if (classInfo.allSubjects) {
-        const foundSubject = classInfo.allSubjects.find(subject => subject.name === value);
-        if (foundSubject && foundSubject.rawData) {
-          // Try to get subject_id from different possible properties
-          newSubjectId = foundSubject.rawData.subject_id || 
-                         foundSubject.rawData.id || 
-                         null;
-          
-          console.log('Selected subject:', value, 'with ID:', newSubjectId);
-        }
-      }
-      
-      setFormData({ 
-        ...formData, 
-        [name]: value,
-        subject_id: newSubjectId
-      });
-    } else {
+  let newSubjectId = null;
+
+  if (classInfo.allSubjects) {
+    const foundSubject = classInfo.allSubjects.find(subject => subject.name === value);
+    if (foundSubject) {
+      newSubjectId = foundSubject.rawData.subjects.find(id => id) || null;
+    }
+  }
+
+  setFormData({ 
+    ...formData, 
+    [name]: value,
+    subject_id: newSubjectId
+  });
+}
+ else {
       setFormData({ ...formData, [name]: value });
     }
   };
@@ -289,9 +280,6 @@ const Grade = () => {
           const fileUrl = assignmentData.file_url;
           console.log('File URL to process:', fileUrl);
           
-          // Extract the path from the URL
-          // Format: https://pabfmpqggljjhncdlzwx.supabase.co/storage/v1/object/public/assessments/upload/1745962092623-717-j1.11.jpg
-          // We need just the "upload/1745962092623-717-j1.11.jpg" part
           
           let filePath;
           
@@ -837,16 +825,12 @@ const Grade = () => {
                   )}
 
                    {/* Display all other subjects from allSubjects array */}
-                  {classInfo && classInfo.allSubjects && 
-                    classInfo.allSubjects.map((subject, index) => (
-                      // Only display subjects that are different from the current one
-                      subject.name !== classInfo.subjects?.subject_name && (
-                        <MenuItem key={index} value={subject.name}>
-                          {subject.name}
-                        </MenuItem>
-                      )
-                    ))
-                  }
+                  {classInfo?.allSubjects?.map((subject, index) => (
+  <MenuItem key={index} value={subject.name}>
+    {subject.name}
+  </MenuItem>
+))}
+
                 </Select>
               </FormControl>
               <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />

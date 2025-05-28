@@ -164,74 +164,67 @@ useEffect(() => {
         }
 
         // Get assigned classes with related data from teacher_assignments table
-        const { data: classes, error: classError } = await supabase
-          .from('teacher_assignments') // Use correct table name
-          .select(`
-            *,
-            sections:section_id(section_name, classes:class_id(class_name), class_id),
-            subjects:subject_id(subject_name)
-          `)
-          .eq('TeacherID', teacherData.TeacherID)
-          .order('day_of_week', { ascending: true })
-          .order('start_time', { ascending: true });
+       const { data: assignments, error: assignmentError } = await supabase
+  .from('teacher_assignments')
+  .select(`
+    TeacherID,
+    assignment_id,
+    section_id,
+    subjects,
+    sections:section_id (
+      section_name,
+      class_id,
+      classes:class_id (class_name)
+    )
+  `)
+  .eq('TeacherID', teacherData.TeacherID);
 
-        if (classError) throw classError;
+if (assignmentError) throw assignmentError;
 
-        // Log the fetched classes to check the data
-        console.log('Fetched classes:', classes);
+// Extract all subject_ids from all rows
+const allSubjectIds = assignments.flatMap(a =>
+  (a.subjects || []).map(sub => sub)
+);
 
-        // Format the data for display
-        const formattedClasses = classes.map(cls => {
-          console.log('Class sections data:', cls.sections); // Log the sections data
-          console.log('Class subjects data:', cls.subjects); // Log the subjects data
+// Get distinct subject IDs
+const uniqueSubjectIds = [...new Set(allSubjectIds)];
 
-          return {
-            className: cls.sections.classes.class_name, // Fetch the class_name through sections table
-            classID: cls.sections.class_id, // Fetch the class ID
-            section: cls.sections.section_name, // Fetch the section name
-            subject: cls.subjects.subject_name, // Fetch the subject name
-            subjectId: cls.subject_id, // Store the subject ID
-            day: cls.day_of_week, // Directly use day_of_week from database
-            time: `${formatTime(cls.start_time)} - ${formatTime(cls.end_time)}`, // Format times
-            period: cls.period, // Period
-            rawData: cls // Raw data for later use (e.g., when managing the class)
-          };
-        });
+// Fetch subject names for these IDs
+const { data: subjectDetails, error: subjectError } = await supabase
+  .from('subjects')
+  .select('subject_id, subject_name')
+  .in('subject_id', uniqueSubjectIds);
 
-        // Group classes by className and section
-        const groupedClasses = [];
-        const classMap = {};
+if (subjectError) throw subjectError;
 
-        formattedClasses.forEach(cls => {
-          const key = `${cls.className}-${cls.section}`;
-          
-          if (!classMap[key]) {
-            // Create a new entry with the first subject
-            const newEntry = {
-              ...cls,
-              subjects: [{ 
-                name: cls.subject, 
-                id: cls.subjectId, 
-                rawData: cls.rawData 
-              }],
-              // Store the original subject in the subjects array but keep the displayed one
-              displaySubjects: cls.subject
-            };
-            classMap[key] = newEntry;
-            groupedClasses.push(newEntry);
-          } else {
-            // Add this subject to existing entry
-            classMap[key].subjects.push({ 
-              name: cls.subject, 
-              id: cls.subjectId, 
-              rawData: cls.rawData 
-            });
-            // Update the displayed subjects
-            classMap[key].displaySubjects = classMap[key].subjects.map(s => s.name).join(', ');
-          }
-        });
+// Create a map of subject_id -> subject_name
+const subjectMap = {};
+(subjectDetails || []).forEach(sub => {
+  subjectMap[sub.subject_id] = sub.subject_name;
+});
 
-        setAssignedClasses(groupedClasses);
+// Format the assignments
+const formattedClasses = assignments.map(a => {
+  const subjectList = (a.subjects || []).map(id => ({
+    id,
+    name: subjectMap[id] || 'Unknown Subject',
+    rawData: a,
+  }));
+
+  return {
+    className: a.sections?.classes?.class_name || 'Unknown Class',
+    classID: a.sections?.class_id || null,
+    section: a.sections?.section_name || 'Unknown Section',
+    subjects: subjectList,
+    displaySubjects: subjectList.map(s => s.name).join(', '),
+    day: '—', // No day/time in teacher_assignments
+    time: '—', // No time info either
+    rawData: a
+  };
+});
+
+setAssignedClasses(formattedClasses);
+
       } catch (err) {
         console.error('Error fetching assigned classes:', err);
         setError('Failed to load assigned classes');
@@ -243,39 +236,24 @@ useEffect(() => {
     fetchAssignedClasses();
   }, [navigate]);
 
-  // Helper function to format time from 24-hour format to 12-hour format
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    let h = parseInt(hours, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12;
-    h = h ? h : 12; // Convert 0 to 12
-    return `${h}:${minutes} ${ampm}`;
-  };
+ 
+const handleManageClick = (classInfo) => {
+  if (classInfo.subjects && classInfo.subjects.length > 0) {
+    const baseData = classInfo.subjects[0].rawData;
+    const enhancedData = {
+      ...baseData,
+      allSubjects: classInfo.subjects.map(subj => ({
+        name: subj.name,
+        rawData: subj.rawData
+      }))
+    };
+    navigate('/teacher/class-management', { state: { classInfo: enhancedData } });
+  } else {
+    navigate('/teacher/class-management', { state: { classInfo: classInfo.rawData } });
+  }
+};
 
-  const handleManageClick = (classInfo) => {
-    // For grouped classes with multiple subjects
-    if (classInfo.subjects && classInfo.subjects.length > 0) {
-      // Take the first subject's rawData as the base
-      const baseData = classInfo.subjects[0].rawData;
-      
-      // Create a modified version that includes all subjects
-      const enhancedData = {
-        ...baseData,
-        // Add a new property that contains all subjects
-        allSubjects: classInfo.subjects.map(subj => ({
-          name: subj.name,
-          rawData: subj.rawData
-        }))
-      };
-      
-      navigate('/teacher/class-management', { state: { classInfo: enhancedData } });
-    } else {
-      // Original behavior for non-grouped classes
-      navigate('/teacher/class-management', { state: { classInfo: classInfo.rawData } });
-    }
-  };
+
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -535,9 +513,6 @@ useEffect(() => {
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {class_.displaySubjects || class_.subject}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {class_.day} | {class_.time}
                         </Typography>
                       </Box>
                       <Button
