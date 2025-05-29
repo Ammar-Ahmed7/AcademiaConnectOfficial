@@ -224,7 +224,7 @@ export default function UnifiedTimetableManager() {
 
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto container p-4 sm:p-6 lg:p-8">
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 mb-6">
         <div className="border-b border-gray-200">

@@ -34,6 +34,17 @@ export default function EditStaffMember() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+    // ─── Today’s date for max‐date checks ─────────────────────────────── 
+  const now = new Date() 
+ const yyyy = now.getFullYear() 
+  const mm = String(now.getMonth()+1).padStart(2,'0') 
+  const dd = String(now.getDate()).padStart(2,'0') 
+ const today = `${yyyy}-${mm}-${dd}` 
+ 
+  // ─── Regex for formats ──────────────────────────────────────────── 
+  const CNIC_REGEX  = /^\d{5}-\d{7}-\d$/ 
+  const PHONE_REGEX = /^\d{4}-\d{7}$/
+
   // loading / submitting
   const [loading, setLoading]         = useState(true);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -168,6 +179,13 @@ export default function EditStaffMember() {
     const { name, value, type, checked } = e.target;
     let val = type==='checkbox' ? checked : value;
 
+        // mask phone inputs 
+    if (name === 'mobileNumber' || name === 'emergencyContactNumber') { 
+      const digits = val.replace(/\D/g,'').slice(0,11) 
+     val = digits.slice(0,4) + (digits.length>4 ? '-' + digits.slice(4) : '') 
+      setErrors(err => ({ ...err, [name]: '' })) 
+    }
+
     // CNIC read-only, but keep mask if user ever types
     if (name==='cnic') {
       val = maskCnic(val);
@@ -211,6 +229,33 @@ export default function EditStaffMember() {
     }
     return errs;
   };
+
+   // ─── field‐level onBlur validations ──────────────────────────────── 
+  const handleBlur = e => { 
+    const { name, value } = e.target 
+    let err = '' 
+    switch (name) { 
+      case 'dob': 
+      case 'joiningDate': 
+        if (value && value > today) { 
+          err = `${name==='dob'?'Date of Birth':'Joining Date'} cannot be in the future` 
+        } 
+        break 
+      case 'cnic': 
+        if (value && !CNIC_REGEX.test(value)) { 
+          err = 'Invalid CNIC format' 
+        } 
+        break 
+      case 'mobileNumber': 
+      case 'emergencyContactNumber': 
+        if (value && !PHONE_REGEX.test(value)) { 
+          err = 'Invalid format (XXXX-XXXXXXX)' 
+        } 
+        break 
+      default: 
+    } 
+    setErrors(curr => ({ ...curr, [name]: err })) 
+  }
 
   // submit
   const handleSubmit = async e => {
@@ -354,8 +399,10 @@ export default function EditStaffMember() {
               fullWidth
               required
               InputLabelProps={{ shrink:true }}
+              inputProps={{ max: today }}
               value={formData.dob}
               onChange={handleChange}
+              onBlur={handleBlur}
               error={!!errors.dob}
               helperText={errors.dob}
             />
@@ -387,6 +434,7 @@ export default function EditStaffMember() {
               fullWidth
               value={formData.cnic}
               InputProps={{ readOnly:true }}
+              onBlur={handleBlur}
               error={!!errors.cnic}
               helperText={errors.cnic}
             />
@@ -405,13 +453,20 @@ export default function EditStaffMember() {
 
           {/* Religion */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Religion"
-              name="religion"
-              fullWidth
-              value={formData.religion}
-              onChange={handleChange}
-            />
+            <FormControl fullWidth required error={!!errors.religion}> 
+              <InputLabel>Religion</InputLabel> 
+              <Select 
+                name="religion" 
+                value={formData.religion} 
+                onChange={handleChange} 
+                label="Religion" 
+              > 
+                <MenuItem value=""><em>None</em></MenuItem> 
+                <MenuItem value="Islam">Islam</MenuItem> 
+                <MenuItem value="Christianity ">Christianity</MenuItem> 
+              </Select> 
+              <FormHelperText>{errors.religion}</FormHelperText> 
+            </FormControl>
           </Grid>
 
           {/* Blood Group */}
@@ -437,16 +492,16 @@ export default function EditStaffMember() {
 
           {/* Mobile */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Mobile Number"
-              name="mobileNumber"
-              required
-              fullWidth
-              value={formData.mobileNumber}
-              onChange={handleChange}
-              error={!!errors.mobileNumber}
-              helperText={errors.mobileNumber}
-            />
+             <TextField 
+              name="mobileNumber" 
+              label="Mobile Number" 
+              fullWidth 
+              required 
+              value={formData.mobileNumber} 
+              onChange={handleChange} 
+              onBlur={handleBlur} 
+              error={!!errors.mobileNumber} 
+              helperText={errors.mobileNumber} />
           </Grid>
 
           {/* Email */}
@@ -562,17 +617,18 @@ export default function EditStaffMember() {
 
           {/* Joining Date */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Joining Date"
-              type="date"
-              name="joiningDate"
-              required
-              fullWidth
-              InputLabelProps={{ shrink:true }}
-              value={formData.joiningDate}
-              onChange={handleChange}
-              error={!!errors.joiningDate}
-              helperText={errors.joiningDate}
+             <TextField 
+              name="joiningDate" 
+              type="date" 
+              fullWidth 
+              required 
+              InputLabelProps={{ shrink:true }} 
+              inputProps={{ max: today }} 
+              value={formData.joiningDate} 
+              onChange={handleChange} 
+              onBlur={handleBlur} 
+              error={!!errors.joiningDate} 
+              helperText={errors.joiningDate} 
             />
           </Grid>
 
@@ -624,7 +680,7 @@ export default function EditStaffMember() {
           {/* Section 4: Health & Emergency */}
           <Grid item xs={12}><Typography variant="h6">Health & Emergency</Typography></Grid>
 
-          {/* Medical Conditions */}
+          {/* Medical Conditions
           <Grid item xs={12} sm={6}>
             <TextField
               label="Medical Conditions"
@@ -635,7 +691,7 @@ export default function EditStaffMember() {
               value={formData.medicalConditions}
               onChange={handleChange}
             />
-          </Grid>
+          </Grid> */}
 
           {/* Emergency Contact Name */}
           <Grid item xs={12} sm={6}>
@@ -653,15 +709,16 @@ export default function EditStaffMember() {
 
           {/* Emergency Contact Number */}
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Emergency Contact Number"
-              name="emergencyContactNumber"
-              required
-              fullWidth
-              value={formData.emergencyContactNumber}
-              onChange={handleChange}
-              error={!!errors.emergencyContactNumber}
-              helperText={errors.emergencyContactNumber}
+             <TextField 
+              name="emergencyContactNumber" 
+              label="Emergency Contact Number" 
+              fullWidth 
+              required 
+              value={formData.emergencyContactNumber} 
+              onChange={handleChange} 
+              onBlur={handleBlur} 
+              error={!!errors.emergencyContactNumber} 
+              helperText={errors.emergencyContactNumber} 
             />
           </Grid>
 

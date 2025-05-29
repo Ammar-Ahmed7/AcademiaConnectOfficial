@@ -45,12 +45,12 @@ import {
   Home,
   Cake,
   Wc,
-  BloodtypeOutlined,
   DirectionsBus,
   MedicalInformation,
   Work,
   AttachMoney,
   FamilyRestroom,
+  LocationCity,
 } from '@mui/icons-material'
 import ApartmentIcon from '@mui/icons-material/Apartment'
 import { useNavigate } from 'react-router-dom'
@@ -114,7 +114,7 @@ export default function ManageStudents() {
           residential_address,
           emergency_contact,
           is_rusticated,
-          blood_group,
+          city,
           father_cnic,
           father_occupation,
           mother_name,
@@ -124,7 +124,8 @@ export default function ManageStudents() {
           major_disability,
           allergies,
           transport,
-          route
+          route,
+          rusticate_reason
         `)
 
       // apply rustication filter
@@ -218,10 +219,10 @@ export default function ManageStudents() {
   }
 
   // ─── Show Details Dialog ───────────────────────────────────────────────
-  function openDetails(std) {
-    setSelectedStd(std)
-    setDialogOpen(true)
-  }
+  // function openDetails(std) {
+  //   setSelectedStd(std)
+  //   setDialogOpen(true)
+  // }
 
   // ─── Helper Functions ──────────────────────────────────────────────────
   const formatDate = (dateString) => {
@@ -503,6 +504,17 @@ export default function ManageStudents() {
                                         )}
                                       </Box>
                                     </Box>
+                                    {/* show rustication reason if rusticated */}
+                                  {student.is_rusticated && (
+                                    <Typography
+                                      variant="body2"
+                                      color="error"
+                                      sx={{ ml: 1, mb: 2 }}
+                                    >
+                                      <strong>Rustication Reason:</strong>{' '}
+                                      {student.rusticate_reason || '-'}
+                                    </Typography>
+                                  )}
                                     <Divider sx={{ mb: 2 }} />
                                     <Grid container spacing={3}>
                                       <Grid item xs={12} md={6}>
@@ -520,8 +532,8 @@ export default function ManageStudents() {
                                             <strong>B-Form No:</strong> {student.b_form_no || "-"}
                                           </Typography>
                                           <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <BloodtypeOutlined fontSize="small" color="action" />
-                                            <strong>Blood Group:</strong> {student.blood_group || "-"}
+                                            <LocationCity fontSize="small" color="action" />
+                                            <strong>City:</strong> {student.city || "-"}
                                           </Typography>
                                           <Typography sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                                             <Home fontSize="small" color="action" />

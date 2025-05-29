@@ -61,6 +61,10 @@ export default function ManageTeachers() {
     else setAllAssignments(data || []);
   }
 
+  const isAdminRole = (post) => {
+  return ['Principal', 'Vice Principal', 'Acting Principal'].includes(post);
+};
+
   // Load teachers with their assignments
   async function loadTeachers() {
     setLoading(true);
@@ -70,6 +74,8 @@ export default function ManageTeachers() {
         TeacherID,
         Name,
         Email,
+        Post,
+        TransferedSchool,
         teacher_assignments (
           assignment_id,
           section_id,
@@ -84,7 +90,29 @@ export default function ManageTeachers() {
     if (error) console.error('loadTeachers error:', error);
     else setTeacherRequests(data || []);
     setLoading(false);
+
+    if (error) {
+  console.error('loadTeachers error:', error);
+  setTeacherRequests([]);
+} else {
+  // Filter out transferred teachers
+  let list = data.filter(t => t.TransferedSchool === null);
+  
+  // Sort teachers: admin roles first, then regular teachers
+  list.sort((a, b) => {
+    const aIsAdmin = isAdminRole(a.Post);
+    const bIsAdmin = isAdminRole(b.Post);
+    
+    if (aIsAdmin && !bIsAdmin) return -1; // a comes first
+    if (!aIsAdmin && bIsAdmin) return 1;  // b comes first
+    return 0; // maintain original order
+  });
+  
+  setTeacherRequests(list);
+}
   }
+
+  
 
   // Load all sections
   async function loadSections() {
@@ -140,6 +168,11 @@ export default function ManageTeachers() {
 
   // Open modal & initialize section assignments
   const openModal = teacher => {
+
+     if (isAdminRole(teacher.Post)) {
+    setError(`Cannot assign subjects to ${teacher.Post}. Administrative roles are not eligible for subject assignments.`);
+    return;
+  }
     setSelectedTeacher(teacher);
     setIsModalOpen(true);
     setClassSearch('');
@@ -417,7 +450,11 @@ export default function ManageTeachers() {
               return (
                 <div
                   key={teacher.TeacherID}
-                  className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
+                  className={`rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer ${
+                    isAdminRole(teacher.Post) 
+                      ? 'bg-purple-50 border-purple-200' 
+                      : 'bg-white'
+                  }`}
                   onClick={() => openModal(teacher)}
                 >
                   <div className="p-6">
@@ -426,10 +463,15 @@ export default function ManageTeachers() {
                         <div className="p-3 bg-blue-100 rounded-full">
                           <User className="w-6 h-6 text-blue-600" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{teacher.Name}</h3>
-                          <p className="text-gray-500">{teacher.Email}</p>
-                        </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{teacher.Name}</h3>
+                            <p className="text-gray-500">{teacher.Email}</p>
+                            {isAdminRole(teacher.Post) && (
+                              <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                {teacher.Post}
+                              </span>
+                            )}
+                          </div>
                       </div>
                       <div className="text-sm text-gray-500">
                         {Object.keys(assignmentsByClass).length} sections, {totalSubjects} subjects

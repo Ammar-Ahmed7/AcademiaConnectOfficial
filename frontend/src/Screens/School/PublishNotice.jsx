@@ -753,7 +753,7 @@ function PublishNotice({ onPublish }) {
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   return (
-    <Card sx={{ maxWidth: 800, margin: "auto", mt: 4, p: 3 }}>
+    <Card sx={{ maxWidth: '100vw', margin: "auto", mt: 4, p: 3 }}>
       <Typography
         variant="h5"
         component="h2"
