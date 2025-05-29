@@ -1,5 +1,5 @@
 // src/screens/School/EditStudent.jsx
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Container,
   Box,
@@ -31,7 +31,16 @@ import { supabase } from './supabaseClient'
 export default function EditStudent() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const today = new Date().toISOString().slice(0,10)
+    // ─── Today’s date and regex patterns ────────────────────────────── 
+  const now    = new Date() 
+  const yyyy   = now.getFullYear() 
+  const mm     = String(now.getMonth()+1).padStart(2,'0') 
+  const dd     = String(now.getDate()).padStart(2,'0') 
+  const today  = `${yyyy}-${mm}-${dd}` 
+ 
+  // B-Form/CNIC and phone number formats 
+  const BFORM_CNIC_REGEX = /^\d{5}-\d{7}-\d$/ 
+  const PHONE_REGEX      = /^\d{4}-\d{7}$/
 
   // Initial full form shape
   const initial = {
@@ -229,9 +238,54 @@ export default function EditStudent() {
       })
   },[])
 
+    // ─── field-by-field blur validation ─────────────────────────────── 
+  const handleBlur = async e => { 
+   const { name, value } = e.target 
+    let err = '' 
+    switch (name) { 
+     case 'dob': 
+      case 'admissionDate': 
+       if (value && value > today) { 
+          err = `${name==='dob'?'Date of Birth':'Admission Date'} cannot be in the future` 
+        } 
+        break 
+     case 'bFormNo': 
+        if (value && !BFORM_CNIC_REGEX.test(value)) { 
+          err = 'Format: 12345-1234567-1' 
+        } 
+       break 
+      case 'fatherCnic': 
+        if (value && !BFORM_CNIC_REGEX.test(value)) { 
+          err = 'Format: 12345-1234567-1' 
+        } 
+        break 
+      case 'emergencyContact': 
+        if (value && !PHONE_REGEX.test(value)) { 
+          err = 'Format: 0324-1234567' 
+        } 
+        break 
+      default: 
+    } 
+    setErrors(curr => ({ ...curr, [name]: err })) 
+  }
+
   const handleChange = e => {
     const { name, type, checked, value, files } = e.target
     let val = value
+
+        // real-time masks 
+    if (name==='bFormNo' || name==='fatherCnic') { 
+     const digits = value.replace(/\D/g,'').slice(0,13) 
+      val = digits.slice(0,5) 
+        + (digits.length>5 ? '-'+digits.slice(5,12) : '') 
+       + (digits.length>12? '-'+digits.slice(12):'') 
+      setErrors(err => ({ ...err, [name]: '' })) 
+    } 
+   if (name==='emergencyContact') { 
+      const digits = value.replace(/\D/g,'').slice(0,11) 
+      val = digits.slice(0,4) + (digits.length>4? '-'+digits.slice(4):'') 
+      setErrors(err => ({ ...err, emergencyContact: '' })) 
+   }
 
     if (name==='bFormNo'||name==='fatherCnic') {
       val = mask(value)
@@ -401,9 +455,10 @@ export default function EditStudent() {
               name="dob"
               value={formData.dob}
               onChange={handleChange}
+              onBlur={handleBlur}
               margin="dense"
               InputLabelProps={{ shrink:true }}
-              InputProps={{ readOnly:true }}
+              inputProps={{ max: today }}
               error={!!errors.dob}
               helperText={errors.dob}
             />
@@ -431,14 +486,20 @@ export default function EditStudent() {
 
           {/* Religion */}
           <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Religion"
-              name="religion"
-              value={formData.religion}
-              onChange={handleChange}
-              margin="dense"
-            />
+             <FormControl fullWidth margin="dense" error={!!errors.religion}> 
+              <InputLabel>Religion *</InputLabel> 
+              <Select 
+                name="religion" 
+                value={formData.religion} 
+                onChange={handleChange} 
+                label="Religion *" 
+              > 
+                <MenuItem value=""><em>Select</em></MenuItem> 
+                <MenuItem value="Islam">Islam</MenuItem> 
+                <MenuItem value="Christianity">Christianity</MenuItem> 
+              </Select> 
+              <FormHelperText>{errors.religion}</FormHelperText> 
+            </FormControl>
           </Grid>
 
           {/* B-Form No (read-only) */}
@@ -449,6 +510,7 @@ export default function EditStudent() {
               name="bFormNo"
               value={formData.bFormNo}
               onChange={handleChange}
+              onBlur={handleBlur}
               margin="dense"
               InputProps={{ readOnly:true }}
             />
@@ -571,6 +633,7 @@ export default function EditStudent() {
               name="fatherCnic"
               value={formData.fatherCnic}
               onChange={handleChange}
+              onBlur={handleBlur}
               margin="dense"
               placeholder="XXXXX-XXXXXXX-X"
               error={!!errors.fatherCnic}
@@ -787,7 +850,9 @@ export default function EditStudent() {
               name="admissionDate"
               value={formData.admissionDate}
               onChange={handleChange}
+              onBlur={handleBlur}
               InputLabelProps={{shrink:true}}
+              inputProps={{ max: today }}
               margin="dense"
               error={!!errors.admissionDate}
               helperText={errors.admissionDate}
@@ -959,6 +1024,7 @@ export default function EditStudent() {
               name="emergencyContact"
               value={formData.emergencyContact}
               onChange={handleChange}
+              onBlur={handleBlur}
               margin="dense"
               error={!!errors.emergencyContact}
               helperText={errors.emergencyContact}
@@ -1028,7 +1094,7 @@ export default function EditStudent() {
               margin="dense"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          {/* <Grid item xs={12} md={6}>
             <FormControl component="fieldset" margin="dense">
               <Typography component="legend">Admission Approved</Typography>
               <FormControlLabel
@@ -1067,7 +1133,7 @@ export default function EditStudent() {
                 margin="dense"
               />
             </Grid>
-          )}
+          )} */}
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
