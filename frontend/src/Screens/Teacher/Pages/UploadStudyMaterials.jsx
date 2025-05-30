@@ -1,8 +1,11 @@
+/* eslint-disable no-unused-vars */
+// Updated StudyMaterial.jsx UI consistent with Sidebar and Dashboard
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, InputBase, IconButton, Divider, List,
   ListItem, ListItemText, ListItemIcon, ListItemSecondaryAction, Chip,
-  Modal, TextField, Snackbar, Alert, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Modal, TextField, Snackbar, Alert, CircularProgress, Dialog, DialogActions,
+  DialogContent, DialogContentText, DialogTitle, useTheme, alpha
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -33,6 +36,8 @@ const StudyMaterial = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const classInfo = location.state?.classInfo;
+  const theme = useTheme();
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -166,41 +171,52 @@ const StudyMaterial = () => {
     setDeleteDialog(true);
   };
 
-  const modalStyle = {
+ const modalStyle = {
     position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
     width: 500, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
       <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, ml: '240px', height: '100vh', overflowY: 'auto' }}>
-        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
-  <ArrowBackIcon fontSize="large" />
-</IconButton>
-          <Typography variant="h4" sx={{ color: '#1a1a2e' }}>Study Materials</Typography>
-          <IconButton
-            sx={{ backgroundColor: '#4ade80', left:'640px',color: 'white', '&:hover': { backgroundColor: '#22c55e' } }}
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3, lg: 4 }, ml: '240px', overflowY: 'auto' }}>
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2 }}>
+              <ArrowBackIcon fontSize="medium" />
+            </IconButton>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+              Study Materials
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
             onClick={() => setOpenModal(true)}
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              textTransform: 'none',
+              borderRadius: 2,
+              fontWeight: 600,
+              '&:hover': { bgcolor: theme.palette.primary.dark },
+            }}
           >
-            <AddIcon />
-          </IconButton>
+            Add Material
+          </Button>
         </Box>
 
-         {/* ── SEARCH BAR ── */}
         <Paper
           component="form"
-          sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', mb: 3, width: '100%' }}
+          sx={{ p: '2px 8px', mb: 3, display: 'flex', alignItems: 'center', borderRadius: 2, boxShadow: 1 }}
           onSubmit={e => e.preventDefault()}
         >
           <InputBase
             sx={{ ml: 1, flex: 1 }}
-            placeholder="Search study materials by name"
+            placeholder="Search study materials by name or description"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <IconButton type="button" sx={{ p: '10px' }} aria-label="search">
+          <IconButton type="button" sx={{ p: '10px', color: theme.palette.primary.main }}>
             <SearchIcon />
           </IconButton>
         </Paper>
@@ -208,7 +224,7 @@ const StudyMaterial = () => {
         {loadingResources ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
         ) : (
-          <Paper sx={{ width: '100%', borderRadius: 2 }}>
+          <Paper sx={{ width: '100%', borderRadius: 2, boxShadow: 1 }}>
             <List>
               {filteredMaterials.map((material, index) => (
                 <React.Fragment key={material.id}>
@@ -220,10 +236,10 @@ const StudyMaterial = () => {
                     />
                     <Chip label={classInfo.subjects.subject_name} size="small" sx={{ mr: 6 }} />
                     <ListItemSecondaryAction>
-                      <IconButton edge="end" aria-label="download" onClick={() => window.open(material.file_url, '_blank')}>
-                        <DownloadIcon sx={{color:'#05a5d4'}} />
+                      <IconButton edge="end" onClick={() => window.open(material.file_url, '_blank')}>
+                        <DownloadIcon sx={{ color: theme.palette.info.main }} />
                       </IconButton>
-                      <IconButton edge="end" aria-label="delete" color="error" onClick={() => openDeleteDialog(material)}>
+                      <IconButton edge="end" color="error" onClick={() => openDeleteDialog(material)}>
                         <DeleteIcon />
                       </IconButton>
                     </ListItemSecondaryAction>
@@ -254,7 +270,12 @@ const StudyMaterial = () => {
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                 <Button onClick={() => setOpenModal(false)}>Cancel</Button>
-                <Button type="submit" variant="contained" disabled={uploading} sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={uploading}
+                  sx={{ bgcolor: theme.palette.primary.main, '&:hover': { bgcolor: theme.palette.primary.dark } }}
+                >
                   {uploading ? <CircularProgress size={24} /> : 'Upload'}
                 </Button>
               </Box>
@@ -288,8 +309,6 @@ const StudyMaterial = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
-
-        
       </Box>
     </Box>
   );

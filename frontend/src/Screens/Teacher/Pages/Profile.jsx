@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 // Profile.jsx
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
@@ -8,7 +9,8 @@ import {
   Grid, 
   CircularProgress,
   Avatar,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client';
@@ -16,6 +18,7 @@ import Sidebar from '../Components/Sidebar';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [teacherData, setTeacherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -123,7 +126,7 @@ const Profile = () => {
         >
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <CircularProgress size={30} sx={{ color: '#4ade80' }} />
+              <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
             </Box>
           ) : error ? (
             <Typography color="error" sx={{ p: 2 }}>{error}</Typography>
@@ -135,7 +138,7 @@ const Profile = () => {
                     width: 150, 
                     height: 150, 
                     fontSize: 60,
-                    backgroundColor: '#4ade80',
+                    backgroundColor: theme.palette.primary.main,
                     mb: 2
                   }}
                 >
@@ -150,7 +153,7 @@ const Profile = () => {
               </Grid>
               
               <Grid item xs={12} md={8}>
-                <Typography variant="h6" gutterBottom sx={{ mb: 2, color: '#4ade80' }}>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2, color: theme.palette.primary.main }}>
                   Personal Information
                 </Typography>
                 
@@ -191,7 +194,7 @@ const Profile = () => {
                 
                 <Divider sx={{ my: 3 }} />
                 
-                <Typography variant="h6" gutterBottom sx={{ mb: 2, color: '#4ade80' }}>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2, color: theme.palette.primary.main }}>
                   Professional Information
                 </Typography>
                 

@@ -1,543 +1,637 @@
-// eslint-disable-next-line no-unused-vars
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Button, CircularProgress } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import Sidebar from '../Components/Sidebar';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../../../supabase-client';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css'; // Make sure styles are loaded // Make sure you have this import
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import DownloadIcon from '@mui/icons-material/Download';
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react/prop-types */
+// Updated Dashboard.jsx with better calendar (MUI X) and notification UI
+import React, { useState, useEffect } from "react"
+import { Box, Typography, Paper, Grid, Button, CircularProgress, Chip, useTheme, alpha } from "@mui/material"
+import NotificationsIcon from "@mui/icons-material/Notifications"
+import Sidebar from "../Components/Sidebar"
+import { useNavigate } from "react-router-dom"
+import { supabase } from "../../../../supabase-client"
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker'
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile"
+import DownloadIcon from "@mui/icons-material/Download"
+import ClassIcon from "@mui/icons-material/Class"
+import EventIcon from "@mui/icons-material/Event"
+import AnnouncementIcon from "@mui/icons-material/Announcement"
+import ScheduleIcon from "@mui/icons-material/Schedule"
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [assignedClasses, setAssignedClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [loadingNotices, setLoadingNotices] = useState(true);
+  const theme = useTheme()
+  const navigate = useNavigate()
+  const [assignedClasses, setAssignedClasses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const [loadingNotices, setLoadingNotices] = useState(true)
 
-  const [timetableFilePath, setTimetableFilePath] = useState(null);
-  const [timetableFileName, setTimetableFileName] = useState('');
-  const [timetableLoading, setTimetableLoading] = useState(true);
+  const [timetableFilePath, setTimetableFilePath] = useState(null)
+  const [timetableFileName, setTimetableFileName] = useState("")
+  const [timetableLoading, setTimetableLoading] = useState(true)
 
+  const [calendarValue, setCalendarValue] = useState(new Date())
 
-const [calendarValue, setCalendarValue] = useState(new Date());
+  useEffect(() => {
+    const fetchTimetableFile = async () => {
+      try {
+        setTimetableLoading(true)
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) return navigate("/")
 
-useEffect(() => {
-  const fetchTimetableFile = async () => {
-    try {
-      setTimetableLoading(true); // Start loading
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) return navigate('/');
+        const { data: teacherData, error: teacherError } = await supabase
+          .from("Teacher")
+          .select("SchoolID")
+          .eq("user_id", user.id)
+          .single()
+        if (teacherError) throw teacherError
 
-      // Fetch teacher info
-      const { data: teacherData, error: teacherError } = await supabase
-        .from('Teacher')
-        .select('SchoolID')
-        .eq('user_id', user.id)
-        .single();
-      if (teacherError) throw teacherError;
+        const { data: timetableData, error: timetableError } = await supabase
+          .from("class_timetables")
+          .select("file_path, file_name")
+          .eq("school_id", teacherData.SchoolID)
+          .single()
+        if (timetableError) throw timetableError
 
-      // Fetch timetable record
-      const { data: timetableData, error: timetableError } = await supabase
-        .from('class_timetables')
-        .select('file_path, file_name')
-        .eq('SchoolID', teacherData.SchoolID)
-        .single();
-      if (timetableError) throw timetableError;
+        const filePath = timetableData?.file_path
+        const fileName = timetableData?.file_name
 
-      const filePath = timetableData?.file_path;
-      const fileName = timetableData?.file_name;
+        if (!filePath) return
 
-      if (!filePath) return;
+        const { data: urlData } = supabase.storage.from("class-timetables").getPublicUrl(filePath)
 
-      // Get public URL
-      const { data: urlData } = supabase
-        .storage
-        .from('class-timetables')
-        .getPublicUrl(filePath);
-
-      setTimetableFilePath(urlData?.publicUrl || null);
-      setTimetableFileName(fileName || '');
-    } catch (err) {
-      console.error('Error fetching timetable file:', err);
-    } finally {
-      setTimetableLoading(false); // Stop loading
+        setTimetableFilePath(urlData?.publicUrl || null)
+        setTimetableFileName(fileName || "")
+      } catch (err) {
+        console.error("Error fetching timetable file:", err)
+      } finally {
+        setTimetableLoading(false)
+      }
     }
-  };
 
-  fetchTimetableFile();
-}, [navigate]);
+    fetchTimetableFile()
+  }, [navigate])
 
+  useEffect(() => {
+    const fetchNotificationData = async () => {
+      setLoadingNotices(true)
+      try {
+        setLoading(true)
 
-useEffect(() => {
-  const fetchNotificationData = async () => {
-    setLoadingNotices(true); // Start loader
-    try {
-      setLoading(true);
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) return navigate("/")
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) return navigate('/');
+        const { data: teacherData, error: teacherError } = await supabase
+          .from("Teacher")
+          .select("TeacherID, SchoolID")
+          .eq("user_id", user.id)
+          .single()
+        if (teacherError) throw teacherError
 
-      const { data: teacherData, error: teacherError } = await supabase
-        .from('Teacher')
-        .select('TeacherID, SchoolID')
-        .eq('user_id', user.id)
-        .single();
-      if (teacherError) throw teacherError;
+        const today = new Date().toISOString().split("T")[0]
 
-      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        const { data: adminNotices, error: adminError } = await supabase
+          .from("Notice")
+          .select("*")
+          .eq("AudienceTeacher", true)
+          .eq("CreatedType", "Admin")
+          .gte("EndDate", today)
 
-      // Fetch relevant notices
-      const { data: adminNotices, error: adminError } = await supabase
-        .from('Notice')
-        .select('*')
-        .eq('AudienceTeacher', true)
-        .eq('CreatedType', 'Admin')
-        .gte('EndDate', today);  // ✅ only include future or current notices
+        const { data: schoolNotices, error: schoolError } = await supabase
+          .from("Notice")
+          .select("*")
+          .eq("AudienceTeacher", true)
+          .eq("CreatedType", "School")
+          .eq("CreatedBy", teacherData.SchoolID)
+          .gte("EndDate", today)
 
-      const { data: schoolNotices, error: schoolError } = await supabase
-        .from('Notice')
-        .select('*')
-        .eq('AudienceTeacher', true)
-        .eq('CreatedType', 'School')
-        .eq('CreatedBy', teacherData.SchoolID)
-        .gte('EndDate', today); // ✅ only include future or current notices
+        if (adminError || schoolError) throw adminError || schoolError
 
-      if (adminError || schoolError) throw adminError || schoolError;
+        const allNotices = [...(adminNotices || []), ...(schoolNotices || [])]
+        const sorted = allNotices.sort((a, b) => {
+          if (a.Urgent === b.Urgent) {
+            return new Date(b.created_at) - new Date(a.created_at)
+          }
+          return b.Urgent ? 1 : -1
+        })
 
-      const allNotices = [...(adminNotices || []), ...(schoolNotices || [])];
-      const sorted = allNotices.sort((a, b) => {
-  // Urgent notices first
-  if (a.Urgent === b.Urgent) {
-    return new Date(b.created_at) - new Date(a.created_at); // newer first
-  }
-  return b.Urgent ? 1 : -1;
-});
-
-
-      setNotifications(sorted);
-
-    } catch (err) {
-      console.error('Dashboard load error:', err);
-      setError('Failed to load dashboard data.');
-    } finally {
-      setLoadingNotices(false); // Stop loader
+        setNotifications(sorted)
+      } catch (err) {
+        console.error("Dashboard load error:", err)
+        setError("Failed to load dashboard data.")
+      } finally {
+        setLoadingNotices(false)
+      }
     }
-  };
 
-  fetchNotificationData();
-}, [navigate]);
+    fetchNotificationData()
+  }, [navigate])
 
   useEffect(() => {
     const fetchAssignedClasses = async () => {
       try {
-        setLoading(true);
+        setLoading(true)
 
-        // First, get the current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
 
-        if (userError) throw userError;
+        if (userError) throw userError
 
         if (!user) {
-          navigate('/');
-          return;
+          navigate("/")
+          return
         }
 
-        // Get the teacher record for this user
         const { data: teacherData, error: teacherError } = await supabase
-          .from('Teacher')
-          .select('TeacherID') // Use TeacherID instead of id
-          .eq('user_id', user.id)
-          .single();
+          .from("Teacher")
+          .select("TeacherID")
+          .eq("user_id", user.id)
+          .single()
 
-        if (teacherError) throw teacherError;
+        if (teacherError) throw teacherError
 
         if (!teacherData) {
-          setError('Teacher profile not found');
-          setLoading(false);
-          return;
+          setError("Teacher profile not found")
+          setLoading(false)
+          return
         }
 
-        // Get assigned classes with related data from teacher_assignments table
-       const { data: assignments, error: assignmentError } = await supabase
-  .from('teacher_assignments')
-  .select(`
-    TeacherID,
-    assignment_id,
-    section_id,
-    subjects,
-    sections:section_id (
-      section_name,
-      class_id,
-      classes:class_id (class_name)
-    )
-  `)
-  .eq('TeacherID', teacherData.TeacherID);
+        const { data: assignments, error: assignmentError } = await supabase
+          .from("teacher_assignments")
+          .select(`
+            TeacherID,
+            assignment_id,
+            section_id,
+            subjects,
+            sections:section_id (
+              section_name,
+              class_id,
+              classes:class_id (class_name)
+            )
+          `)
+          .eq("TeacherID", teacherData.TeacherID)
 
-if (assignmentError) throw assignmentError;
+        if (assignmentError) throw assignmentError
 
-// Extract all subject_ids from all rows
-const allSubjectIds = assignments.flatMap(a =>
-  (a.subjects || []).map(sub => sub)
-);
+        const allSubjectIds = assignments.flatMap((a) => (a.subjects || []).map((sub) => sub))
 
-// Get distinct subject IDs
-const uniqueSubjectIds = [...new Set(allSubjectIds)];
+        const uniqueSubjectIds = [...new Set(allSubjectIds)]
 
-// Fetch subject names for these IDs
-const { data: subjectDetails, error: subjectError } = await supabase
-  .from('subjects')
-  .select('subject_id, subject_name')
-  .in('subject_id', uniqueSubjectIds);
+        const { data: subjectDetails, error: subjectError } = await supabase
+          .from("subjects")
+          .select("subject_id, subject_name")
+          .in("subject_id", uniqueSubjectIds)
 
-if (subjectError) throw subjectError;
+        if (subjectError) throw subjectError
 
-// Create a map of subject_id -> subject_name
-const subjectMap = {};
-(subjectDetails || []).forEach(sub => {
-  subjectMap[sub.subject_id] = sub.subject_name;
-});
+        const subjectMap = {}
+        ;(subjectDetails || []).forEach((sub) => {
+          subjectMap[sub.subject_id] = sub.subject_name
+        })
 
-// Format the assignments
-const formattedClasses = assignments.map(a => {
-  const subjectList = (a.subjects || []).map(id => ({
-    id,
-    name: subjectMap[id] || 'Unknown Subject',
-    rawData: a,
-  }));
+        const formattedClasses = assignments.map((a) => {
+          const subjectList = (a.subjects || []).map((id) => ({
+            id,
+            name: subjectMap[id] || "Unknown Subject",
+            rawData: a,
+          }))
 
-  return {
-    className: a.sections?.classes?.class_name || 'Unknown Class',
-    classID: a.sections?.class_id || null,
-    section: a.sections?.section_name || 'Unknown Section',
-    subjects: subjectList,
-    displaySubjects: subjectList.map(s => s.name).join(', '),
-    day: '—', // No day/time in teacher_assignments
-    time: '—', // No time info either
-    rawData: a
-  };
-});
+          return {
+            className: a.sections?.classes?.class_name || "Unknown Class",
+            classID: a.sections?.class_id || null,
+            section: a.sections?.section_name || "Unknown Section",
+            subjects: subjectList,
+            displaySubjects: subjectList.map((s) => s.name).join(", "),
+            day: "—",
+            time: "—",
+            rawData: a,
+          }
+        })
 
-setAssignedClasses(formattedClasses);
-
+        setAssignedClasses(formattedClasses)
       } catch (err) {
-        console.error('Error fetching assigned classes:', err);
-        setError('Failed to load assigned classes');
+        console.error("Error fetching assigned classes:", err)
+        setError("Failed to load assigned classes")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchAssignedClasses();
-  }, [navigate]);
+    fetchAssignedClasses()
+  }, [navigate])
 
- 
-const handleManageClick = (classInfo) => {
-  if (classInfo.subjects && classInfo.subjects.length > 0) {
-    const baseData = classInfo.subjects[0].rawData;
-    const enhancedData = {
-      ...baseData,
-      allSubjects: classInfo.subjects.map(subj => ({
-        name: subj.name,
-        rawData: subj.rawData
-      }))
-    };
-    navigate('/teacher/class-management', { state: { classInfo: enhancedData } });
-  } else {
-    navigate('/teacher/class-management', { state: { classInfo: classInfo.rawData } });
+  const handleManageClick = (classInfo) => {
+    if (classInfo.subjects && classInfo.subjects.length > 0) {
+      const baseData = classInfo.subjects[0].rawData
+      const enhancedData = {
+        ...baseData,
+        allSubjects: classInfo.subjects.map((subj) => ({
+          name: subj.name,
+          rawData: subj.rawData,
+        })),
+      }
+      navigate("/teacher/class-management", { state: { classInfo: enhancedData } })
+    } else {
+      navigate("/teacher/class-management", { state: { classInfo: classInfo.rawData } })
+    }
   }
-};
-
-
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-  
+    if (!dateStr) return ""
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  // Professional card component
+  const DashboardCard = ({ title, icon, children, height = 400 }) => (
+    <Paper
+      elevation={2}
+      sx={{
+        p: 3,
+        height,
+        display: "flex",
+        flexDirection: "column",
+        background: "white",
+        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+        transition: "all 0.3s ease",
+        overflow: "hidden",
+        "&:hover": {
+          boxShadow: `0 8px 24px ${alpha(theme.palette.primary.dark, 0.12)}`,
+        },
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 42,
+            height: 42,
+            borderRadius: 1.5,
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            mr: 2,
+          }}
+        >
+          {React.cloneElement(icon, { sx: { color: theme.palette.primary.main, fontSize: 22 } })}
+        </Box>
+        <Typography
+          variant="h6"
+          sx={{
+            color: theme.palette.text.primary,
+            fontWeight: 600,
+            fontSize: "1.1rem",
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+      {children}
+    </Paper>
+  )
+
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f8fafc" }}>
       <Sidebar />
-      
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          ml: '240px', // Match sidebar width
-          height: '100vh',
-          overflowY: 'auto', // Make main content scrollable
-          '&::-webkit-scrollbar': {
-            width: '0.4em'
-          },
-          '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1'
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#888'
-          }
+          p: { xs: 2, md: 3, lg: 4 },
+          ml: "240px",
+          minHeight: "100vh",
         }}
       >
-        <Grid 
-          container 
-          spacing={3}
-          sx={{
-            maxHeight: 'calc(100vh - 48px)', // Account for padding
-            mb: 3 // Add bottom margin to ensure last items are visible
-          }}
-        >
-          {/* Grid items remain the same */}
-          <Grid item xs={12} md={6}>
-            <Paper 
-              sx={{ 
-                p: 2, 
-                height: 400,
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#fff',
-                borderRadius: 2,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                Class Timetable
-              </Typography>
-              <Box
-  sx={{
-    flexGrow: 1,
-    backgroundColor: '#efefef',
-    display: 'flex',
-    alignItems: 'center',
-    borderRadius: 1,
-    p: 2,
-    flexDirection: 'column',
-    textAlign: 'center',
+        {/* Header with gradient underline */}
+        <Box sx={{ mb: 4, pb: 2, borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>
+          <Typography
+            variant="h4"
+            sx={{
+              color: theme.palette.text.primary,
+              fontWeight: 700,
+              mb: 1,
+              fontSize: { xs: "1.8rem", md: "2.2rem" },
+            }}
+          >
+            Teacher Dashboard
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: theme.palette.text.secondary,
+              fontSize: "1rem",
+            }}
+          >
+            Welcome back! Here's what's happening in your classes today.
+          </Typography>
+        </Box>
 
-  }}
->
-{timetableLoading ? (
-<CircularProgress size={30} sx={{ color: '#4ade80' }} />
-) : 
-  timetableFilePath ? (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'auto' }}>
-      <InsertDriveFileIcon sx={{ color: '#fe0f0f' }} />
-      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-        {timetableFileName}
-      </Typography>
-      <a
-        href={timetableFilePath}
-        download={timetableFileName}
-        style={{
-          textDecoration: 'none',
-          backgroundColor: '#05a5d4',
-          color: 'white',
-          padding: '6px 12px',
-          borderRadius: '6px',
+        <Grid container spacing={3}>
+          {/* Class Timetable */}
+          <Grid item xs={12} md={6}>
+            <DashboardCard title="Class Timetable" icon={<ScheduleIcon />}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+  {timetableLoading ? (
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+      <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
+    </Box>
+  ) : timetableFilePath ? (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box
+        sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          justifyContent: 'center',
+          width: 48,
+          height: 48,
+          borderRadius: 1.5,
+          bgcolor: alpha(theme.palette.error.main, 0.1),
         }}
       >
-        <DownloadIcon fontSize="small"/>
-        Download
-      </a>
-    </Box>
-  ) : (
-    <Typography variant="body2" color="text.secondary">
-      No timetable file available for this school.
-    </Typography>
-  )}
-</Box>
-
-
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-  <Paper 
-    sx={{ 
-      p: 2, 
-      height: 400,
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#fff',
-      borderRadius: 2,
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}
-  >
-    <Typography variant="h6" gutterBottom color="primary">
-      Calendar
-    </Typography>
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 1,
-        
-      }}
-    >
-      <Calendar 
-        onChange={setCalendarValue} 
-        value={calendarValue} 
-      />
-    </Box>
-  </Paper>
-</Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper 
-              sx={{ 
-                p: 2, 
-                height: 400,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                backgroundColor: '#fff',
-                borderRadius: 2,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-  <Box sx={{ flexGrow: 1, overflow: 'auto'}}>
-  <Typography variant="h6" gutterBottom color="primary">
-                Notifications and Announcements
-              </Typography>
-  {loadingNotices ? (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3,  backgroundColor: '#efefef' }}>
-     <CircularProgress size={30} sx={{ color: '#4ade80' }} />
-    </Box>
-  ) : notifications.length === 0 ? (
-    <Typography sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
-      No notifications found.
-    </Typography>
-  ) : (
-    notifications.map((notification, index) => (
-      <Paper
-        key={index}
-        elevation={3}
+        <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: 24 }} />
+      </Box>
+      <Box sx={{ flexGrow: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+          {timetableFileName}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Class schedule document
+        </Typography>
+      </Box>
+      <Button
+        component="a"
+        href={timetableFilePath}
+        download={timetableFileName}
+        variant="contained"
+        startIcon={<DownloadIcon />}
         sx={{
-          backgroundColor:
-            notification.CreatedType === 'Admin' ? '#fff9c4' : '#e6f4ea',
-          borderLeft: `6px solid ${
-            notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
-          }`,
-          mb: 2,
-          p: 0.5,
+          bgcolor: theme.palette.primary.main,
+          color: "white",
+          borderRadius: 1.5,
+          textTransform: "none",
+          fontWeight: 600,
+          px: 3,
+          "&:hover": {
+            bgcolor: theme.palette.primary.dark,
+            transform: "translateY(-1px)",
+          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <NotificationsIcon
-            sx={{
-              mr: 2,
-              color: notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80',
-            }}
-          />
-          <Box>
-          <Typography variant="subtitle1" fontWeight="bold">
-  {notification.Title} {notification.Urgent && <span style={{ color: '#ff0000', fontSize:'11px' }}>(Urgent)</span>}
-</Typography>
-
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-  {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
-</Typography>
-
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              {notification.Message}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              From: {notification.CreatedType}
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
-    
-    ))
+        Download
+      </Button>
+    </Box>
+  ) : (
+    <Box sx={{ textAlign: "left", px: 2 }}>
+      <ScheduleIcon sx={{ fontSize: 48, color: alpha(theme.palette.text.primary, 0.2), mb: 2 }} />
+      <Typography variant="body1" color="text.secondary">
+        No timetable file available for this school.
+      </Typography>
+    </Box>
   )}
 </Box>
-
-
-            </Paper>
+            </DashboardCard>
           </Grid>
 
+          {/* Calendar */}
           <Grid item xs={12} md={6}>
-            <Paper 
-              sx={{ 
-                p: 2, 
-                height: 400,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                backgroundColor: '#fff',
-                borderRadius: 2,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-              <Typography variant="h6" gutterBottom color="primary">
-                Assigned Classes
-              </Typography>
-              <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <DashboardCard title="Calendar" icon={<EventIcon />}>
+             <Box
+  sx={{
+    flexGrow: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    px: 1,
+    "& .MuiPickersLayout-root": {
+      borderRadius: 2,
+      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+      border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+      bgcolor: "white",
+    },
+  }}
+>
+  <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <StaticDatePicker
+      displayStaticWrapperAs="desktop"
+      value={calendarValue}
+      onChange={(newValue) => setCalendarValue(newValue)}
+      sx={{ width: "100%" }}
+    />
+  </LocalizationProvider>
+</Box>
+
+            </DashboardCard>
+          </Grid>
+
+          {/* Notifications */}
+          <Grid item xs={12} md={6}>
+            <DashboardCard title="Notifications & Announcements" icon={<AnnouncementIcon />}>
+              <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                {loadingNotices ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                    <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
+                  </Box>
+                ) : notifications.length === 0 ? (
+                  <Box sx={{ textAlign: "center", mt: 4 }}>
+                    <NotificationsIcon sx={{ fontSize: 48, color: alpha(theme.palette.text.primary, 0.2), mb: 2 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      No notifications found.
+                    </Typography>
+                  </Box>
+                ) : (
+                  notifications.map((notification, index) => (
+                    <Paper
+  key={index}
+  elevation={1}
+  sx={{
+    p: 2,
+    mb: 2,
+    borderRadius: 2,
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+    background:
+      notification.CreatedType === "Admin"
+        ? alpha(theme.palette.info.main, 0.08)
+        : alpha(theme.palette.secondary.main, 0.08),
+    borderLeft: `4px solid ${
+      notification.CreatedType === "Admin"
+        ? theme.palette.info.main
+        : theme.palette.secondary.main
+    }`,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      transform: "translateX(4px)",
+      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+    },
+  }}
+>
+<Box
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 1.5,
+    bgcolor:
+      notification.CreatedType === "Admin"
+        ? theme.palette.info.main
+        : theme.palette.secondary.main,
+    flexShrink: 0,
+  }}
+>
+  <NotificationsIcon sx={{ color: "white", fontSize: 18 }} />
+</Box>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                              {notification.Title}
+                            </Typography>
+                            {notification.Urgent && (
+                              <Chip
+                                label="Urgent"
+                                size="small"
+                                sx={{
+                                  bgcolor: theme.palette.error.main,
+                                  color: "white",
+                                  fontSize: "10px",
+                                  height: 20,
+                                  fontWeight: 600,
+                                }}
+                              />
+                            )}
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: theme.palette.text.secondary, display: "block", mb: 1 }}
+                          >
+                            {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: theme.palette.text.secondary, lineHeight: 1.5, mb: 1 }}
+                          >
+                            {notification.Message}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: alpha(theme.palette.text.primary, 0.6) }}>
+                            From: {notification.CreatedType}
+                          </Typography>
+                        </Box>
+                      
+                    
+                    </Paper>
+                  ))
+                )}
+              </Box>
+            </DashboardCard>
+          </Grid>
+
+          {/* Assigned Classes */}
+          <Grid item xs={12} md={6}>
+            <DashboardCard title="Assigned Classes" icon={<ClassIcon />}>
+              <Box sx={{ flexGrow: 1, overflow: "auto" }}>
                 {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <CircularProgress size={30} sx={{ color: '#4ade80' }} />
+                  <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                    <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
                   </Box>
                 ) : error ? (
-                  <Typography color="error" sx={{ p: 2 }}>{error}</Typography>
+                  <Typography color="error" sx={{ p: 2, textAlign: "center" }}>
+                    {error}
+                  </Typography>
                 ) : assignedClasses.length === 0 ? (
-                  <Typography sx={{ p: 2 }}>No classes assigned yet.</Typography>
+                  <Box sx={{ textAlign: "center", mt: 4 }}>
+                    <ClassIcon sx={{ fontSize: 48, color: alpha(theme.palette.text.primary, 0.2), mb: 2 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      No classes assigned yet.
+                    </Typography>
+                  </Box>
                 ) : (
                   assignedClasses.map((class_, index) => (
-                    <Box 
-                      key={index} 
-                      sx={{ 
-                        p: 2, 
-                        borderBottom: '1px solid #eee',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
+                    <Paper
+                      key={index}
+                      elevation={1}
+                      sx={{
+                        p: 2.5,
+                        mb: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.1)}`,
+                        },
                       }}
                     >
-                      <Box>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {class_.className} - {class_.section}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {class_.displaySubjects || class_.subject}
-                        </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 36,
+                            height: 36,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          }}
+                        >
+                          <ClassIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                            {class_.className} - {class_.section}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {class_.displaySubjects || class_.subject}
+                          </Typography>
+                        </Box>
                       </Box>
                       <Button
                         variant="contained"
                         size="small"
                         onClick={() => handleManageClick(class_)}
                         sx={{
-                          backgroundColor: '#4ade80',
-                          '&:hover': {
-                            backgroundColor: '#22c55e'
-                          }
+                          bgcolor: theme.palette.primary.main,
+                          color: "white",
+                          borderRadius: 1.5,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          px: 2.5,
+                          "&:hover": {
+                            bgcolor: theme.palette.primary.dark,
+                            transform: "translateY(-1px)",
+                          },
                         }}
                       >
                         Manage
                       </Button>
-                    </Box>
+                    </Paper>
                   ))
                 )}
               </Box>
-            </Paper>
+            </DashboardCard>
           </Grid>
         </Grid>
       </Box>
     </Box>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard
