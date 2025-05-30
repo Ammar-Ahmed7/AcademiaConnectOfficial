@@ -1,5 +1,10 @@
+/* eslint-disable no-unused-vars */
+// Updated TeacherNotifications.jsx with consistent purple color for school notifications
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, InputBase, IconButton } from '@mui/material';
+import {
+  Box, Typography, Paper, CircularProgress, InputBase, IconButton,
+  useTheme, alpha
+} from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SearchIcon from '@mui/icons-material/Search';
 import Sidebar from '../Components/Sidebar';
@@ -8,10 +13,11 @@ import { supabase } from '../../../../supabase-client';
 
 const TeacherNotifications = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [loadingNotices, setLoadingNotices] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(''); // State for the search query
+  const [searchQuery, setSearchQuery] = useState('');
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -38,7 +44,6 @@ const TeacherNotifications = () => {
           .single();
         if (teacherError) throw teacherError;
 
-        // Fetch Admin-created notices for teachers (no EndDate filter)
         const { data: adminNotices, error: adminError } = await supabase
           .from('Notice')
           .select('*')
@@ -46,7 +51,6 @@ const TeacherNotifications = () => {
           .eq('CreatedType', 'Admin')
           .order('created_at', { ascending: false });
 
-        // Fetch School-created notices for this teacher’s school (no EndDate filter)
         const { data: schoolNotices, error: schoolError } = await supabase
           .from('Notice')
           .select('*')
@@ -58,11 +62,8 @@ const TeacherNotifications = () => {
         if (adminError || schoolError) throw adminError || schoolError;
 
         const allNotices = [...(adminNotices || []), ...(schoolNotices || [])];
-
         const sorted = allNotices.sort((a, b) => {
-          if (a.Urgent === b.Urgent) {
-            return new Date(b.created_at) - new Date(a.created_at);
-          }
+          if (a.Urgent === b.Urgent) return new Date(b.created_at) - new Date(a.created_at);
           return b.Urgent ? 1 : -1;
         });
 
@@ -74,55 +75,45 @@ const TeacherNotifications = () => {
         setLoadingNotices(false);
       }
     };
-
     fetchNotifications();
   }, [navigate]);
 
-  // Filter notifications based on search query
-  const filteredNotifications = notifications.filter((notification) =>
-    notification.Title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    notification.Message.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNotifications = notifications.filter((n) =>
+    n.Title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    n.Message.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
       <Sidebar />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          ml: '240px',
-          overflowY: 'auto',
-        }}
-      >
-        <Typography variant="h5" gutterBottom color="primary">
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3, lg: 4 }, ml: '240px', overflowY: 'auto' }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: theme.palette.text.primary }}>
           Notifications and Announcements
         </Typography>
 
-        {/* Search Bar */}
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+        <Box sx={{ mb: 3, display: 'flex' }}>
           <InputBase
             placeholder="Search Notifications"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
-              ml: 1,
               flex: 1,
+              bgcolor: 'white',
+              px: 2,
+              py: 1,
               borderRadius: 2,
-              bgcolor: '#fff',
-              p: 1,
-              border: '1px solid #ccc',
+              boxShadow: 1,
+              mr: 2
             }}
           />
-          <IconButton sx={{ p: '10px' }} aria-label="search">
+          <IconButton sx={{ color: theme.palette.primary.main }}>
             <SearchIcon />
           </IconButton>
         </Box>
 
         {loadingNotices ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <CircularProgress size={30} sx={{ color: '#4ade80' }} />
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress />
           </Box>
         ) : filteredNotifications.length === 0 ? (
           <Typography sx={{ mt: 2, textAlign: 'center' }} color="text.secondary">
@@ -132,38 +123,40 @@ const TeacherNotifications = () => {
           filteredNotifications.map((notification, index) => (
             <Paper
               key={index}
-              elevation={3}
+              elevation={2}
               sx={{
-                backgroundColor: notification.CreatedType === 'Admin' ? '#fff9c4' : '#e6f4ea',
-                borderLeft: `6px solid ${
-                  notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80'
-                }`,
+                p: 2,
                 mb: 2,
-                p: 1,
+                borderLeft: `6px solid ${
+                  notification.CreatedType === 'Admin'
+                    ? theme.palette.info.main
+                    : theme.palette.secondary.main
+                }`,
+                bgcolor: notification.CreatedType === 'Admin'
+                  ? alpha(theme.palette.info.main, 0.08)
+                  : alpha(theme.palette.secondary.main, 0.08),
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <NotificationsIcon
                   sx={{
+                    color: notification.CreatedType === 'Admin'
+                      ? theme.palette.info.main
+                      : theme.palette.secondary.main,
                     mr: 2,
-                    color: notification.CreatedType === 'Admin' ? '#facc15' : '#4ade80',
                   }}
                 />
-                <Box>
-                 <Typography variant="subtitle1" fontWeight="bold">
-                   {notification.Title} {notification.Urgent && <span style={{ color: '#ff0000', fontSize:'11px' }}>(Urgent)</span>}
-                 </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                    {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    {notification.Message}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    From: {notification.CreatedType}
-                  </Typography>
-                </Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {notification.Title} {notification.Urgent && <span style={{ color: '#e53935', fontSize: '12px' }}>(Urgent)</span>}
+                </Typography>
               </Box>
+              <Typography variant="caption" color="text.secondary">
+                {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>{notification.Message}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                From: {notification.CreatedType}
+              </Typography>
             </Paper>
           ))
         )}

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Grid, Button, TextField, Table, 
   TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Modal, IconButton, Tooltip, Snackbar, Alert
+  Modal, IconButton, Tooltip, Snackbar, Alert,useTheme
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -23,6 +23,7 @@ import SearchIcon from '@mui/icons-material/Search';
 
 const Grade = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [openModal, setOpenModal] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
@@ -576,10 +577,10 @@ const Grade = () => {
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
               <Box sx={{ color: '#1a1a2e', mb: 3 , display: 'flex', alignItems: 'center' }}>
-                 <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
+                 <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2, fontSize: 'medium' }}>
                   <ArrowBackIcon fontSize="large" />
                 </IconButton>
-  <Typography variant="h4">
+  <Typography variant="h4" sx={{fontWeight: 700, color: theme.palette.text.primary}}>
     Assignment & Grade Management
   </Typography>
   <Box sx={{ display: 'flex', gap: 1 }}>
@@ -587,7 +588,7 @@ const Grade = () => {
       variant="contained"
       startIcon={<AddIcon />}
       onClick={handleOpenModal}
-      sx={{ backgroundColor: '#4ade80',left:'160px' , '&:hover': { backgroundColor: '#22c55e' } }}
+      sx={{ backgroundColor: theme.palette.primary.main, left:'130px' , '&:hover': { backgroundColor: '#0069ee' } }}
       disabled={uploadingAssignment}
     >
       {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
@@ -620,7 +621,8 @@ const Grade = () => {
                     Assignments & Quizzes
                   </Typography>
                   {loadingAssignments ? (
-                    <Typography>Loading assignments...</Typography>
+            
+                    <CircularProgress sx={{display:'flex', justifyContent:'center', ml:50}}> </CircularProgress>
                   ) : assignments.length === 0 ? (
                     <Typography>No assignments created yet.</Typography>
                   ) : (
@@ -661,7 +663,7 @@ const Grade = () => {
                                   handleDownload(assignment.file);
                                 }}
                               >
-                                <DownloadIcon sx={{ color:'#05a5d4'}} />
+                                <DownloadIcon sx={{ color:'#05a5d4'}} className='mt-[4px]'/>
                               </IconButton>
                             </Tooltip>
                           )}
@@ -684,7 +686,7 @@ const Grade = () => {
                           <Button
                             variant="contained"
                             size="small"
-                            sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+                            sx={{ backgroundColor: theme.palette.primary.main, '&:hover': { backgroundColor: '#0069ee' } }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAssignmentClick(assignment);

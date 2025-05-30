@@ -1,18 +1,22 @@
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable no-unused-vars */
+// Updated Attendance.jsx UI consistent with Sidebar and Dashboard
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Radio, RadioGroup, FormControlLabel, Button, CircularProgress, Snackbar, Alert, TextField } from '@mui/material';
-import IconButton from '@mui/material/IconButton';
+import {
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead,
+  TableRow, Radio, RadioGroup, FormControlLabel, Button, CircularProgress,
+  Snackbar, Alert, TextField, IconButton, useTheme, alpha
+} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import Sidebar from '../Components/Sidebar';
 import { supabase } from '../../../../supabase-client';
-import { PhoneEnabled } from '@mui/icons-material';
 
 const Attendance = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   const classInfo = location.state?.classInfo;
 
   const [students, setStudents] = useState([]);
@@ -20,53 +24,23 @@ const Attendance = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [isExistingAttendance, setIsExistingAttendance] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-    });
-  };
+  const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
+  const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
 
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({
-      ...prev,
-      open: false,
-    }));
-  };
-
-  useEffect(() => {
-    if (classInfo) {
-      fetchStudents();
-      console.log('Class Info:', classInfo); // Log class info to the
-    }
-  }, [classInfo]);
+  useEffect(() => { if (classInfo) fetchStudents(); }, [classInfo]);
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const combinedClassSection = `${classInfo.sections?.classes?.class_name || ''}${classInfo.sections?.section_name || ''}`;
-
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('admission_class', combinedClassSection);
-
+      const classSection = `${classInfo.sections?.classes?.class_name || ''}${classInfo.sections?.section_name || ''}`;
+      const { data, error } = await supabase.from('students').select('*').eq('admission_class', classSection);
       if (error) throw error;
-
       setStudents(data);
-
-      const initialAttendance = {};
-      data.forEach(student => {
-        initialAttendance[student.registration_no] = '';
-      });
-      setAttendanceState(initialAttendance);
+      const initialState = {};
+      data.forEach(s => initialState[s.registration_no] = '');
+      setAttendanceState(initialState);
     } catch (error) {
       console.error('Error fetching students:', error.message);
     } finally {
@@ -75,52 +49,32 @@ const Attendance = () => {
   };
 
   const handleDateChange = async (date) => {
-    if (!date) {
-      setSelectedDate(null);
-      setIsExistingAttendance(false);
-      return;
-    }
-  
+    if (!date) return setSelectedDate(null);
     setSelectedDate(date);
-  
-    const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-  
+    const formatted = date.toISOString().split('T')[0];
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('attendance')
+      const { data, error } = await supabase.from('attendance')
         .select('*')
         .eq('class_id', classInfo.sections.class_id)
-        .eq('section_id', classInfo.section_id)  // <-- added section_id
-        .eq('date', formattedDate);
-  
+        .eq('section_id', classInfo.section_id)
+        .eq('date', formatted);
       if (error) throw error;
-  
       if (data.length > 0) {
         setIsExistingAttendance(true);
-  
-        const loadedAttendance = {};
-        data.forEach(record => {
-          loadedAttendance[record.registration_no] = record.attendance_status;
-        });
+        const mapped = {};
+        data.forEach(r => mapped[r.registration_no] = r.attendance_status);
         setAttendanceState(prev => {
-          const newState = { ...prev };
-          Object.keys(newState).forEach(regNo => {
-            newState[regNo] = loadedAttendance[regNo] || '';
-          });
-          return newState;
+          const updated = { ...prev };
+          Object.keys(updated).forEach(reg => updated[reg] = mapped[reg] || '');
+          return updated;
         });
-  
         showSnackbar('Existing attendance loaded for update.', 'info');
       } else {
         setIsExistingAttendance(false);
-  
-        const resetAttendance = {};
-        students.forEach(student => {
-          resetAttendance[student.registration_no] = '';
-        });
-        setAttendanceState(resetAttendance);
-  
+        const reset = {};
+        students.forEach(s => reset[s.registration_no] = '');
+        setAttendanceState(reset);
         showSnackbar('No attendance found. Ready to submit.', 'info');
       }
     } catch (error) {
@@ -130,51 +84,30 @@ const Attendance = () => {
       setLoading(false);
     }
   };
-  
 
-  const handleAttendanceChange = (studentId, value) => {
-    setAttendanceState(prev => ({
-      ...prev,
-      [studentId]: value,
-    }));
-  };
-
+  const handleAttendanceChange = (id, value) => setAttendanceState(prev => ({ ...prev, [id]: value }));
   const handleSelectAllChange = (value) => {
-    const updatedAttendance = {};
-    students.forEach(student => {
-      updatedAttendance[student.registration_no] = value;
-    });
-    setAttendanceState(updatedAttendance);
+    const updated = {};
+    students.forEach(s => updated[s.registration_no] = value);
+    setAttendanceState(updated);
   };
 
   const handleSubmitAttendance = async () => {
-    if (!selectedDate) {
-      showSnackbar('Please select a date.', 'error');
-      return;
-    }
-  
-    const formattedDate = `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`;
-  
+    if (!selectedDate) return showSnackbar('Please select a date.', 'error');
+    const formatted = selectedDate.toISOString().split('T')[0];
     try {
       setLoading(true);
-  
-      const attendanceData = students.map(student => ({
+      const attendanceData = students.map(s => ({
         teacher_id: classInfo.TeacherID,
         class_id: classInfo.sections.class_id,
         section_id: classInfo.section_id,
-        registration_no: student.registration_no,
-        full_name: student.full_name,
-        date: formattedDate,
-        attendance_status: attendanceState[student.registration_no] || 'A',
+        registration_no: s.registration_no,
+        full_name: s.full_name,
+        date: formatted,
+        attendance_status: attendanceState[s.registration_no] || 'A',
       }));
-  
-      // Use upsert instead of delete+insert
-      const { error } = await supabase
-        .from('attendance')
-        .upsert(attendanceData, { onConflict: ['registration_no', 'date'] });
-  
+      const { error } = await supabase.from('attendance').upsert(attendanceData, { onConflict: ['registration_no', 'date'] });
       if (error) throw error;
-  
       showSnackbar(isExistingAttendance ? 'Attendance updated successfully!' : 'Attendance submitted successfully!', 'success');
       setIsExistingAttendance(true);
     } catch (error) {
@@ -184,24 +117,22 @@ const Attendance = () => {
       setLoading(false);
     }
   };
-  
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
       <Sidebar />
-      
-      <Box component="main" sx={{ flexGrow: 1, p: 3, ml: '240px', height: '100vh', overflowY: 'auto' }}>
-        
-        <Typography variant="h4" sx={{ color: '#1a1a2e', mb: 3 }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ color: '#4ade80', mr: 2, fontSize: 'medium' }}>
-  <ArrowBackIcon fontSize="large" />
-</IconButton>
-
-          Attendance Management
-        </Typography>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3, lg: 4 }, ml: '240px', overflowY: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2 }}>
+            <ArrowBackIcon fontSize="medium" />
+          </IconButton>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+            Attendance Management
+          </Typography>
+        </Box>
 
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
             <CircularProgress />
           </Box>
         ) : (
@@ -213,88 +144,89 @@ const Attendance = () => {
                   value={selectedDate}
                   onChange={handleDateChange}
                   disableFuture
-                  renderInput={(params) => <TextField {...params} />}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
                 />
               </LocalizationProvider>
             </Box>
 
-            <Box
-  sx={{
-    pointerEvents: selectedDate ? 'auto' : 'none',
-    opacity: selectedDate ? 1 : 0.5,
-    transition: 'opacity 0.3s ease',
-  }}
->
-  <Box sx={{ mb: 2 }}>
-    <RadioGroup row onChange={(e) => handleSelectAllChange(e.target.value)}>
-      <FormControlLabel value="P" control={<Radio />} label="Mark All Present" />
-      <FormControlLabel value="A" control={<Radio />} label="Mark All Absent" />
-    </RadioGroup>
-  </Box>
-
-  <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell>Roll No</TableCell>
-          <TableCell>Name</TableCell>
-          <TableCell align="center">Attendance</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {students.length > 0 ? (
-          students.map((student) => (
-            <TableRow key={student.id}>
-              <TableCell>{student.registration_no}</TableCell>
-              <TableCell>{student.full_name}</TableCell>
-              <TableCell align="center">
-                <RadioGroup
-                  row
-                  value={attendanceState[student.registration_no] || ''}
-                  onChange={(e) => handleAttendanceChange(student.registration_no, e.target.value)}
-                >
-                  <FormControlLabel value="P" control={<Radio />} label="P" />
-                  <FormControlLabel value="A" control={<Radio />} label="A" />
+            <Box sx={{ pointerEvents: selectedDate ? 'auto' : 'none', opacity: selectedDate ? 1 : 0.5, transition: 'opacity 0.3s ease' }}>
+              <Box sx={{ mb: 2 }}>
+                <RadioGroup row onChange={(e) => handleSelectAllChange(e.target.value)}>
+                  <FormControlLabel value="P" control={<Radio />} label="Mark All Present" />
+                  <FormControlLabel value="A" control={<Radio />} label="Mark All Absent" />
                 </RadioGroup>
-              </TableCell>
-            </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={3} align="center">
-              No students found.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  </TableContainer>
+              </Box>
 
-  <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-   
-    {students.length > 0 && (
-      <Button variant="contained" sx={{ backgroundColor: '#6366f1'}} className='left-[800px]' onClick={handleSubmitAttendance}>
-        {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
-      </Button>
-    )}
-  </Box>
-</Box>
- 
+              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Roll No</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell align="center">Attendance</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {students.length > 0 ? (
+                      students.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell>{student.registration_no}</TableCell>
+                          <TableCell>{student.full_name}</TableCell>
+                          <TableCell align="center">
+                            <RadioGroup
+                              row
+                              value={attendanceState[student.registration_no] || ''}
+                              onChange={(e) => handleAttendanceChange(student.registration_no, e.target.value)}
+                            >
+                              <FormControlLabel value="P" control={<Radio />} label="P" />
+                              <FormControlLabel value="A" control={<Radio />} label="A" />
+                            </RadioGroup>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">No students found.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
+              {students.length > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmitAttendance}
+                    sx={{
+                      bgcolor: theme.palette.primary.main,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 4,
+                      '&:hover': {
+                        bgcolor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    {isExistingAttendance ? 'Update Attendance' : 'Submit Attendance'}
+                  </Button>
+                </Box>
+              )}
+            </Box>
           </>
         )}
-      </Box>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Box>
   );
 };
