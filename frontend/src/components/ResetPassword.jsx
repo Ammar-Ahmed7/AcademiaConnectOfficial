@@ -56,26 +56,24 @@ export default function ResetPassword() {
       
       setSuccessMsg("Password updated successfully!");
       
-      // Get user metadata from session and navigate based on role
-      const { data } = await supabase.auth.getSession();
-      const userRole = data?.session?.user?.user_metadata?.role; // Access role from user_metadata
-      console.log("User Role:", userRole); // Log the role for debugging
-      
-      // Redirect based on role
-      if (userRole === 'School') {
-        setTimeout(() => {
+  // Get the email from session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const email = sessionData?.session?.user?.email;
 
-        navigate('/school-login');
-        }, 3000); // Redirect after 3 seconds
-      } else if (userRole === 'Teacher') {
-        setTimeout(() => {
-        navigate('/teacher-login');
-        }, 3000); // Redirect after 3 seconds
-      } else if (userRole === 'Admin') {
-        setTimeout(() => {
-        navigate('/admin-login');
-        },3000); // Redirect after 3 seconds
-      } 
+    // Concurrent role checks
+    const [teacherRes, adminRes, schoolRes] = await Promise.all([
+      supabase.from('Teacher').select('Role').eq('Email', email).single(),
+      supabase.from('Admin').select('Role').eq('Email', email).single(),
+      supabase.from('School').select('Role').eq('Email', email).single(),
+    ]);
+
+    if (teacherRes?.data?.Role === 'Teacher') {
+      setTimeout(() => navigate('/teacher-login'), 3000);
+    } else if (adminRes?.data?.Role === 'Admin') {
+      setTimeout(() => navigate('/admin-login'), 3000);
+    } else if (schoolRes?.data?.Role === 'School') {
+      setTimeout(() => navigate('/school-login'), 3000);
+    }
       
     } catch (err) {
       setErrorMsg("An error occurred while resetting your password");

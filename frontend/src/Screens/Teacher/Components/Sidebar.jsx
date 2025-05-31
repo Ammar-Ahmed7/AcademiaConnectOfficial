@@ -207,6 +207,7 @@ const Sidebar = () => {
         <Divider sx={{ bgcolor: alpha("#ffffff", 0.1), my: 2 }} />
         <Tooltip title="Logout" placement="right">
           <ListItem
+            className="cursor-pointer"
             button
             onClick={handleLogout}
             sx={{
