@@ -51,7 +51,7 @@ const Dashboard = () => {
         if (teacherError) throw teacherError
 
         const { data: timetableData, error: timetableError } = await supabase
-          .from("class_timetables")
+          .from("faculty_timetables")
           .select("file_path, file_name")
           .eq("school_id", teacherData.SchoolID)
           .single()
@@ -62,7 +62,7 @@ const Dashboard = () => {
 
         if (!filePath) return
 
-        const { data: urlData } = supabase.storage.from("class-timetables").getPublicUrl(filePath)
+        const { data: urlData } = supabase.storage.from("faculty-timetables").getPublicUrl(filePath)
 
         setTimetableFilePath(urlData?.publicUrl || null)
         setTimetableFileName(fileName || "")
