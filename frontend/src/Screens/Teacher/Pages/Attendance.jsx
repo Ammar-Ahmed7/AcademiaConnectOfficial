@@ -163,7 +163,7 @@ const Attendance = () => {
                     <TableRow>
                       <TableCell>Roll No</TableCell>
                       <TableCell>Name</TableCell>
-                      <TableCell align="center">Attendance</TableCell>
+                      <TableCell >Attendance</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>

@@ -15,6 +15,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../../supabase-client';
 import Sidebar from '../Components/Sidebar';
+import EditIcon from '@mui/icons-material/Edit';
+import { TextField, Button, Snackbar, Alert } from '@mui/material';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -22,6 +24,16 @@ const Profile = () => {
   const [teacherData, setTeacherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+const [newPhoneNumber, setNewPhoneNumber] = useState('');
+const [phoneError, setPhoneError] = useState('');
+const [isSaving, setIsSaving] = useState(false);
+
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  severity: 'error'
+});
 
   useEffect(() => {
     const fetchTeacherProfile = async () => {
@@ -93,6 +105,43 @@ const Profile = () => {
     return `${cnicStr.slice(0, 5)}-${cnicStr.slice(5, 12)}-${cnicStr.slice(12)}`;
   };
 
+ const handleSavePhoneNumber = async () => {
+  // Validate phone number
+  if (!newPhoneNumber || newPhoneNumber.length !== 11 || !/^\d+$/.test(newPhoneNumber)) {
+    setPhoneError('Phone number must be exactly 11 digits');
+    return;
+  }
+   setIsSaving(true); // Start saving
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error("User not authenticated");
+
+    const { error } = await supabase
+      .from('Teacher')
+      .update({ PhoneNumber: newPhoneNumber })
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    setTeacherData({ ...teacherData, PhoneNumber: newPhoneNumber });
+    setIsEditing(false);
+    setPhoneError('');
+    setSnackbar({
+      open: true,
+      message: 'Phone number updated successfully!',
+      severity: 'success'
+    });
+  } catch (err) {
+    console.error("Error saving phone number:", err.message);
+    setSnackbar({
+      open: true,
+      message: err.message || 'Failed to update phone number',
+      severity: 'error'
+    });
+  } finally {
+    setIsSaving(false); // End saving regardless of success/failure
+  }
+};
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
@@ -168,7 +217,76 @@ const Profile = () => {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="text.secondary">Phone Number</Typography>
-                    <Typography variant="body1">{formatPhoneNumber(teacherData.PhoneNumber)}</Typography>
+                     {isEditing ? (
+    <>
+      <TextField
+  value={newPhoneNumber}
+  onChange={(e) => {
+    setNewPhoneNumber(e.target.value);
+    // Clear error when user types
+    if (phoneError) setPhoneError('');
+  }}
+  variant="outlined"
+  size="small"
+  fullWidth
+  sx={{ mt: 1 }}
+  error={!!phoneError}
+  helperText={phoneError}
+  inputProps={{
+    maxLength: 11,
+    inputMode: 'numeric',
+    pattern: '[0-9]*'
+  }}
+  InputProps={{
+    style: {
+      borderColor: phoneError ? theme.palette.error.main : theme.palette.primary.main,
+      borderWidth: '2px'
+    }
+  }}
+/>
+      <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+      <Button
+  onClick={handleSavePhoneNumber}
+  variant="contained"
+  size="small"
+  color="primary"
+  disabled={!newPhoneNumber || newPhoneNumber.length !== 11 || !!phoneError || isSaving}
+>
+  {isSaving ? (
+    <>
+      <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+      Saving...
+    </>
+  ) : (
+    'Save'
+  )}
+</Button>
+        <Button
+          onClick={() => setIsEditing(false)}
+          variant="outlined"
+          size="small"
+          color="secondary"
+        >
+          Cancel
+        </Button>
+      </Box>
+    </>
+  ) : (
+    <>
+      <Typography variant="body1">{formatPhoneNumber(teacherData.PhoneNumber)}</Typography>
+      <Button
+        onClick={() => {
+          setNewPhoneNumber(teacherData.PhoneNumber);
+          setIsEditing(true);
+        }}
+        startIcon={<EditIcon />}
+        size="small"
+        sx={{ mt: 1 }}
+      >
+        Edit
+      </Button>
+    </>
+  )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="subtitle2" color="text.secondary">BPS</Typography>
@@ -223,6 +341,20 @@ const Profile = () => {
           )}
         </Paper>
       </Box>
+      <Snackbar
+  open={snackbar.open}
+  autoHideDuration={6000}
+  onClose={() => setSnackbar({...snackbar, open: false})}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+>
+  <Alert 
+    onClose={() => setSnackbar({...snackbar, open: false})}
+    severity={snackbar.severity}
+    sx={{ width: '100%' }}
+  >
+    {snackbar.message}
+  </Alert>
+</Snackbar>
     </Box>
   );
 };
