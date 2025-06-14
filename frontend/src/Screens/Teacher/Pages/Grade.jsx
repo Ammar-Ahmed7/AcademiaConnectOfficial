@@ -627,25 +627,26 @@ const Grade = () => {
           {!selectedAssignment ? (
             <Grid container spacing={3} sx={{ mb: 3 }}>
               <Grid item xs={12}>
-              <Box sx={{ color: '#1a1a2e', mb: 3 , display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ color: '#1a1a2e', mb: 3 , display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                 <Box sx={{ display: 'flex', gap: 1 }}>
                  <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2, fontSize: 'medium' }}>
                   <ArrowBackIcon fontSize="large" />
                 </IconButton>
   <Typography variant="h4" sx={{fontWeight: 700, color: theme.palette.text.primary}}>
     Assignment & Grade Management
   </Typography>
-  <Box sx={{ display: 'flex', gap: 1 }}>
+ </Box>
     <Button
       variant="contained"
       startIcon={<AddIcon />}
       onClick={handleOpenModal}
-      sx={{ backgroundColor: theme.palette.primary.main, left:'130px' , '&:hover': { backgroundColor: '#0069ee' } }}
+      sx={{ backgroundColor: theme.palette.primary.main, '&:hover': { backgroundColor: '#0069ee' } }}
       disabled={uploadingAssignment}
     >
       {uploadingAssignment ? 'Uploading...' : 'Create Assignment'}
     </Button>
    
-  </Box>
+  
   
 </Box>
 

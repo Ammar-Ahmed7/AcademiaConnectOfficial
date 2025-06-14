@@ -34,7 +34,7 @@ const Sidebar = () => {
     if (currentPath.includes("/dashboard")) return "dashboard"
     if (currentPath.includes("/notifications")) return "notifications"
     if (currentPath.includes("/profile")) return "profile"
-    if (currentPath.includes("/salary")) return "salary"
+    
     return "dashboard"
   })
 
@@ -51,9 +51,7 @@ const Sidebar = () => {
       case "profile":
         navigate("/teacher/profile")
         break
-      case "salary":
-        navigate("/teacher/salary")
-        break
+     
     }
   }
 
@@ -75,7 +73,7 @@ const Sidebar = () => {
     { text: "Dashboard", icon: <LayoutDashboard size={20} />, value: "dashboard" },
     { text: "Notifications", icon: <Bell size={20} />, value: "notifications" },
     { text: "Profile", icon: <User size={20} />, value: "profile" },
-    { text: "Salary Slips", icon: <Receipt size={20} />, value: "salary" },
+    
   ]
 
   return (
