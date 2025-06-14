@@ -122,7 +122,9 @@ const Grade = () => {
   subject: classInfo?.allSubjects?.[0]?.name || "", 
   subject_id: classInfo?.allSubjects?.[0]?.rawData?.subjects?.[0] || null,
   description: "", 
-  file: null 
+  file: null,
+   deadline: "", // Add deadline field
+  total_marks: "" // Add total marks field
 });
 
   
@@ -132,6 +134,12 @@ const Grade = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+      // Prevent negative values for total_marks
+  if (name === 'total_marks' && value < 0) {
+    showSnackbar("Total marks cannot be negative", "warning");
+    return;
+  }
     
     // If the subject is being changed, also update the subject_id
     if (name === 'subject') {
@@ -172,6 +180,8 @@ const Grade = () => {
         description,
         file_url,
         subject_id,
+        deadline,
+        total_marks,
         subjects (
           subject_name
         )
@@ -213,7 +223,9 @@ const Grade = () => {
           }
         : null,
         subject_name: assignment.subjects?.subject_name || "Subject not found",
-        hasGrades: assignmentIdsWithGrades.has(assignment.id)
+        hasGrades: assignmentIdsWithGrades.has(assignment.id),
+        deadline: assignment.deadline, // Add deadline
+        total_marks: assignment.total_marks // Add total marks
       }));
       
       setAssignments(assignmentsData);
@@ -342,6 +354,31 @@ const Grade = () => {
     e.preventDefault();
     setUploadingAssignment(true);
 
+     // Validate required fields
+  if (!formData.deadline) {
+    showSnackbar('Please select a deadline', 'error');
+    setUploadingAssignment(false);
+    return;
+  }
+
+  // Validate total marks
+  if (!formData.total_marks || formData.total_marks <= 0) {
+    showSnackbar('Total marks must be a positive number', 'error');
+    setUploadingAssignment(false);
+    return;
+  }
+
+  // Validate deadline is not in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selectedDate = new Date(formData.deadline);
+
+  if (selectedDate < today) {
+    showSnackbar('Deadline cannot be in the past', 'error');
+    setUploadingAssignment(false);
+    return;
+  }
+  
     let fileUrl = null;
 
     if (formData.file) {
@@ -382,6 +419,8 @@ const Grade = () => {
           teacher_id: classInfo.TeacherID,
           class_id: classInfo.sections.class_id,
           section_id: classInfo.section_id,
+          deadline: formData.deadline, // Add deadline
+          total_marks: formData.total_marks // Add total marks
         }]);
 
       if (error) {
@@ -393,7 +432,7 @@ const Grade = () => {
       await fetchAssignments();
       showSnackbar('Assignment created successfully!', 'success'); // Added snackbar
 
-      setFormData({ name: "", subject: "", description: "", file: null });
+      setFormData({ name: "", subject: "", description: "", file: null, deadline: "", total_marks: "" }); // Reset form data
       handleCloseModal();
 
     } catch (error) {
@@ -454,10 +493,22 @@ const Grade = () => {
 
 
   const handleMarksChange = (index, value) => {
-    const updated = [...students];
-    updated[index].marks = value;
-    setStudents(updated);
-  };
+  // Don't allow negative numbers
+  if (value < 0) {
+    showSnackbar("Marks cannot be negative", "warning");
+    return;
+  }
+  
+  // Validate against total marks if available
+  if (selectedAssignment?.total_marks && value > selectedAssignment.total_marks) {
+    showSnackbar(`Marks cannot exceed total marks (${selectedAssignment.total_marks})`, "warning");
+    return;
+  }
+
+  const updated = [...students];
+  updated[index].marks = value;
+  setStudents(updated);
+};
 
   const handleMarksSubmit = async () => {
     if (!selectedAssignment || !students.length) return;
@@ -646,10 +697,11 @@ const Grade = () => {
                           <Typography variant="body2" color="text.secondary">
                             {assignment.subject_name ? assignment.subject_name : "Subject not found"} 
                           </Typography>
-                           
+
                           <Typography variant="body2" color="text.secondary">
-                            {assignment.description || "No description provided"}
-                          </Typography>
+                            {assignment.deadline ? `Deadline: ${new Date(assignment.deadline).toLocaleDateString()}` : "No deadline set"}
+                          </Typography> 
+                          
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem'}}> 
                             {assignment.file &&  `${assignment.file.name}`}
                           </Typography>
@@ -707,8 +759,19 @@ const Grade = () => {
                 <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography variant="h6">{selectedAssignment.name}</Typography>
+                    <Typography variant="body2">{selectedAssignment.description}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {selectedAssignment.subject}
+                      {selectedAssignment.total_marks && (
+      <Typography variant="body2" color="text.secondary">
+        Total Marks: {selectedAssignment.total_marks}
+      </Typography>
+    )}
+    {selectedAssignment.deadline && (
+      <Typography variant="body2" color="text.secondary">
+        Deadline: {new Date(selectedAssignment.deadline).toLocaleDateString()}
+      </Typography>
+    )}
                     </Typography>
                     {selectedAssignment.file && (
                       <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
@@ -801,57 +864,77 @@ const Grade = () => {
        
 
         {/* Modal */}
-        <Modal open={openModal} onClose={handleCloseModal}>
-          <Box sx={modalStyle}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">Create Assignment</Typography>
-              <IconButton onClick={handleCloseModal}><CloseIcon /></IconButton>
-            </Box>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <TextField label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
-              <FormControl fullWidth margin="normal">
-                <InputLabel id="subject-select-label">Subject</InputLabel>
-                <Select
-                  labelId="subject-select-label"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  label="Subject"
-                >
-                  {classInfo && classInfo.subjects && (
-                    <MenuItem value={classInfo.subjects.subject_name}>
-                      {classInfo.subjects.subject_name}
-                    </MenuItem>
-                  )}
-
-                   {/* Display all other subjects from allSubjects array */}
-                  {classInfo?.allSubjects?.map((subject, index) => (
-  <MenuItem key={index} value={subject.name}>
-    {subject.name}
-  </MenuItem>
-))}
-
-                </Select>
-              </FormControl>
-              <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
-              <Box>
-                <Typography variant="body2">Attach File (optional)</Typography>
-                <input type="file" onChange={handleFileChange} />
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button onClick={handleCloseModal}>Cancel</Button>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  disabled={uploadingAssignment}
-                  sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
-                >
-                  {uploadingAssignment ? 'Uploading...' : 'Create'}
-                </Button>
-              </Box>
-            </form>
-          </Box>
-        </Modal>
+       <Modal open={openModal} onClose={handleCloseModal}>
+  <Box sx={modalStyle}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+      <Typography variant="h6">Create Assignment</Typography>
+      <IconButton onClick={handleCloseModal}><CloseIcon /></IconButton>
+    </Box>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <TextField label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
+      <FormControl fullWidth margin="normal">
+        <InputLabel id="subject-select-label">Subject</InputLabel>
+        <Select
+          labelId="subject-select-label"
+          name="subject"
+          value={formData.subject}
+          onChange={handleInputChange}
+          label="Subject"
+        >
+          {classInfo && classInfo.subjects && (
+            <MenuItem value={classInfo.subjects.subject_name}>
+              {classInfo.subjects.subject_name}
+            </MenuItem>
+          )}
+          {classInfo?.allSubjects?.map((subject, index) => (
+            <MenuItem key={index} value={subject.name}>
+              {subject.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <TextField label="Description" name="description" multiline rows={3} value={formData.description} onChange={handleInputChange} />
+      <TextField
+        label="Total Marks"
+        name="total_marks"
+        type="number"
+        value={formData.total_marks}
+        onChange={handleInputChange}
+        inputProps={{ min: 1 }}
+        required
+      />
+      <TextField
+        label="Deadline"
+        name="deadline"
+        type="date"
+        InputLabelProps={{ shrink: true }}
+        value={formData.deadline}
+        onChange={handleInputChange}
+        inputProps={{ 
+    min: 1, // Minimum value of 1
+    step: 1 // Only whole numbers
+  }}
+        required
+        fullWidth
+      />
+      <Box>
+        <Typography variant="body2">Attach File (optional)</Typography>
+        <input type="file" onChange={handleFileChange} />
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+        <Button onClick={handleCloseModal}>Cancel</Button>
+        <Button 
+          type="submit" 
+          variant="contained" 
+          disabled={uploadingAssignment}
+          sx={{ backgroundColor: '#4ade80', '&:hover': { backgroundColor: '#22c55e' } }}
+        >
+          {uploadingAssignment ? 'Uploading...' : 'Create'}
+        </Button>
+      </Box>
+    </form>
+  </Box>
+</Modal>
 
         {/* Added Snackbar component from Attendance.jsx */}
         <Snackbar
