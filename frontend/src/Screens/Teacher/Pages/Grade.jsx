@@ -759,6 +759,7 @@ const Grade = () => {
                 <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography variant="h6">{selectedAssignment.name}</Typography>
+                    <Typography variant="body2">{selectedAssignment.description}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {selectedAssignment.subject}
                       {selectedAssignment.total_marks && (
