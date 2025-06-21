@@ -96,6 +96,7 @@ function App() {
         <Route path="edit-staff/:id"   element={<EditStaffMember />} />
         <Route path="/school/add-staff" element={<AddStaff />} />
         <Route path="/school/publish-notice" element={<PublishNotice />} />
+
         <Route path="/school/upload-timetables" element={<UploadTimetables />} />
         {/* <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} /> */}
         <Route path="/school/upload-bus-routes" element={<UploadBusRoutes />} />
