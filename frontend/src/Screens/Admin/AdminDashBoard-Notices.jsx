@@ -51,6 +51,7 @@ const AdminDashBoardNotices = () => {
           description: item.Message,
           notificationColor,
           isUrgent: item.Urgent,
+          status: item.Status,
         };
       });
 
@@ -59,7 +60,8 @@ const AdminDashBoardNotices = () => {
         const end = new Date(event.Enddate);
         return (
           (start >= today && start <= next7Days) ||
-          (end >= today && end <= next7Days)
+          (end >= today && end <= next7Days) ||
+          (start <= today && end >= next7Days)
         );
       });
 
@@ -91,7 +93,7 @@ const AdminDashBoardNotices = () => {
                   {event.title}
                 </Typography>
                 <Typography variant="body2">
-                  {`${event.Startdate} - ${event.Enddate} - ${event.type} ${event.subtype}`}
+                  {`${event.Startdate} - ${event.Enddate} - ${event.type} ${event.subtype}- ${event.status}`}
                 </Typography>
               </>
             }
