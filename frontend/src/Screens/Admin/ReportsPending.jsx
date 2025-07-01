@@ -803,55 +803,140 @@ const PendingReports = () => {
     setPage(0);
   };
 
-  // Handle sending reminder to school
+  // // Handle sending reminder to school
+  
+  // const handleReminder = async (school) => {
+  //   try {
+  //     setIsLoading(true);
+  
+  //     const session = await supabase.auth.getSession();
+  //     const accessToken = session.data?.session?.access_token;
+  
+  //     if (!accessToken) {
+  //       throw new Error("User not authenticated");
+  //     }
+  // console.log("i ma here")
+  //     const emailData = {
+  //       to: [school.Email.trim()], // wrap in array!
+  //       subject: `Reminder: Pending Report for ${monthNames[selectedMonth]} ${selectedYear}`,
+  //       html: `
+  //         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  //           <h2 style="color: #333;">Monthly Report Reminder</h2>
+  //           <p>Dear <strong>${school.SchoolName}</strong>,</p>
+  //           <p>This is a reminder that we haven't received your monthly report for <strong>${monthNames[selectedMonth]} ${selectedYear}</strong>.</p>
+  //           <p>Please submit it at your earliest convenience.</p>
+  //           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+  //             <p>Best regards,<br/>
+  //             <strong>Muhamad Abrar Amjad</strong></p>
+  //           </div>
+  //         </div>
+  //       `,
+  //     };
+  //     console.log("i ma here2")
+
+  
+  //     const { data, error } = await supabase.functions.invoke("send-reminder-email", {
+  //       body: emailData,
+  //       headers: {
+  //         Authorization: `Bearer ${accessToken}`, // ✅ Pass user token!
+  //       },
+  //     });
+  
+  //     if (error) {
+  //       console.error("❌ Function invocation error:", error);
+  //       throw error;
+  //     }
+  
+  //     if (!data?.success) {
+  //       throw new Error(data?.error || "Email sending failed");
+  //     }
+  
+  //     setAlert({
+  //       open: true,
+  //       message: `Reminder sent successfully to ${school.SchoolName} (${school.Email})`,
+  //       severity: "success",
+  //     });
+  
+  //   } catch (error) {
+  //     setAlert({
+  //       open: true,
+  //       message: `Failed to send reminder: ${error.message}`,
+  //       severity: "error",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleReminder = async (school) => {
     try {
       setIsLoading(true);
-
-      // Prepare email data with proper formatting
+  
+      // Validate email
+      if (!school.Email || !school.Email.includes('@')) {
+        throw new Error('Invalid email address');
+      }
+  
+      // Prepare email data
       const emailData = {
-        to: school.Email, // Use the school's email from the data
+        to: [school.Email.trim()], // Must be an array!
         subject: `Reminder: Pending Report for ${monthNames[selectedMonth]} ${selectedYear}`,
         html: `
-        <p>Dear ${school.SchoolName},</p>
-        <p>This is a reminder that we haven't received your monthly report for ${monthNames[selectedMonth]} ${selectedYear}.</p>
-        <p>Please submit it at your earliest convenience.</p>
-        <p>Best regards,<br/>Muhamad Abrar Amjad</p>
-      `,
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Monthly Report Reminder</h2>
+            <p>Dear <strong>${school.SchoolName}</strong>,</p>
+            <p>This is a reminder that we haven't received your monthly report for <strong>${monthNames[selectedMonth]} ${selectedYear}</strong>.</p>
+            <p>Please submit it at your earliest convenience.</p>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+              <p>Best regards,<br/>
+              <strong>Muhamad Abrar Amjad</strong></p>
+            </div>
+          </div>
+        `,
       };
-
-      console.log("Sending email to:", school.Email);
-
-      // Call the Supabase Edge Function to send the email
-      const { data, error } = await supabase.functions.invoke(
-        "send-reminder-email",
+  
+      console.log("📤 Sending to Supabase Edge Function:", emailData);
+  
+      const response = await fetch(
+        "https://pabfmpqggljjhncdlzwx.functions.supabase.co/send-reminder-email",
         {
-          body: emailData,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(emailData)
         }
       );
-
-      if (error) throw error;
-
-      // Show success message
+  
+      const data = await response.json();
+  
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || "Email sending failed");
+      }
+  
       setAlert({
         open: true,
-        message: `Reminder sent successfully to ${school.SchoolName}`,
+        message: `Reminder sent to ${school.SchoolName} (${school.Email})`,
         severity: "success",
       });
-
-      console.log("Email sent successfully:", data);
+  
+      console.log("✅ Email sent:", data);
+  
     } catch (error) {
-      console.error("Error sending reminder:", error);
+      console.error("❌ Error sending reminder:", error);
+  
       setAlert({
         open: true,
         message: `Failed to send reminder: ${error.message}`,
         severity: "error",
       });
+  
     } finally {
       setIsLoading(false);
     }
   };
-
+  
+  
   return (
     <Box
       display="flex"

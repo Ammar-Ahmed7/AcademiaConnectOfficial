@@ -95,6 +95,7 @@ import SchoolStudentDetailsPage from "./SchoolStudentDetailsPage"
 import SchoolTeacherDetailsPage from "./SchoolTeacherDetailsPage"
 import TeacherDelete from "./TeacherDelete"
 import TransferTeacher from "./TeacherTransfer"
+import NoticeAll from "./NoticeAll"
 
 const AdminTemplate = () => {
   const [collapsed, setCollapsed] = useState(false)
@@ -139,7 +140,9 @@ const AdminTemplate = () => {
             <Route path="/add-school" element={<AddSchool />} />
             <Route path="/edit-school" element={<SchoolEdit />} />
             <Route path="/delete-school" element={<SchoolDelete />} />
-            <Route path="/publish-notice" element={<Notices />} />
+            <Route path="/notice/publish-notice" element={<Notices />} />
+            <Route path="/notice/all" element={<NoticeAll />} />
+            
             {/* <Route path="/reports" element={<Reports />} /> */}
             <Route path="/all-teachers" element={<Teacher />} />
             <Route path="/add-teacher" element={<TeacherAdd />} />
