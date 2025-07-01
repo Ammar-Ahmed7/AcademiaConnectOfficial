@@ -177,13 +177,13 @@ const StudyMaterial = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       <Sidebar />
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3, lg: 4 }, ml: '240px', overflowY: 'auto' }}>
         <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2 }}>
-              <ArrowBackIcon fontSize="medium" />
+            <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2, fontSize: 'medium' }}>
+              <ArrowBackIcon fontSize="large" />
             </IconButton>
             <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
               Study Materials
