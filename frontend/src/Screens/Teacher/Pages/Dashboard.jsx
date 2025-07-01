@@ -103,6 +103,7 @@ const Dashboard = () => {
           .select("*")
           .eq("AudienceTeacher", true)
           .eq("CreatedType", "Admin")
+          .eq("Status", "ON")  // Added Status condition
           .gte("EndDate", today)
 
         const { data: schoolNotices, error: schoolError } = await supabase
@@ -111,6 +112,7 @@ const Dashboard = () => {
           .eq("AudienceTeacher", true)
           .eq("CreatedType", "School")
           .eq("CreatedBy", teacherData.SchoolID)
+          .eq("Status", "ON")  // Added Status condition
           .gte("EndDate", today)
 
         if (adminError || schoolError) throw adminError || schoolError

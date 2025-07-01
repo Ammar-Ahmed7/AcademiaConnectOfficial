@@ -40,23 +40,33 @@ export default function LoginAuth() {
   // Check user role and redirect accordingly
   const checkUserRoleAndRedirect = async (userId) => {
     try {
-      // Check in Teachers
+      // Check in Teachers - now also checking EmployementType
       const { data: teacher } = await supabase
         .from('Teacher')
-        .select('Role')
+        .select('Role, EmployementStatus')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (teacher) {
-        return navigate('/teacher/dashboard');
+        // Check if employment type is 'Working'
+        if (teacher.EmployementStatus === 'Working') {
+          return navigate('/teacher/dashboard');
+        } else {
+          // Sign out the user if employment type is not 'Working'
+          await supabase.auth.signOut();
+          setErrorMsg("Access denied. Your employment status is not active.");
+          return;
+        }
       }
 
       await supabase.auth.signOut();
       // If we get here, user is authenticated but has no role
-      setErrorMsg("User doesn't have the assigned role");
+      setErrorMsg("Access denied. Your account does not have the required role or employment status.");
 
     } catch (err) {
       console.error("Error checking user role:", err);
+      await supabase.auth.signOut();
+      setErrorMsg("An error occurred while verifying your account");
     }
   };
 
