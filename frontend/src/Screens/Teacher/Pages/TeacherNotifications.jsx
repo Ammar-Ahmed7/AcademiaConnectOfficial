@@ -173,7 +173,7 @@ const TeacherNotifications = () => {
         .or(`Title.ilike.%${searchTerm}%,Message.ilike.%${searchTerm}%`)
         .order('Urgent', { ascending: false })
         .order('created_at', { ascending: false })
-        // .limit(100); // Reasonable limit for search results
+        .limit(100); // Reasonable limit for search results
 
       let schoolQuery = supabase
         .from('Notice')
@@ -184,7 +184,7 @@ const TeacherNotifications = () => {
         .or(`Title.ilike.%${searchTerm}%,Message.ilike.%${searchTerm}%`)
         .order('Urgent', { ascending: false })
         .order('created_at', { ascending: false })
-        // .limit(100); // Reasonable limit for search results
+        .limit(100); // Reasonable limit for search results
 
       const [adminResult, schoolResult] = await Promise.all([adminQuery, schoolQuery]);
 
