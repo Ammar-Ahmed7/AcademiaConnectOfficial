@@ -123,7 +123,13 @@ export default function StudentListPage() {
       flexDirection="column"
       alignItems="center"
       bgcolor="#f5f5f5"
-      p={4}
+      // p={4}
+      sx={{
+        p: {
+          xs: 0,  // no padding on mobile
+          sm: 4,  // padding 4 on small screens and up
+        },
+      }}
     >
       <Card
         sx={{
