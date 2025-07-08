@@ -808,7 +808,17 @@ const Grade = () => {
                       </Box>
                     )}
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box
+  sx={{
+    display: 'flex',
+    flexDirection: { xs: 'column', sm: 'row' },
+    gap: 2,
+    flexWrap: 'wrap',
+    justifyContent: { xs: 'center', sm: 'space-between' },
+    alignItems: { xs: 'stretch', sm: 'center' },
+    mt: 2,
+  }}
+>
                     {selectedAssignment.file && (
                       <Button
                         variant="outlined"
