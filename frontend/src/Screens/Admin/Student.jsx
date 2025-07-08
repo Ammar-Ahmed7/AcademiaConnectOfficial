@@ -142,14 +142,38 @@ export default function StudentListPage() {
         py: { xs: 2, sm: 4 }, // vertical padding
       }}
     >
-      <Card
+      {/* <Card
         sx={{
           width: "100%",
           maxWidth: 1400,
           boxShadow: 6,
           borderRadius: 2,
         }}
-      >
+      > */}
+      <Card
+  sx={{
+    width: "100%",
+    maxWidth: {
+      xs: "100%",   // Full width on phones
+      sm: 600,      // Tablets
+      md: 900,      // Medium screens
+      lg: 1200,     // Large screens
+      xl: 1400,     // Desktops
+    },
+    mx: "auto",             // Center horizontally
+    boxShadow: {
+      xs: 2,                // Lighter shadow on mobile
+      sm: 4,
+      md: 6,
+    },
+    borderRadius: {
+      xs: 1,                // Slightly softer corners on mobile
+      sm: 2,
+    },
+    overflowX: "auto",      // Prevent table overflow on small screens
+  }}
+>
+
         <CardContent>
           {/* <Typography
             variant="h4"
