@@ -118,17 +118,28 @@ export default function StudentListPage() {
 
   // 4️⃣ Render
   return (
+    // <Box
+    //   display="flex"
+    //   flexDirection="column"
+    //   alignItems="center"
+    //   bgcolor="#f5f5f5"
+    //   // p={4}
+    //   sx={{
+    //     p: {
+    //       xs: 0,  // no padding on mobile
+    //       sm: 4,  // padding 4 on small screens and up
+    //     },
+    //   }}
+    // >
+
     <Box
       display="flex"
       flexDirection="column"
       alignItems="center"
       bgcolor="#f5f5f5"
-      // p={4}
       sx={{
-        p: {
-          xs: 0,  // no padding on mobile
-          sm: 4,  // padding 4 on small screens and up
-        },
+        px: { xs: 1, sm: 4 }, // horizontal padding
+        py: { xs: 2, sm: 4 }, // vertical padding
       }}
     >
       <Card
@@ -140,10 +151,22 @@ export default function StudentListPage() {
         }}
       >
         <CardContent>
-          <Typography
+          {/* <Typography
             variant="h4"
             gutterBottom
             sx={{ fontWeight: "bold", color: "#3f51b5" }}
+          >
+            Student List
+          </Typography> */}
+
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: "bold",
+              color: "#3f51b5",
+              fontSize: { xs: "1.5rem", sm: "2rem" }, // responsive font
+            }}
           >
             Student List
           </Typography>
@@ -190,7 +213,14 @@ export default function StudentListPage() {
             </Box>
           ) : (
             <>
-              <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+              {/* <TableContainer component={Paper} sx={{ borderRadius: 2 }}> */}
+              <TableContainer
+                component={Paper}
+                sx={{
+                  borderRadius: 2,
+                  overflowX: "auto", // 💡 Enables horizontal scrolling
+                }}
+              >
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: "#e0e0e0" }}>
