@@ -128,12 +128,19 @@ const AdminTemplate = () => {
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
         {/* Main content */}
-        <div
+        {/* <div
           className="flex-1 p-5 overflow-y-auto transition-all duration-300 ease-in-out"
           style={{
             marginLeft: collapsed ? "60px" : "240px",
           }}
-        >
+        > */}
+        <div
+  className="flex-1 px-1 sm:px-5 py-2 sm:py-5 overflow-y-auto transition-all duration-300 ease-in-out"
+  style={{
+    marginLeft: collapsed ? "60px" : "240px",
+  }}
+>
+        
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/all-schools" element={<Schools />} />
