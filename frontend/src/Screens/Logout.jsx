@@ -11,8 +11,9 @@ const Logout = () => {
     const dispatch = useDispatch();
 
     const handleLogout = () => {
-        dispatch(authLogout());
         navigate('/');
+        dispatch(authLogout());
+        
     };
 
     const handleCancel = () => {
