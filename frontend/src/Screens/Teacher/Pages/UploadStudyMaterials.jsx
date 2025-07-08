@@ -346,21 +346,21 @@ const StudyMaterial = () => {
       flexShrink: 0,
     }}
   >
-    <Chip
-      label={classInfo.subjects.subject_name}
-      size="small"
-      sx={{
-        fontSize: { xs: '0.7rem', sm: '0.75rem' },
-        height: { xs: 24, sm: 28 },
-      }}
-    />
-    <IconButton
-      size={isMobile ? 'small' : 'medium'}
-      onClick={() => window.open(material.file_url, '_blank')}
-      sx={{ color: theme.palette.info.main }}
-    >
-      <DownloadIcon fontSize={isMobile ? 'small' : 'medium'} />
-    </IconButton>
+    
+   <a
+  href={material.file_url}
+  download
+  style={{ display: 'flex', color:theme.palette.info.main }}
+>
+  <IconButton
+    size={isMobile ? 'small' : 'medium'}
+    component="span"
+    sx={{ color: theme.palette.info.main, '&:hover': { color: theme.palette.info.dark } }}
+  >
+    <DownloadIcon fontSize={isMobile ? 'small' : 'medium'} />
+  </IconButton>
+</a>
+
     <IconButton
       size={isMobile ? 'small' : 'medium'}
       color="error"
