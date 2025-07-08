@@ -938,30 +938,83 @@ const PendingReports = () => {
   
   
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      bgcolor="#f5f5f5"
-      p={4}
-    >
-      <Card
+   
+//     <Box
+//   display="flex"
+//   justifyContent="center"
+//   alignItems="center"
+//   bgcolor="#f5f5f5"
+//   sx={{
+//     px: { xs: 1, sm: 4 },
+//     py: { xs: 2, sm: 4 },
+//   }}
+// >
+
+//       <Card
+//         sx={{
+//           width: "100%",
+//           maxWidth: 1200,
+//           padding: 4,
+//           boxShadow: 6,
+//           borderRadius: 2,
+//         }}
+//       >
+//         <CardContent>
+//           <Typography
+//             variant="h4"
+//             gutterBottom
+//             sx={{ fontWeight: "bold", color: "#3f51b5", mb: 3 }}
+//           >
+//             Pending Reports
+//           </Typography>
+
+
+<Box
+  display="flex"
+  justifyContent="center"
+  alignItems="center"
+  bgcolor="#f5f5f5"
+  sx={{
+    px: { xs: 1, sm: 4 },
+    py: { xs: 2, sm: 4 },
+  }}
+>
+  <Card
+    sx={{
+      width: "100%",
+      maxWidth: {
+        xs: "100%",
+        sm: 600,
+        md: 900,
+        lg: 1200,
+      },
+      mx: "auto",
+      px: { xs: 2, sm: 4 },
+      py: { xs: 2, sm: 4 },
+      boxShadow: {
+        xs: 2,  // lighter on phones
+        sm: 4,
+        md: 6,  // stronger on larger screens
+      },
+      borderRadius: {
+        xs: 1,  // softer corners on phones
+        sm: 2,
+      },
+    }}
+  >
+    <CardContent>
+      <Typography
+        variant="h4"
+        gutterBottom
         sx={{
-          width: "100%",
-          maxWidth: 1200,
-          padding: 4,
-          boxShadow: 6,
-          borderRadius: 2,
+          fontWeight: "bold",
+          color: "#3f51b5",
+          mb: 3,
+          fontSize: { xs: "1.5rem", sm: "2rem" },
         }}
       >
-        <CardContent>
-          <Typography
-            variant="h4"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5", mb: 3 }}
-          >
-            Pending Reports
-          </Typography>
+        Pending Reports
+      </Typography>
 
           {/* Month and Year Selection UI */}
           {/* <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -1021,7 +1074,13 @@ const PendingReports = () => {
               )}
             </Grid>
           </Grid> */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          {/* <Grid container spacing={2} sx={{ mb: 3 }}> */}
+          <Grid
+  container
+  spacing={{ xs: 1.5, sm: 2 }}
+  sx={{ mb: { xs: 2, sm: 3 } }}
+>
+
             {/* Month Select */}
             <Grid item xs={12} md={4}>
               <FormControl
