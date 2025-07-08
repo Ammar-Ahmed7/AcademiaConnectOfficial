@@ -1,8 +1,1099 @@
-"use client";
+// "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "../../../supabase-client"; // Adjust the import path as needed
+// import { useEffect, useState } from "react";
+// import { supabase } from "../../../supabase-client"; // Adjust the import path as needed
 
+// import {
+//   Box,
+//   Typography,
+//   TextField,
+//   Button,
+//   CircularProgress,
+//   Alert,
+//   Paper,
+//   Grid,
+//   Divider,
+//   MenuItem,
+//   Select,
+//   InputLabel,
+//   FormControl,
+//   Dialog,
+//   DialogActions,
+//   DialogContent,
+//   DialogContentText,
+//   DialogTitle,
+//   Snackbar,
+//   InputAdornment,
+// } from "@mui/material";
+// import {
+//   Search as SearchIcon,
+//   Person as PersonIcon,
+//   School as SchoolIcon,
+//   Email as EmailIcon,
+//   Phone as PhoneIcon,
+//   Home as HomeIcon,
+//   Work as WorkIcon,
+//   Cake as CakeIcon,
+//   TransferWithinAStation as TransferIcon,
+//   Male as MaleIcon,
+//   Female as FemaleIcon,
+//   Badge as BadgeIcon,
+//   Cancel as CancelIcon,
+//   Apartment as ApartmentIcon,
+// } from "@mui/icons-material";
+// import { use } from "react";
+
+// function TransferTeacher() {
+//   const [cnic, setCnic] = useState("");
+//   const [newEmail, setNewEmail] = useState("");
+//   const [emailError, setEmailError] = useState(false);
+//   const [formattedCnic, setFormattedCnic] = useState("");
+//   const [teacherData, setTeacherData] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
+//   const [newSchoolId, setNewSchoolId] = useState("");
+//   const [availableSchools, setAvailableSchools] = useState([]);
+//   const [success, setSuccess] = useState(null);
+//   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+//   const [alert, setAlert] = useState({
+//     open: false,
+//     severity: "info",
+//     message: "",
+//   });
+//   const [isFetching, setIsFetching] = useState(false);
+
+//   const checkEmailExists = async (email) => {
+//     try {
+//       const { data, error } = await supabase
+//         .from("Teacher")
+//         .select("Email")
+//         .eq("Email", email)
+//         .single();
+
+//       return !!data; // returns true if email exists
+//     } catch (err) {
+//       console.error("Error checking email:", err);
+//       return false;
+//     }
+//   };
+//   const formatCnicInput = (value) => {
+//     // Remove all non-digits
+//     const digitsOnly = value.replace(/\D/g, "");
+
+//     // Format as 31102-5522345-9 (5-7-1 format)
+//     let formatted = "";
+//     if (digitsOnly.length > 0) {
+//       formatted = digitsOnly.substring(0, 5);
+//       if (digitsOnly.length > 5) {
+//         formatted += "-" + digitsOnly.substring(5, 12);
+//         if (digitsOnly.length > 12) {
+//           formatted += "-" + digitsOnly.substring(12, 13);
+//         }
+//       }
+//     }
+
+//     return formatted;
+//   };
+
+//   const handleCnicChange = (e) => {
+//     const rawValue = e.target.value.replace(/-/g, "");
+//     if (rawValue.length <= 13 && /^\d*$/.test(rawValue)) {
+//       setCnic(rawValue);
+//       setFormattedCnic(formatCnicInput(rawValue));
+//     }
+//   };
+
+//   const fetchTeacherDetails = async () => {
+//     if (!formattedCnic) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: "Please enter a CNIC",
+//       });
+//       return;
+//     }
+
+//     if (formattedCnic.length !== 15) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: "CNIC must be exactly 13 digits",
+//       });
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError(null);
+//     setSuccess(null);
+//     setIsFetching(true);
+//     console.log("i amCNIC", formattedCnic);
+
+//     try {
+//       const { data, error } = await supabase
+//         .from("Teacher")
+//         .select(
+//           `
+//     TeacherID,
+//     CNIC,
+//     Name,
+//     Email,
+//     PhoneNumber,
+//     Gender,
+//     DateOfBirth,
+//     ExperienceYear,
+//     Qualification,
+//     HireDate,
+//     EmployeeType,
+//     Address,
+//     Post,
+//     TeacherSubject,
+//     SchoolID,
+//     BPS,
+//     FatherName,
+//     Domicile,
+//     EmployementStatus,
+//     TransferedSchool,
+//     School:SchoolID (SchoolName),
+//     Disability,
+//     DisabilityDetails,
+//     EmployementType
+//     `
+//         )
+//         .eq("CNIC", formattedCnic)
+//         .eq("EmployementStatus", "Working")
+//         .single();
+
+//       // if (error) throw error
+
+//       console.log("Teacher data:", data);
+
+//       if (data) {
+//         setTeacherData(data);
+
+//         // Fetch all schools and filter out current one
+//         const { data: schoolsData, error: schoolsError } = await supabase
+//           .from("School")
+//           .select("SchoolID, SchoolName");
+
+//         if (schoolsError) throw schoolsError;
+
+//         const filteredSchools = schoolsData.filter(
+//           (school) => school.SchoolID !== data.SchoolID
+//         );
+
+//         setAvailableSchools(filteredSchools);
+//       } else {
+//         setAlert({
+//           open: true,
+//           severity: "error",
+//           message: "No teacher found against this CNIC",
+//         });
+//         setTeacherData(null);
+//       }
+//     } catch (err) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: err.message,
+//       });
+//       setTeacherData(null);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const cancelFetch = () => {
+//     setIsFetching(false);
+//     setTeacherData(null);
+//     setCnic("");
+//     setFormattedCnic("");
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     fetchTeacherDetails();
+//   };
+
+//   const generateTeacherID = async (schoolId) => {
+//     if (!schoolId) return null;
+
+//     const formattedSchoolId = schoolId.replace(/-/g, "");
+//     const prefix = `T-${formattedSchoolId}-`;
+
+//     try {
+//       const { data, error } = await supabase
+//         .from("Teacher")
+//         .select("TeacherID")
+//         .filter("TeacherID", "like", `${prefix}%`);
+
+//       if (error) throw error;
+
+//       const filteredData = data.filter((entry) =>
+//         entry.TeacherID.startsWith(prefix)
+//       );
+//       const existingIds = filteredData.map((entry) =>
+//         Number.parseInt(entry.TeacherID.split("-").pop(), 10)
+//       );
+
+//       const nextNumber = (Math.max(...existingIds, 0) + 1)
+//         .toString()
+//         .padStart(2, "0");
+
+//       return `${prefix}${nextNumber}`;
+//     } catch (err) {
+//       console.error("Failed to generate Teacher ID:", err);
+//       throw new Error("Failed to generate Teacher ID");
+//     }
+//   };
+
+//   const handleOpenConfirmDialog = () => {
+//     if (!newSchoolId) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: "Please select a new school",
+//       });
+//       return;
+//     }
+//     setConfirmDialogOpen(true);
+//   };
+
+//   const handleCloseConfirmDialog = () => {
+//     setConfirmDialogOpen(false);
+//   };
+//   const validateEmail = (email) => {
+//     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     return re.test(email);
+//   };
+
+//   const handleCloseAlert = (event, reason) => {
+//     if (reason === "clickaway") {
+//       return;
+//     }
+//     setAlert({ ...alert, open: false });
+//   };
+
+//   // const handleTransfer = async () => {
+//   //   setConfirmDialogOpen(false);
+
+//   //  if (!newSchoolId ) {
+//   //   setAlert({
+//   //     open: true,
+//   //     severity: "error",
+//   //     message: "Please select a new school ",
+//   //   });
+//   //   return;
+//   // }
+
+//   //   setLoading(true);
+//   //   setError(null);
+//   //   setSuccess(null);
+
+//   //   try {
+//   //     // Generate new teacher ID for the new school
+//   //     const newTeacherId = await generateTeacherID(newSchoolId);
+//   //     if (!newTeacherId) throw new Error("Could not generate Teacher ID");
+
+//   //     // Get the new school's name for the success message
+//   //     const { data: schoolData, error: schoolError } = await supabase
+//   //       .from("School")
+//   //       .select("SchoolName")
+//   //       .eq("SchoolID", newSchoolId)
+//   //       .single();
+
+//   //     if (schoolError) throw schoolError;
+
+//   //     // Create a new teacher record in the new school
+//   //     const { error: insertError } = await supabase.from("Teacher").insert([
+//   //       {
+//   //         TeacherID: newTeacherId,
+//   //         CNIC: formattedCnic, // Use formatted CNIC with dashes
+//   //         Name: teacherData.Name,
+//   //         Email: teacherData.Email,
+//   //         PhoneNumber: teacherData.PhoneNumber,
+//   //         Gender: teacherData.Gender,
+//   //         DateOfBirth: teacherData.DateOfBirth,
+//   //         ExperienceYear: teacherData.ExperienceYear,
+//   //         Qualification: teacherData.Qualification,
+//   //         HireDate: new Date().toISOString(), // New hire date for the transfer
+//   //         EmployeeType: teacherData.EmployeeType,
+//   //         Address: teacherData.Address,
+//   //         Post: teacherData.Post,
+//   //         TeacherSubject: teacherData.TeacherSubject,
+//   //         SchoolID: newSchoolId,
+//   //         BPS: teacherData.BPS,
+//   //         FatherName: teacherData.FatherName,
+//   //         Domicile: teacherData.Domicile,
+//   //         EmployementStatus: "Working",
+//   //         // Only include these fields if they exist in teacherData
+//   //         ...(teacherData.Disability && { Disability: teacherData.Disability }),
+//   //         ...(teacherData.DisabilityDetails && {
+//   //           DisabilityDetails: teacherData.DisabilityDetails,
+//   //         }),
+//   //         ...(teacherData.EmployementType && {
+//   //           EmployementType: teacherData.EmployementType,
+//   //         }),
+//   //       },
+//   //     ]);
+
+//   //     if (insertError) throw insertError;
+
+//   //     // Update the original teacher record
+//   //     const { error: updateError } = await supabase
+//   //       .from("Teacher")
+//   //       .update({
+//   //         EmployementStatus: "Transferred",
+//   //         TransferedSchool: newSchoolId,
+//   //         TransferDate: new Date().toISOString(),
+//   //       })
+//   //       .eq("TeacherID", teacherData.TeacherID);
+
+//   //     if (updateError) throw updateError;
+
+//   //     setAlert({
+//   //       open: true,
+//   //       severity: "success",
+//   //       message: `Teacher successfully transferred to ${schoolData.SchoolName} with new ID: ${newTeacherId}`,
+//   //     });
+
+//   //     // Refresh the data to show the transfer was successful
+//   //     await fetchTeacherDetails();
+//   //   } catch (err) {
+//   //     setAlert({
+//   //       open: true,
+//   //       severity: "error",
+//   //       message: err.message,
+//   //     });
+//   //   } finally {
+//   //     setLoading(false);
+//   //   }
+//   // };
+//   useEffect(() => {
+//     const {
+//       data: { subscription },
+//     } = supabase.auth.onAuthStateChange((event, session) => {
+//       console.log("Auth event:", event, session);
+//       if (event === "SIGNED_OUT") {
+//         // Handle logout gracefully
+//         console.warn("Unexpected logout detected!");
+//       }
+//     });
+
+//     return () => subscription.unsubscribe();
+//   }, []);
+
+//   const checkSession = async () => {
+//     const { data, error } = await supabase.auth.getSession();
+//     if (error) {
+//       console.error("Session check failed:", error);
+//       return null;
+//     }
+//     return data.session;
+//   };
+
+//   // Usage example
+
+//   const handleTransfer = async () => {
+//     setConfirmDialogOpen(false);
+//     setLoading(true);
+
+//     // Validate inputs
+//     if (!newSchoolId || !newEmail) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: "Please select a new school and provide a new email",
+//       });
+//       setLoading(false);
+//       return;
+//     }
+
+//     // Validate email format
+//     if (!validateEmail(newEmail)) {
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: "Please enter a valid email address",
+//       });
+//       setLoading(false);
+//       return;
+//     }
+
+//     try {
+//       // 1. Store current admin session BEFORE any auth operations
+//       const {
+//         data: { session: currentSession },
+//         error: sessionError,
+//       } = await supabase.auth.getSession();
+//       if (sessionError || !currentSession) {
+//         throw new Error("Admin session not found");
+//       }
+//       console.log("Step 1 - Current admin session stored");
+
+//       // 2. Check if email already exists in Teacher table
+//       const { count: emailCount } = await supabase
+//         .from("Teacher")
+//         .select("*", { count: "exact", head: true })
+//         .eq("Email", newEmail);
+
+//       if (emailCount && emailCount > 0) {
+//         throw new Error("This email is already registered to another teacher");
+//       }
+//       console.log("Step 2 - Email validation passed");
+
+//       // 3. Generate new teacher ID
+//       const newTeacherId = await generateTeacherID(newSchoolId);
+//       if (!newTeacherId) throw new Error("Failed to generate Teacher ID");
+//       console.log("Step 3 - New teacher ID generated:", newTeacherId);
+
+//       // 4. Create auth user (this will change the current session)
+//       const { data: authData, error: authError } = await supabase.auth.signUp({
+//         email: newEmail,
+//         password: "Ww@123#w",
+//       });
+//       console.log("Step 4 - Auth user created, session changed");
+
+//       if (authError || !authData.user) {
+//         throw authError || new Error("Auth user creation failed");
+//       }
+
+//       // 5. IMMEDIATELY restore the admin session before any database operations
+//       const { error: restoreError } = await supabase.auth.setSession({
+//         access_token: currentSession.access_token,
+//         refresh_token: currentSession.refresh_token,
+//       });
+
+//       if (restoreError) {
+//         console.error("Failed to restore admin session:", restoreError);
+//         throw new Error("Failed to restore admin session");
+//       }
+//       console.log("Step 5 - Admin session restored successfully");
+
+//       // 6. Now perform database operations with restored admin session
+//       const { error: insertError } = await supabase.from("Teacher").insert([
+//         {
+//           TeacherID: newTeacherId,
+//           CNIC: formattedCnic,
+//           Name: teacherData.Name,
+//           Email: newEmail,
+//           PhoneNumber: teacherData.PhoneNumber,
+//           Gender: teacherData.Gender,
+//           DateOfBirth: teacherData.DateOfBirth,
+//           ExperienceYear: teacherData.ExperienceYear,
+//           Qualification: teacherData.Qualification,
+//           HireDate: new Date().toISOString(),
+//           EmployeeType: teacherData.EmployeeType,
+//           Address: teacherData.Address,
+//           Post: teacherData.Post,
+//           TeacherSubject: teacherData.TeacherSubject,
+//           SchoolID: newSchoolId,
+//           BPS: teacherData.BPS,
+//           FatherName: teacherData.FatherName,
+//           Domicile: teacherData.Domicile,
+//           EmployementStatus: "Working",
+//           user_id: authData.user.id,
+//           ...(teacherData.Disability && { Disability: teacherData.Disability }),
+//           ...(teacherData.DisabilityDetails && {
+//             DisabilityDetails: teacherData.DisabilityDetails,
+//           }),
+//           ...(teacherData.EmployementType && {
+//             EmployementType: teacherData.EmployementType,
+//           }),
+//         },
+//       ]);
+//       console.log(
+//         "Step 6 - Teacher record inserted:",
+//         insertError ? "Failed" : "Success"
+//       );
+
+//       if (insertError) throw insertError;
+
+//       // 7. Update original teacher record
+//       const { error: updateError } = await supabase
+//         .from("Teacher")
+//         .update({
+//           EmployementStatus: "Transferred",
+//           TransferedSchool: newSchoolId,
+//           TransferDate: new Date().toISOString(),
+//         })
+//         .eq("TeacherID", teacherData.TeacherID);
+//       console.log(
+//         "Step 7 - Original teacher updated:",
+//         updateError ? "Failed" : "Success"
+//       );
+
+//       if (updateError) throw updateError;
+
+//       // 8. Get school name for success message
+//       const { data: schoolData, error: schoolError } = await supabase
+//         .from("School")
+//         .select("SchoolName")
+//         .eq("SchoolID", newSchoolId)
+//         .single();
+
+//       if (schoolError) throw schoolError;
+
+//       // 9. Show success message
+//       setAlert({
+//         open: true,
+//         severity: "success",
+//         message: `Teacher successfully transferred to ${schoolData.SchoolName} with new ID: ${newTeacherId}`,
+//       });
+
+//       // 10. Refresh teacher data
+//       await fetchTeacherDetails();
+//     } catch (err) {
+//       console.error("Transfer error:", err);
+
+//       // If there was an error, try to restore the admin session one more time
+//       try {
+//         const {
+//           data: { session: fallbackSession },
+//         } = await supabase.auth.getSession();
+//         if (!fallbackSession) {
+//           // Try to get a fresh session - you might need to redirect to login
+//           console.warn(
+//             "No session found after error, user may need to re-login"
+//           );
+//         }
+//       } catch (sessionRestoreError) {
+//         console.error(
+//           "Failed to restore session after error:",
+//           sessionRestoreError
+//         );
+//       }
+
+//       setAlert({
+//         open: true,
+//         severity: "error",
+//         message: err.message || "Failed to complete transfer",
+//       });
+//     } finally {
+//       setLoading(false);
+//       setNewEmail("");
+//     }
+//   };
+
+//   // const handleTransfer = async () => {
+//   //   setConfirmDialogOpen(false);
+
+//   //   // Validate inputs
+//   //   if (!newSchoolId || !newEmail) {
+//   //     setAlert({
+//   //       open: true,
+//   //       severity: "error",
+//   //       message: "Please select a new school and provide a new email",
+//   //     });
+//   //     return;
+//   //   }
+
+//   //   // Save current session
+//   //   const {
+//   //     data: { session },
+//   //   } = await supabase.auth.getSession();
+
+//   //   try {
+//   //     // 1. Create auth user first
+//   //     const { data: authData, error: authError } = await supabase.auth.signUp({
+//   //       email: newEmail,
+//   //       password: "Ww@123#w",
+//   //       options: {
+//   //         // Prevent automatic session change
+//   //         data: {
+//   //           role: "teacher",
+//   //           teacher_id: "", // Will be updated below
+//   //         },
+//   //       },
+//   //     });
+
+//   //     if (authError) throw authError;
+//   //     if (!authData.user) throw new Error("Auth user creation failed");
+
+//   //     // 2. Create teacher record
+//   //     const newTeacherId = await generateTeacherID(newSchoolId);
+//   //     const { error: insertError } = await supabase.from("Teacher").insert([
+//   //       {
+//   //         TeacherID: newTeacherId,
+//   //         // ... all other fields ...
+//   //         user_id: authData.user.id,
+//   //         Email: newEmail,
+//   //       },
+//   //     ]);
+
+//   //     if (insertError) throw insertError;
+
+//   //     // 3. Update auth user with teacher ID
+//   //     await supabase.auth.admin.updateUserById(authData.user.id, {
+//   //       user_metadata: { teacher_id: newTeacherId },
+//   //     });
+
+//   //     // 4. Update original teacher
+//   //     const { error: updateError } = await supabase
+//   //       .from("Teacher")
+//   //       .update({
+//   //         EmployementStatus: "Transferred",
+//   //         TransferedSchool: newSchoolId,
+//   //         TransferDate: new Date().toISOString(),
+//   //       })
+//   //       .eq("TeacherID", teacherData.TeacherID);
+
+//   //     if (updateError) throw updateError;
+
+//   //     // Restore original session
+//   //     await supabase.auth.setSession({
+//   //       access_token: session.access_token,
+//   //       refresh_token: session.refresh_token,
+//   //     });
+
+//   //     setAlert({
+//   //       open: true,
+//   //       severity: "success",
+//   //       message: `Teacher transferred successfully! New ID: ${newTeacherId}`,
+//   //     });
+
+//   //     await fetchTeacherDetails();
+//   //   } catch (err) {
+//   //     setAlert({
+//   //       open: true,
+//   //       severity: "error",
+//   //       message: err.message,
+//   //     });
+//   //   } finally {
+//   //     setLoading(false);
+//   //     setNewEmail("");
+//   //   }
+//   // };
+//   const formatDate = (dateString) => {
+//     if (!dateString) return "N/A";
+//     const date = new Date(dateString);
+//     return date.toLocaleDateString();
+//   };
+
+//   const GenderIcon = ({ gender }) => {
+//     switch (gender) {
+//       case "Male":
+//         return <MaleIcon fontSize="small" />;
+//       case "Female":
+//         return <FemaleIcon fontSize="small" />;
+//       default:
+//         return <PersonIcon fontSize="small" />;
+//     }
+//   };
+
+//   return (
+//     <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+//       <Typography
+//         variant="h4"
+//         gutterBottom
+//         sx={{ mb: 4, display: "flex", alignItems: "center" }}
+//       >
+//         <TransferIcon color="primary" sx={{ mr: 1 }} />
+//         Teacher Transfer
+//       </Typography>
+
+//       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+//         <form onSubmit={handleSubmit}>
+//           <Grid container spacing={2} alignItems="center">
+//             <Grid item xs={12} sm={8} md={9}>
+//               <TextField
+//                 fullWidth
+//                 label="Enter Teacher CNIC"
+//                 variant="outlined"
+//                 value={formattedCnic}
+//                 onChange={handleCnicChange}
+//                 disabled={isFetching}
+//                 placeholder="31102-5522345-9"
+//                 InputProps={{
+//                   startAdornment: (
+//                     <InputAdornment position="start">
+//                       <BadgeIcon color="action" />
+//                     </InputAdornment>
+//                   ),
+//                 }}
+//               />
+//               {/* <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+//                 Format: XXXXX-XXXXXXX-X
+//               </Typography> */}
+//             </Grid>
+//             <Grid item xs={12} sm={4} md={3}>
+//               {!isFetching ? (
+//                 <Button
+//                   fullWidth
+//                   type="submit"
+//                   variant="contained"
+//                   color="primary"
+//                   size="large"
+//                   disabled={loading || cnic.length !== 13}
+//                   startIcon={
+//                     loading ? (
+//                       <CircularProgress size={20} color="inherit" />
+//                     ) : (
+//                       <SearchIcon />
+//                     )
+//                   }
+//                   sx={{ height: "56px" }} // Match height with TextField
+//                 >
+//                   {loading ? "Fetching..." : "Fetch Details"}
+//                 </Button>
+//               ) : (
+//                 <Button
+//                   fullWidth
+//                   variant="outlined"
+//                   color="error"
+//                   size="large"
+//                   onClick={cancelFetch}
+//                   startIcon={<CancelIcon />}
+//                   sx={{ height: "56px" }} // Match height with TextField
+//                 >
+//                   Cancel Fetch
+//                 </Button>
+//               )}
+//             </Grid>
+//           </Grid>
+//         </form>
+//       </Paper>
+
+//       {error && (
+//         <Alert severity="error" sx={{ mb: 3 }}>
+//           {error}
+//         </Alert>
+//       )}
+
+//       {success && (
+//         <Alert severity="success" sx={{ mb: 3 }}>
+//           {success}
+//         </Alert>
+//       )}
+
+//       {teacherData && (
+//         <Paper elevation={3} sx={{ p: 3 }}>
+//           <Typography
+//             variant="h5"
+//             gutterBottom
+//             sx={{ mb: 3, display: "flex", alignItems: "center" }}
+//           >
+//             <SchoolIcon color="primary" sx={{ mr: 1 }} />
+//             Teacher Details
+//           </Typography>
+
+//           <Grid container spacing={3}>
+//             <Grid item xs={12} md={6}>
+//               <DetailItem
+//                 icon={<PersonIcon />}
+//                 label="Name"
+//                 value={teacherData.Name}
+//               />
+//               <DetailItem
+//                 icon={<PersonIcon />}
+//                 label="Father's Name"
+//                 value={teacherData.FatherName}
+//               />
+//               <DetailItem
+//                 icon={<SchoolIcon />}
+//                 label="Teacher ID"
+//                 value={teacherData.TeacherID}
+//               />
+//               <DetailItem
+//                 icon={<BadgeIcon />}
+//                 label="CNIC"
+//                 value={formattedCnic || formatCnicInput(teacherData.CNIC)}
+//               />
+//               <DetailItem
+//                 icon={<GenderIcon gender={teacherData.Gender} />}
+//                 label="Gender"
+//                 value={teacherData.Gender}
+//               />
+//               <DetailItem
+//                 icon={<CakeIcon />}
+//                 label="Date of Birth"
+//                 value={formatDate(teacherData.DateOfBirth)}
+//               />
+//               <DetailItem
+//                 icon={<HomeIcon />}
+//                 label="Domicile"
+//                 value={teacherData.Domicile}
+//               />
+//               {teacherData.Disability && (
+//                 <DetailItem
+//                   icon={<PersonIcon />}
+//                   label="Disability"
+//                   value={teacherData.Disability}
+//                 />
+//               )}
+//               {teacherData.Disability === "Yes" &&
+//                 teacherData.DisabilityDetails && (
+//                   <DetailItem
+//                     icon={<PersonIcon />}
+//                     label="Disability Details"
+//                     value={teacherData.DisabilityDetails}
+//                   />
+//                 )}
+//             </Grid>
+
+//             <Grid item xs={12} md={6}>
+//               <DetailItem
+//                 icon={<EmailIcon />}
+//                 label="Email"
+//                 value={teacherData.Email}
+//               />
+//               <DetailItem
+//                 icon={<PhoneIcon />}
+//                 label="Phone Number"
+//                 value={teacherData.PhoneNumber}
+//               />
+//               <DetailItem
+//                 icon={<HomeIcon />}
+//                 label="Address"
+//                 value={teacherData.Address}
+//               />
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="BPS"
+//                 value={teacherData.BPS}
+//               />
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="Post"
+//                 value={teacherData.Post}
+//               />
+//               <DetailItem
+//                 icon={<SchoolIcon />}
+//                 label="Qualification"
+//                 value={teacherData.Qualification}
+//               />
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="Experience (Years)"
+//                 value={teacherData.ExperienceYear}
+//               />
+//             </Grid>
+//           </Grid>
+
+//           <Divider sx={{ my: 3 }} />
+
+//           <Typography
+//             variant="h6"
+//             gutterBottom
+//             sx={{ display: "flex", alignItems: "center" }}
+//           >
+//             <ApartmentIcon color="primary" sx={{ mr: 1 }} />
+//             Current Assignment
+//           </Typography>
+
+//           <Grid container spacing={3} sx={{ mb: 3 }}>
+//             <Grid item xs={12} md={6}>
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="Employee Type"
+//                 value={teacherData.EmployeeType}
+//               />
+//               {teacherData.EmployementType && (
+//                 <DetailItem
+//                   icon={<WorkIcon />}
+//                   label="Employment Type"
+//                   value={teacherData.EmployementType}
+//                 />
+//               )}
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="Hire Date"
+//                 value={formatDate(teacherData.HireDate)}
+//               />
+//               <DetailItem
+//                 icon={<WorkIcon />}
+//                 label="Employment Status"
+//                 value={teacherData.EmploymentStatus || "Working"}
+//               />
+//               {teacherData.TransferredSchool && (
+//                 <DetailItem
+//                   icon={<ApartmentIcon />}
+//                   label="Transferred School"
+//                   value={teacherData.TransferredSchool}
+//                 />
+//               )}
+//             </Grid>
+//             <Grid item xs={12} md={6}>
+//               <DetailItem
+//                 icon={<ApartmentIcon />}
+//                 label="Current School"
+//                 value={teacherData.School?.SchoolName || "N/A"}
+//               />
+//               <DetailItem
+//                 icon={<ApartmentIcon />}
+//                 label="School ID"
+//                 value={teacherData.SchoolID}
+//               />
+//               <DetailItem
+//                 icon={<SchoolIcon />}
+//                 label="Subject"
+//                 value={teacherData.TeacherSubject}
+//               />
+//             </Grid>
+//           </Grid>
+
+//           <Divider sx={{ my: 3 }} />
+
+//           <Typography
+//             variant="h6"
+//             gutterBottom
+//             sx={{ display: "flex", alignItems: "center" }}
+//           >
+//             <TransferIcon color="primary" sx={{ mr: 1 }} />
+//             Transfer Options
+//           </Typography>
+
+//           <Grid container spacing={2} alignItems="center">
+//             <Grid item xs={12} sm={8} md={9}>
+//               <FormControl fullWidth>
+//                 <InputLabel id="new-school-label">Select New School</InputLabel>
+//                 <Select
+//                   labelId="new-school-label"
+//                   value={newSchoolId}
+//                   label="Select New School"
+//                   onChange={(e) => setNewSchoolId(e.target.value)}
+//                 >
+//                   <MenuItem value="">
+//                     <em>Select a school</em>
+//                   </MenuItem>
+//                   {availableSchools.map((school) => (
+//                     <MenuItem key={school.SchoolID} value={school.SchoolID}>
+//                       {school.SchoolID} - {school.SchoolName}
+//                     </MenuItem>
+//                   ))}
+//                 </Select>
+//               </FormControl>
+//             </Grid>
+//             <Grid item xs={12} sm={4} md={3}>
+//               <Button
+//                 fullWidth
+//                 variant="contained"
+//                 color="primary"
+//                 size="large"
+//                 onClick={handleOpenConfirmDialog}
+//                 disabled={loading || !newSchoolId}
+//                 startIcon={
+//                   loading ? <CircularProgress size={20} /> : <TransferIcon />
+//                 }
+//                 sx={{ height: "56px" }} // Match height with Select
+//               >
+//                 Transfer Teacher
+//               </Button>
+//             </Grid>
+//           </Grid>
+//         </Paper>
+//       )}
+//       {/* Confirmation Dialog */}
+//       {/* <Dialog
+//         open={confirmDialogOpen}
+//         onClose={handleCloseConfirmDialog}
+//         aria-labelledby="alert-dialog-title"
+//         aria-describedby="alert-dialog-description"
+//       >
+//         <DialogTitle id="alert-dialog-title">
+//           {"Confirm Teacher Transfer"}
+//         </DialogTitle>
+//         <DialogContent>
+//           <DialogContentText id="alert-dialog-description">
+//             Are you sure you want to transfer {teacherData?.Name} to the
+//             selected school? This action cannot be undone.
+//           </DialogContentText>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={handleCloseConfirmDialog} color="primary">
+//             Cancel
+//           </Button>
+//           <Button onClick={handleTransfer} color="primary" autoFocus>
+//             Confirm Transfer
+//           </Button>
+//         </DialogActions>
+//       </Dialog> */}
+//       <Dialog
+//         open={confirmDialogOpen}
+//         onClose={handleCloseConfirmDialog}
+//         aria-labelledby="alert-dialog-title"
+//         aria-describedby="alert-dialog-description"
+//       >
+//         <DialogTitle id="alert-dialog-title">
+//           {"Confirm Teacher Transfer"}
+//         </DialogTitle>
+//         <DialogContent>
+//           <DialogContentText id="alert-dialog-description" sx={{ mb: 2 }}>
+//             Are you sure you want to transfer {teacherData?.Name} to the
+//             selected school? Please provide a new email address for the teacher.
+//           </DialogContentText>
+//           <TextField
+//             autoFocus
+//             margin="dense"
+//             id="new-email"
+//             label="New Email Address"
+//             type="email"
+//             fullWidth
+//             variant="standard"
+//             value={newEmail}
+//             onChange={(e) => {
+//               setNewEmail(e.target.value);
+//               setEmailError(e.target.value && !validateEmail(e.target.value));
+//             }}
+//             error={emailError}
+//             helperText={emailError ? "Please enter a valid email address" : ""}
+//           />
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={handleCloseConfirmDialog} color="primary">
+//             Cancel
+//           </Button>
+//           <Button
+//             onClick={handleTransfer}
+//             color="primary"
+//             autoFocus
+//             disabled={!newEmail || emailError}
+//           >
+//             Confirm Transfer
+//           </Button>
+//         </DialogActions>
+//       </Dialog>
+
+//       {/* Alert Snackbar */}
+//       <Snackbar
+//         open={alert.open}
+//         autoHideDuration={6000}
+//         onClose={handleCloseAlert}
+//       >
+//         <Alert onClose={handleCloseAlert} severity={alert.severity}>
+//           {alert.message}
+//         </Alert>
+//       </Snackbar>
+//     </Box>
+//   );
+// }
+
+// function DetailItem({ icon, label, value }) {
+//   return (
+//     <Box sx={{ mb: 2 }}>
+//       <Typography
+//         variant="subtitle2"
+//         color="text.secondary"
+//         sx={{ display: "flex", alignItems: "center" }}
+//       >
+//         {icon}
+//         <Box component="span" sx={{ ml: 1 }}>
+//           {label}
+//         </Box>
+//       </Typography>
+//       <Typography variant="body1" sx={{ ml: 4 }}>
+//         {value || "N/A"}
+//       </Typography>
+//     </Box>
+//   );
+// }
+
+// export default TransferTeacher;
+
+
+"use client"
+
+import { useEffect, useState } from "react"
+import { supabase } from "../../../supabase-client"
 import {
   Box,
   Typography,
@@ -24,7 +1115,11 @@ import {
   DialogTitle,
   Snackbar,
   InputAdornment,
-} from "@mui/material";
+  Card,
+  CardContent,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material"
 import {
   Search as SearchIcon,
   Person as PersonIcon,
@@ -40,68 +1135,63 @@ import {
   Badge as BadgeIcon,
   Cancel as CancelIcon,
   Apartment as ApartmentIcon,
-} from "@mui/icons-material";
-import { use } from "react";
+} from "@mui/icons-material"
 
 function TransferTeacher() {
-  const [cnic, setCnic] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [emailError, setEmailError] = useState(false);
-  const [formattedCnic, setFormattedCnic] = useState("");
-  const [teacherData, setTeacherData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [newSchoolId, setNewSchoolId] = useState("");
-  const [availableSchools, setAvailableSchools] = useState([]);
-  const [success, setSuccess] = useState(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"))
+
+  const [cnic, setCnic] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [emailError, setEmailError] = useState(false)
+  const [formattedCnic, setFormattedCnic] = useState("")
+  const [teacherData, setTeacherData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [newSchoolId, setNewSchoolId] = useState("")
+  const [availableSchools, setAvailableSchools] = useState([])
+  const [success, setSuccess] = useState(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [alert, setAlert] = useState({
     open: false,
     severity: "info",
     message: "",
-  });
-  const [isFetching, setIsFetching] = useState(false);
+  })
+  const [isFetching, setIsFetching] = useState(false)
 
   const checkEmailExists = async (email) => {
     try {
-      const { data, error } = await supabase
-        .from("Teacher")
-        .select("Email")
-        .eq("Email", email)
-        .single();
-
-      return !!data; // returns true if email exists
+      const { data, error } = await supabase.from("Teacher").select("Email").eq("Email", email).single()
+      return !!data
     } catch (err) {
-      console.error("Error checking email:", err);
-      return false;
+      console.error("Error checking email:", err)
+      return false
     }
-  };
-  const formatCnicInput = (value) => {
-    // Remove all non-digits
-    const digitsOnly = value.replace(/\D/g, "");
+  }
 
-    // Format as 31102-5522345-9 (5-7-1 format)
-    let formatted = "";
+  const formatCnicInput = (value) => {
+    const digitsOnly = value.replace(/\D/g, "")
+    let formatted = ""
     if (digitsOnly.length > 0) {
-      formatted = digitsOnly.substring(0, 5);
+      formatted = digitsOnly.substring(0, 5)
       if (digitsOnly.length > 5) {
-        formatted += "-" + digitsOnly.substring(5, 12);
+        formatted += "-" + digitsOnly.substring(5, 12)
         if (digitsOnly.length > 12) {
-          formatted += "-" + digitsOnly.substring(12, 13);
+          formatted += "-" + digitsOnly.substring(12, 13)
         }
       }
     }
-
-    return formatted;
-  };
+    return formatted
+  }
 
   const handleCnicChange = (e) => {
-    const rawValue = e.target.value.replace(/-/g, "");
+    const rawValue = e.target.value.replace(/-/g, "")
     if (rawValue.length <= 13 && /^\d*$/.test(rawValue)) {
-      setCnic(rawValue);
-      setFormattedCnic(formatCnicInput(rawValue));
+      setCnic(rawValue)
+      setFormattedCnic(formatCnicInput(rawValue))
     }
-  };
+  }
 
   const fetchTeacherDetails = async () => {
     if (!formattedCnic) {
@@ -109,25 +1199,22 @@ function TransferTeacher() {
         open: true,
         severity: "error",
         message: "Please enter a CNIC",
-      });
-      return;
+      })
+      return
     }
-
     if (formattedCnic.length !== 15) {
       setAlert({
         open: true,
         severity: "error",
         message: "CNIC must be exactly 13 digits",
-      });
-      return;
+      })
+      return
     }
-
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    setIsFetching(true);
-    console.log("i amCNIC", formattedCnic);
-
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+    setIsFetching(true)
+    console.log("i amCNIC", formattedCnic)
     try {
       const { data, error } = await supabase
         .from("Teacher")
@@ -157,94 +1244,70 @@ function TransferTeacher() {
     Disability,
     DisabilityDetails,
     EmployementType
-    `
+    `,
         )
         .eq("CNIC", formattedCnic)
         .eq("EmployementStatus", "Working")
-        .single();
+        .single()
 
-      // if (error) throw error
-
-      console.log("Teacher data:", data);
-
+      console.log("Teacher data:", data)
       if (data) {
-        setTeacherData(data);
-
-        // Fetch all schools and filter out current one
-        const { data: schoolsData, error: schoolsError } = await supabase
-          .from("School")
-          .select("SchoolID, SchoolName");
-
-        if (schoolsError) throw schoolsError;
-
-        const filteredSchools = schoolsData.filter(
-          (school) => school.SchoolID !== data.SchoolID
-        );
-
-        setAvailableSchools(filteredSchools);
+        setTeacherData(data)
+        const { data: schoolsData, error: schoolsError } = await supabase.from("School").select("SchoolID, SchoolName")
+        if (schoolsError) throw schoolsError
+        const filteredSchools = schoolsData.filter((school) => school.SchoolID !== data.SchoolID)
+        setAvailableSchools(filteredSchools)
       } else {
         setAlert({
           open: true,
           severity: "error",
           message: "No teacher found against this CNIC",
-        });
-        setTeacherData(null);
+        })
+        setTeacherData(null)
       }
     } catch (err) {
       setAlert({
         open: true,
         severity: "error",
         message: err.message,
-      });
-      setTeacherData(null);
+      })
+      setTeacherData(null)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const cancelFetch = () => {
-    setIsFetching(false);
-    setTeacherData(null);
-    setCnic("");
-    setFormattedCnic("");
-  };
+    setIsFetching(false)
+    setTeacherData(null)
+    setCnic("")
+    setFormattedCnic("")
+  }
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    fetchTeacherDetails();
-  };
+    e.preventDefault()
+    fetchTeacherDetails()
+  }
 
   const generateTeacherID = async (schoolId) => {
-    if (!schoolId) return null;
-
-    const formattedSchoolId = schoolId.replace(/-/g, "");
-    const prefix = `T-${formattedSchoolId}-`;
-
+    if (!schoolId) return null
+    const formattedSchoolId = schoolId.replace(/-/g, "")
+    const prefix = `T-${formattedSchoolId}-`
     try {
       const { data, error } = await supabase
         .from("Teacher")
         .select("TeacherID")
-        .filter("TeacherID", "like", `${prefix}%`);
-
-      if (error) throw error;
-
-      const filteredData = data.filter((entry) =>
-        entry.TeacherID.startsWith(prefix)
-      );
-      const existingIds = filteredData.map((entry) =>
-        Number.parseInt(entry.TeacherID.split("-").pop(), 10)
-      );
-
-      const nextNumber = (Math.max(...existingIds, 0) + 1)
-        .toString()
-        .padStart(2, "0");
-
-      return `${prefix}${nextNumber}`;
+        .filter("TeacherID", "like", `${prefix}%`)
+      if (error) throw error
+      const filteredData = data.filter((entry) => entry.TeacherID.startsWith(prefix))
+      const existingIds = filteredData.map((entry) => Number.parseInt(entry.TeacherID.split("-").pop(), 10))
+      const nextNumber = (Math.max(...existingIds, 0) + 1).toString().padStart(2, "0")
+      return `${prefix}${nextNumber}`
     } catch (err) {
-      console.error("Failed to generate Teacher ID:", err);
-      throw new Error("Failed to generate Teacher ID");
+      console.error("Failed to generate Teacher ID:", err)
+      throw new Error("Failed to generate Teacher ID")
     }
-  };
+  }
 
   const handleOpenConfirmDialog = () => {
     if (!newSchoolId) {
@@ -252,224 +1315,116 @@ function TransferTeacher() {
         open: true,
         severity: "error",
         message: "Please select a new school",
-      });
-      return;
+      })
+      return
     }
-    setConfirmDialogOpen(true);
-  };
+    setConfirmDialogOpen(true)
+  }
 
   const handleCloseConfirmDialog = () => {
-    setConfirmDialogOpen(false);
-  };
+    setConfirmDialogOpen(false)
+  }
+
   const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return re.test(email)
+  }
 
   const handleCloseAlert = (event, reason) => {
     if (reason === "clickaway") {
-      return;
+      return
     }
-    setAlert({ ...alert, open: false });
-  };
+    setAlert({ ...alert, open: false })
+  }
 
-  // const handleTransfer = async () => {
-  //   setConfirmDialogOpen(false);
-
-  //  if (!newSchoolId ) {
-  //   setAlert({
-  //     open: true,
-  //     severity: "error",
-  //     message: "Please select a new school ",
-  //   });
-  //   return;
-  // }
-
-  //   setLoading(true);
-  //   setError(null);
-  //   setSuccess(null);
-
-  //   try {
-  //     // Generate new teacher ID for the new school
-  //     const newTeacherId = await generateTeacherID(newSchoolId);
-  //     if (!newTeacherId) throw new Error("Could not generate Teacher ID");
-
-  //     // Get the new school's name for the success message
-  //     const { data: schoolData, error: schoolError } = await supabase
-  //       .from("School")
-  //       .select("SchoolName")
-  //       .eq("SchoolID", newSchoolId)
-  //       .single();
-
-  //     if (schoolError) throw schoolError;
-
-  //     // Create a new teacher record in the new school
-  //     const { error: insertError } = await supabase.from("Teacher").insert([
-  //       {
-  //         TeacherID: newTeacherId,
-  //         CNIC: formattedCnic, // Use formatted CNIC with dashes
-  //         Name: teacherData.Name,
-  //         Email: teacherData.Email,
-  //         PhoneNumber: teacherData.PhoneNumber,
-  //         Gender: teacherData.Gender,
-  //         DateOfBirth: teacherData.DateOfBirth,
-  //         ExperienceYear: teacherData.ExperienceYear,
-  //         Qualification: teacherData.Qualification,
-  //         HireDate: new Date().toISOString(), // New hire date for the transfer
-  //         EmployeeType: teacherData.EmployeeType,
-  //         Address: teacherData.Address,
-  //         Post: teacherData.Post,
-  //         TeacherSubject: teacherData.TeacherSubject,
-  //         SchoolID: newSchoolId,
-  //         BPS: teacherData.BPS,
-  //         FatherName: teacherData.FatherName,
-  //         Domicile: teacherData.Domicile,
-  //         EmployementStatus: "Working",
-  //         // Only include these fields if they exist in teacherData
-  //         ...(teacherData.Disability && { Disability: teacherData.Disability }),
-  //         ...(teacherData.DisabilityDetails && {
-  //           DisabilityDetails: teacherData.DisabilityDetails,
-  //         }),
-  //         ...(teacherData.EmployementType && {
-  //           EmployementType: teacherData.EmployementType,
-  //         }),
-  //       },
-  //     ]);
-
-  //     if (insertError) throw insertError;
-
-  //     // Update the original teacher record
-  //     const { error: updateError } = await supabase
-  //       .from("Teacher")
-  //       .update({
-  //         EmployementStatus: "Transferred",
-  //         TransferedSchool: newSchoolId,
-  //         TransferDate: new Date().toISOString(),
-  //       })
-  //       .eq("TeacherID", teacherData.TeacherID);
-
-  //     if (updateError) throw updateError;
-
-  //     setAlert({
-  //       open: true,
-  //       severity: "success",
-  //       message: `Teacher successfully transferred to ${schoolData.SchoolName} with new ID: ${newTeacherId}`,
-  //     });
-
-  //     // Refresh the data to show the transfer was successful
-  //     await fetchTeacherDetails();
-  //   } catch (err) {
-  //     setAlert({
-  //       open: true,
-  //       severity: "error",
-  //       message: err.message,
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth event:", event, session);
+      console.log("Auth event:", event, session)
       if (event === "SIGNED_OUT") {
-        // Handle logout gracefully
-        console.warn("Unexpected logout detected!");
+        console.warn("Unexpected logout detected!")
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const checkSession = async () => {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession()
     if (error) {
-      console.error("Session check failed:", error);
-      return null;
+      console.error("Session check failed:", error)
+      return null
     }
-    return data.session;
-  };
-
-  // Usage example
+    return data.session
+  }
 
   const handleTransfer = async () => {
-    setConfirmDialogOpen(false);
-    setLoading(true);
+    setConfirmDialogOpen(false)
+    setLoading(true)
 
-    // Validate inputs
     if (!newSchoolId || !newEmail) {
       setAlert({
         open: true,
         severity: "error",
         message: "Please select a new school and provide a new email",
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
-    // Validate email format
     if (!validateEmail(newEmail)) {
       setAlert({
         open: true,
         severity: "error",
         message: "Please enter a valid email address",
-      });
-      setLoading(false);
-      return;
+      })
+      setLoading(false)
+      return
     }
 
     try {
-      // 1. Store current admin session BEFORE any auth operations
       const {
         data: { session: currentSession },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } = await supabase.auth.getSession()
       if (sessionError || !currentSession) {
-        throw new Error("Admin session not found");
+        throw new Error("Admin session not found")
       }
-      console.log("Step 1 - Current admin session stored");
+      console.log("Step 1 - Current admin session stored")
 
-      // 2. Check if email already exists in Teacher table
       const { count: emailCount } = await supabase
         .from("Teacher")
         .select("*", { count: "exact", head: true })
-        .eq("Email", newEmail);
-
+        .eq("Email", newEmail)
       if (emailCount && emailCount > 0) {
-        throw new Error("This email is already registered to another teacher");
+        throw new Error("This email is already registered to another teacher")
       }
-      console.log("Step 2 - Email validation passed");
+      console.log("Step 2 - Email validation passed")
 
-      // 3. Generate new teacher ID
-      const newTeacherId = await generateTeacherID(newSchoolId);
-      if (!newTeacherId) throw new Error("Failed to generate Teacher ID");
-      console.log("Step 3 - New teacher ID generated:", newTeacherId);
+      const newTeacherId = await generateTeacherID(newSchoolId)
+      if (!newTeacherId) throw new Error("Failed to generate Teacher ID")
+      console.log("Step 3 - New teacher ID generated:", newTeacherId)
 
-      // 4. Create auth user (this will change the current session)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newEmail,
         password: "Ww@123#w",
-      });
-      console.log("Step 4 - Auth user created, session changed");
+      })
+      console.log("Step 4 - Auth user created, session changed")
 
       if (authError || !authData.user) {
-        throw authError || new Error("Auth user creation failed");
+        throw authError || new Error("Auth user creation failed")
       }
 
-      // 5. IMMEDIATELY restore the admin session before any database operations
       const { error: restoreError } = await supabase.auth.setSession({
         access_token: currentSession.access_token,
         refresh_token: currentSession.refresh_token,
-      });
-
+      })
       if (restoreError) {
-        console.error("Failed to restore admin session:", restoreError);
-        throw new Error("Failed to restore admin session");
+        console.error("Failed to restore admin session:", restoreError)
+        throw new Error("Failed to restore admin session")
       }
-      console.log("Step 5 - Admin session restored successfully");
+      console.log("Step 5 - Admin session restored successfully")
 
-      // 6. Now perform database operations with restored admin session
       const { error: insertError } = await supabase.from("Teacher").insert([
         {
           TeacherID: newTeacherId,
@@ -500,15 +1455,10 @@ function TransferTeacher() {
             EmployementType: teacherData.EmployementType,
           }),
         },
-      ]);
-      console.log(
-        "Step 6 - Teacher record inserted:",
-        insertError ? "Failed" : "Success"
-      );
+      ])
+      console.log("Step 6 - Teacher record inserted:", insertError ? "Failed" : "Success")
+      if (insertError) throw insertError
 
-      if (insertError) throw insertError;
-
-      // 7. Update original teacher record
       const { error: updateError } = await supabase
         .from("Teacher")
         .update({
@@ -516,575 +1466,642 @@ function TransferTeacher() {
           TransferedSchool: newSchoolId,
           TransferDate: new Date().toISOString(),
         })
-        .eq("TeacherID", teacherData.TeacherID);
-      console.log(
-        "Step 7 - Original teacher updated:",
-        updateError ? "Failed" : "Success"
-      );
+        .eq("TeacherID", teacherData.TeacherID)
+      console.log("Step 7 - Original teacher updated:", updateError ? "Failed" : "Success")
+      if (updateError) throw updateError
 
-      if (updateError) throw updateError;
-
-      // 8. Get school name for success message
       const { data: schoolData, error: schoolError } = await supabase
         .from("School")
         .select("SchoolName")
         .eq("SchoolID", newSchoolId)
-        .single();
+        .single()
+      if (schoolError) throw schoolError
 
-      if (schoolError) throw schoolError;
-
-      // 9. Show success message
       setAlert({
         open: true,
         severity: "success",
         message: `Teacher successfully transferred to ${schoolData.SchoolName} with new ID: ${newTeacherId}`,
-      });
+      })
 
-      // 10. Refresh teacher data
-      await fetchTeacherDetails();
+      await fetchTeacherDetails()
     } catch (err) {
-      console.error("Transfer error:", err);
-
-      // If there was an error, try to restore the admin session one more time
+      console.error("Transfer error:", err)
       try {
         const {
           data: { session: fallbackSession },
-        } = await supabase.auth.getSession();
+        } = await supabase.auth.getSession()
         if (!fallbackSession) {
-          // Try to get a fresh session - you might need to redirect to login
-          console.warn(
-            "No session found after error, user may need to re-login"
-          );
+          console.warn("No session found after error, user may need to re-login")
         }
       } catch (sessionRestoreError) {
-        console.error(
-          "Failed to restore session after error:",
-          sessionRestoreError
-        );
+        console.error("Failed to restore session after error:", sessionRestoreError)
       }
-
       setAlert({
         open: true,
         severity: "error",
         message: err.message || "Failed to complete transfer",
-      });
+      })
     } finally {
-      setLoading(false);
-      setNewEmail("");
+      setLoading(false)
+      setNewEmail("")
     }
-  };
+  }
 
-  // const handleTransfer = async () => {
-  //   setConfirmDialogOpen(false);
-
-  //   // Validate inputs
-  //   if (!newSchoolId || !newEmail) {
-  //     setAlert({
-  //       open: true,
-  //       severity: "error",
-  //       message: "Please select a new school and provide a new email",
-  //     });
-  //     return;
-  //   }
-
-  //   // Save current session
-  //   const {
-  //     data: { session },
-  //   } = await supabase.auth.getSession();
-
-  //   try {
-  //     // 1. Create auth user first
-  //     const { data: authData, error: authError } = await supabase.auth.signUp({
-  //       email: newEmail,
-  //       password: "Ww@123#w",
-  //       options: {
-  //         // Prevent automatic session change
-  //         data: {
-  //           role: "teacher",
-  //           teacher_id: "", // Will be updated below
-  //         },
-  //       },
-  //     });
-
-  //     if (authError) throw authError;
-  //     if (!authData.user) throw new Error("Auth user creation failed");
-
-  //     // 2. Create teacher record
-  //     const newTeacherId = await generateTeacherID(newSchoolId);
-  //     const { error: insertError } = await supabase.from("Teacher").insert([
-  //       {
-  //         TeacherID: newTeacherId,
-  //         // ... all other fields ...
-  //         user_id: authData.user.id,
-  //         Email: newEmail,
-  //       },
-  //     ]);
-
-  //     if (insertError) throw insertError;
-
-  //     // 3. Update auth user with teacher ID
-  //     await supabase.auth.admin.updateUserById(authData.user.id, {
-  //       user_metadata: { teacher_id: newTeacherId },
-  //     });
-
-  //     // 4. Update original teacher
-  //     const { error: updateError } = await supabase
-  //       .from("Teacher")
-  //       .update({
-  //         EmployementStatus: "Transferred",
-  //         TransferedSchool: newSchoolId,
-  //         TransferDate: new Date().toISOString(),
-  //       })
-  //       .eq("TeacherID", teacherData.TeacherID);
-
-  //     if (updateError) throw updateError;
-
-  //     // Restore original session
-  //     await supabase.auth.setSession({
-  //       access_token: session.access_token,
-  //       refresh_token: session.refresh_token,
-  //     });
-
-  //     setAlert({
-  //       open: true,
-  //       severity: "success",
-  //       message: `Teacher transferred successfully! New ID: ${newTeacherId}`,
-  //     });
-
-  //     await fetchTeacherDetails();
-  //   } catch (err) {
-  //     setAlert({
-  //       open: true,
-  //       severity: "error",
-  //       message: err.message,
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //     setNewEmail("");
-  //   }
-  // };
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
+    if (!dateString) return "N/A"
+    const date = new Date(dateString)
+    return date.toLocaleDateString()
+  }
 
   const GenderIcon = ({ gender }) => {
     switch (gender) {
       case "Male":
-        return <MaleIcon fontSize="small" />;
+        return <MaleIcon fontSize="small" />
       case "Female":
-        return <FemaleIcon fontSize="small" />;
+        return <FemaleIcon fontSize="small" />
       default:
-        return <PersonIcon fontSize="small" />;
+        return <PersonIcon fontSize="small" />
     }
-  };
+  }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ mb: 4, display: "flex", alignItems: "center" }}
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="flex-start"
+      bgcolor="#f5f5f5"
+      p={isMobile ? 1 : isTablet ? 2 : 4}
+      minHeight="100vh"
+    >
+      <Card
+        sx={{
+          width: "100%",
+          maxWidth: isMobile ? "100%" : 1200,
+          padding: isMobile ? 1 : isTablet ? 2 : 3,
+          boxShadow: 6,
+          borderRadius: 2,
+          margin: isMobile ? 0 : "auto",
+        }}
       >
-        <TransferIcon color="primary" sx={{ mr: 1 }} />
-        Teacher Transfer
-      </Typography>
-
-      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={8} md={9}>
-              <TextField
-                fullWidth
-                label="Enter Teacher CNIC"
-                variant="outlined"
-                value={formattedCnic}
-                onChange={handleCnicChange}
-                disabled={isFetching}
-                placeholder="31102-5522345-9"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <BadgeIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {/* <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                Format: XXXXX-XXXXXXX-X
-              </Typography> */}
-            </Grid>
-            <Grid item xs={12} sm={4} md={3}>
-              {!isFetching ? (
-                <Button
-                  fullWidth
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  disabled={loading || cnic.length !== 13}
-                  startIcon={
-                    loading ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      <SearchIcon />
-                    )
-                  }
-                  sx={{ height: "56px" }} // Match height with TextField
-                >
-                  {loading ? "Fetching..." : "Fetch Details"}
-                </Button>
-              ) : (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="error"
-                  size="large"
-                  onClick={cancelFetch}
-                  startIcon={<CancelIcon />}
-                  sx={{ height: "56px" }} // Match height with TextField
-                >
-                  Cancel Fetch
-                </Button>
-              )}
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          {success}
-        </Alert>
-      )}
-
-      {teacherData && (
-        <Paper elevation={3} sx={{ p: 3 }}>
+        <CardContent sx={{ padding: isMobile ? 1 : 2 }}>
           <Typography
-            variant="h5"
+            variant={isMobile ? "h5" : "h4"}
+            align="center"
             gutterBottom
-            sx={{ mb: 3, display: "flex", alignItems: "center" }}
+            sx={{
+              fontWeight: "bold",
+              color: "#3f51b5",
+              mb: isMobile ? 2 : 3,
+              fontSize: isMobile ? "1.5rem" : "2.125rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
           >
-            <SchoolIcon color="primary" sx={{ mr: 1 }} />
-            Teacher Details
+            <TransferIcon
+              color="primary"
+              sx={{
+                mr: 1,
+                fontSize: isMobile ? "1.5rem" : "2rem",
+              }}
+            />
+            Teacher Transfer
           </Typography>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <DetailItem
-                icon={<PersonIcon />}
-                label="Name"
-                value={teacherData.Name}
-              />
-              <DetailItem
-                icon={<PersonIcon />}
-                label="Father's Name"
-                value={teacherData.FatherName}
-              />
-              <DetailItem
-                icon={<SchoolIcon />}
-                label="Teacher ID"
-                value={teacherData.TeacherID}
-              />
-              <DetailItem
-                icon={<BadgeIcon />}
-                label="CNIC"
-                value={formattedCnic || formatCnicInput(teacherData.CNIC)}
-              />
-              <DetailItem
-                icon={<GenderIcon gender={teacherData.Gender} />}
-                label="Gender"
-                value={teacherData.Gender}
-              />
-              <DetailItem
-                icon={<CakeIcon />}
-                label="Date of Birth"
-                value={formatDate(teacherData.DateOfBirth)}
-              />
-              <DetailItem
-                icon={<HomeIcon />}
-                label="Domicile"
-                value={teacherData.Domicile}
-              />
-              {teacherData.Disability && (
-                <DetailItem
-                  icon={<PersonIcon />}
-                  label="Disability"
-                  value={teacherData.Disability}
-                />
-              )}
-              {teacherData.Disability === "Yes" &&
-                teacherData.DisabilityDetails && (
+          {/* Search Section */}
+          <Paper
+            sx={{
+              padding: isMobile ? 2 : 3,
+              borderRadius: 2,
+              backgroundColor: "#fff",
+              mb: isMobile ? 2 : 3,
+            }}
+            elevation={3}
+          >
+            <Typography
+              variant={isMobile ? "subtitle1" : "h6"}
+              gutterBottom
+              sx={{
+                fontSize: isMobile ? "1rem" : "1.25rem",
+                fontWeight: "medium",
+                color: "#3f51b5",
+                mb: isMobile ? 1 : 2,
+              }}
+            >
+              Search Teacher
+            </Typography>
+            <Divider sx={{ mb: isMobile ? 1 : 2 }} />
+
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={isMobile ? 1.5 : 2} alignItems="center">
+                <Grid item xs={12} sm={8} md={9}>
+                  <TextField
+                    fullWidth
+                    label="Enter Teacher CNIC"
+                    variant="outlined"
+                    value={formattedCnic}
+                    onChange={handleCnicChange}
+                    disabled={isFetching}
+                    placeholder="31102-5522345-9"
+                    size={isMobile ? "small" : "medium"}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <BadgeIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      },
+                      "& .MuiInputLabel-root": {
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4} md={3}>
+                  {!isFetching ? (
+                    <Button
+                      fullWidth
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      size={isMobile ? "medium" : "large"}
+                      disabled={loading || cnic.length !== 13}
+                      startIcon={
+                        loading ? <CircularProgress size={isMobile ? 16 : 20} color="inherit" /> : <SearchIcon />
+                      }
+                      sx={{
+                        height: isMobile ? "40px" : "56px",
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      }}
+                    >
+                      {loading ? "Fetching..." : "Fetch Details"}
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="error"
+                      size={isMobile ? "medium" : "large"}
+                      onClick={cancelFetch}
+                      startIcon={<CancelIcon />}
+                      sx={{
+                        height: isMobile ? "40px" : "56px",
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      }}
+                    >
+                      Cancel Fetch
+                    </Button>
+                  )}
+                </Grid>
+              </Grid>
+            </form>
+          </Paper>
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: isMobile ? 2 : 3,
+                fontSize: isMobile ? "0.875rem" : "1rem",
+              }}
+            >
+              {error}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert
+              severity="success"
+              sx={{
+                mb: isMobile ? 2 : 3,
+                fontSize: isMobile ? "0.875rem" : "1rem",
+              }}
+            >
+              {success}
+            </Alert>
+          )}
+
+          {teacherData && (
+            <Paper
+              sx={{
+                padding: isMobile ? 2 : 3,
+                borderRadius: 2,
+                backgroundColor: "#fff",
+              }}
+              elevation={3}
+            >
+              {/* Personal Information Section */}
+              <Typography
+                variant={isMobile ? "subtitle1" : "h6"}
+                gutterBottom
+                sx={{
+                  fontSize: isMobile ? "1rem" : "1.25rem",
+                  fontWeight: "medium",
+                  color: "#3f51b5",
+                  mb: isMobile ? 1 : 2,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <PersonIcon sx={{ mr: 1, fontSize: isMobile ? "1.2rem" : "1.5rem" }} />
+                Personal Information
+              </Typography>
+              <Divider sx={{ mb: isMobile ? 1 : 2 }} />
+
+              <Grid container spacing={isMobile ? 1.5 : 3}>
+                <Grid item xs={12} md={6}>
+                  <DetailItem icon={<PersonIcon />} label="Name" value={teacherData.Name} isMobile={isMobile} />
                   <DetailItem
                     icon={<PersonIcon />}
-                    label="Disability Details"
-                    value={teacherData.DisabilityDetails}
+                    label="Father's Name"
+                    value={teacherData.FatherName}
+                    isMobile={isMobile}
                   />
-                )}
-            </Grid>
+                  <DetailItem
+                    icon={<SchoolIcon />}
+                    label="Teacher ID"
+                    value={teacherData.TeacherID}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<BadgeIcon />}
+                    label="CNIC"
+                    value={formattedCnic || formatCnicInput(teacherData.CNIC)}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<GenderIcon gender={teacherData.Gender} />}
+                    label="Gender"
+                    value={teacherData.Gender}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<CakeIcon />}
+                    label="Date of Birth"
+                    value={formatDate(teacherData.DateOfBirth)}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem icon={<HomeIcon />} label="Domicile" value={teacherData.Domicile} isMobile={isMobile} />
+                  {teacherData.Disability && (
+                    <DetailItem
+                      icon={<PersonIcon />}
+                      label="Disability"
+                      value={teacherData.Disability}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {teacherData.Disability === "Yes" && teacherData.DisabilityDetails && (
+                    <DetailItem
+                      icon={<PersonIcon />}
+                      label="Disability Details"
+                      value={teacherData.DisabilityDetails}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <DetailItem icon={<EmailIcon />} label="Email" value={teacherData.Email} isMobile={isMobile} />
+                  <DetailItem
+                    icon={<PhoneIcon />}
+                    label="Phone Number"
+                    value={teacherData.PhoneNumber}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem icon={<HomeIcon />} label="Address" value={teacherData.Address} isMobile={isMobile} />
+                  <DetailItem icon={<WorkIcon />} label="BPS" value={teacherData.BPS} isMobile={isMobile} />
+                  <DetailItem icon={<WorkIcon />} label="Post" value={teacherData.Post} isMobile={isMobile} />
+                  <DetailItem
+                    icon={<SchoolIcon />}
+                    label="Qualification"
+                    value={teacherData.Qualification}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<WorkIcon />}
+                    label="Experience (Years)"
+                    value={teacherData.ExperienceYear}
+                    isMobile={isMobile}
+                  />
+                </Grid>
+              </Grid>
 
-            <Grid item xs={12} md={6}>
-              <DetailItem
-                icon={<EmailIcon />}
-                label="Email"
-                value={teacherData.Email}
-              />
-              <DetailItem
-                icon={<PhoneIcon />}
-                label="Phone Number"
-                value={teacherData.PhoneNumber}
-              />
-              <DetailItem
-                icon={<HomeIcon />}
-                label="Address"
-                value={teacherData.Address}
-              />
-              <DetailItem
-                icon={<WorkIcon />}
-                label="BPS"
-                value={teacherData.BPS}
-              />
-              <DetailItem
-                icon={<WorkIcon />}
-                label="Post"
-                value={teacherData.Post}
-              />
-              <DetailItem
-                icon={<SchoolIcon />}
-                label="Qualification"
-                value={teacherData.Qualification}
-              />
-              <DetailItem
-                icon={<WorkIcon />}
-                label="Experience (Years)"
-                value={teacherData.ExperienceYear}
-              />
-            </Grid>
-          </Grid>
+              <Divider sx={{ my: isMobile ? 2 : 3 }} />
 
-          <Divider sx={{ my: 3 }} />
-
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            <ApartmentIcon color="primary" sx={{ mr: 1 }} />
-            Current Assignment
-          </Typography>
-
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
-              <DetailItem
-                icon={<WorkIcon />}
-                label="Employee Type"
-                value={teacherData.EmployeeType}
-              />
-              {teacherData.EmployementType && (
-                <DetailItem
-                  icon={<WorkIcon />}
-                  label="Employment Type"
-                  value={teacherData.EmployementType}
-                />
-              )}
-              <DetailItem
-                icon={<WorkIcon />}
-                label="Hire Date"
-                value={formatDate(teacherData.HireDate)}
-              />
-              <DetailItem
-                icon={<WorkIcon />}
-                label="Employment Status"
-                value={teacherData.EmploymentStatus || "Working"}
-              />
-              {teacherData.TransferredSchool && (
-                <DetailItem
-                  icon={<ApartmentIcon />}
-                  label="Transferred School"
-                  value={teacherData.TransferredSchool}
-                />
-              )}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <DetailItem
-                icon={<ApartmentIcon />}
-                label="Current School"
-                value={teacherData.School?.SchoolName || "N/A"}
-              />
-              <DetailItem
-                icon={<ApartmentIcon />}
-                label="School ID"
-                value={teacherData.SchoolID}
-              />
-              <DetailItem
-                icon={<SchoolIcon />}
-                label="Subject"
-                value={teacherData.TeacherSubject}
-              />
-            </Grid>
-          </Grid>
-
-          <Divider sx={{ my: 3 }} />
-
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            <TransferIcon color="primary" sx={{ mr: 1 }} />
-            Transfer Options
-          </Typography>
-
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={8} md={9}>
-              <FormControl fullWidth>
-                <InputLabel id="new-school-label">Select New School</InputLabel>
-                <Select
-                  labelId="new-school-label"
-                  value={newSchoolId}
-                  label="Select New School"
-                  onChange={(e) => setNewSchoolId(e.target.value)}
-                >
-                  <MenuItem value="">
-                    <em>Select a school</em>
-                  </MenuItem>
-                  {availableSchools.map((school) => (
-                    <MenuItem key={school.SchoolID} value={school.SchoolID}>
-                      {school.SchoolID} - {school.SchoolName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4} md={3}>
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={handleOpenConfirmDialog}
-                disabled={loading || !newSchoolId}
-                startIcon={
-                  loading ? <CircularProgress size={20} /> : <TransferIcon />
-                }
-                sx={{ height: "56px" }} // Match height with Select
+              {/* Current Assignment Section */}
+              <Typography
+                variant={isMobile ? "subtitle1" : "h6"}
+                gutterBottom
+                sx={{
+                  fontSize: isMobile ? "1rem" : "1.25rem",
+                  fontWeight: "medium",
+                  color: "#3f51b5",
+                  mb: isMobile ? 1 : 2,
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                Transfer Teacher
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-      )}
-      {/* Confirmation Dialog */}
-      {/* <Dialog
-        open={confirmDialogOpen}
-        onClose={handleCloseConfirmDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Confirm Teacher Transfer"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to transfer {teacherData?.Name} to the
-            selected school? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConfirmDialog} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleTransfer} color="primary" autoFocus>
-            Confirm Transfer
-          </Button>
-        </DialogActions>
-      </Dialog> */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={handleCloseConfirmDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Confirm Teacher Transfer"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description" sx={{ mb: 2 }}>
-            Are you sure you want to transfer {teacherData?.Name} to the
-            selected school? Please provide a new email address for the teacher.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="new-email"
-            label="New Email Address"
-            type="email"
-            fullWidth
-            variant="standard"
-            value={newEmail}
-            onChange={(e) => {
-              setNewEmail(e.target.value);
-              setEmailError(e.target.value && !validateEmail(e.target.value));
-            }}
-            error={emailError}
-            helperText={emailError ? "Please enter a valid email address" : ""}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseConfirmDialog} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleTransfer}
-            color="primary"
-            autoFocus
-            disabled={!newEmail || emailError}
-          >
-            Confirm Transfer
-          </Button>
-        </DialogActions>
-      </Dialog>
+                <ApartmentIcon sx={{ mr: 1, fontSize: isMobile ? "1.2rem" : "1.5rem" }} />
+                Current Assignment
+              </Typography>
+              <Divider sx={{ mb: isMobile ? 1 : 2 }} />
 
-      {/* Alert Snackbar */}
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={6000}
-        onClose={handleCloseAlert}
-      >
-        <Alert onClose={handleCloseAlert} severity={alert.severity}>
-          {alert.message}
-        </Alert>
-      </Snackbar>
+              <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mb: isMobile ? 2 : 3 }}>
+                <Grid item xs={12} md={6}>
+                  <DetailItem
+                    icon={<WorkIcon />}
+                    label="Employee Type"
+                    value={teacherData.EmployeeType}
+                    isMobile={isMobile}
+                  />
+                  {teacherData.EmployementType && (
+                    <DetailItem
+                      icon={<WorkIcon />}
+                      label="Employment Type"
+                      value={teacherData.EmployementType}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  <DetailItem
+                    icon={<WorkIcon />}
+                    label="Hire Date"
+                    value={formatDate(teacherData.HireDate)}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<WorkIcon />}
+                    label="Employment Status"
+                    value={teacherData.EmploymentStatus || "Working"}
+                    isMobile={isMobile}
+                  />
+                  {teacherData.TransferredSchool && (
+                    <DetailItem
+                      icon={<ApartmentIcon />}
+                      label="Transferred School"
+                      value={teacherData.TransferredSchool}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <DetailItem
+                    icon={<ApartmentIcon />}
+                    label="Current School"
+                    value={teacherData.School?.SchoolName || "N/A"}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<ApartmentIcon />}
+                    label="School ID"
+                    value={teacherData.SchoolID}
+                    isMobile={isMobile}
+                  />
+                  <DetailItem
+                    icon={<SchoolIcon />}
+                    label="Subject"
+                    value={teacherData.TeacherSubject}
+                    isMobile={isMobile}
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: isMobile ? 2 : 3 }} />
+
+              {/* Transfer Options Section */}
+              <Typography
+                variant={isMobile ? "subtitle1" : "h6"}
+                gutterBottom
+                sx={{
+                  fontSize: isMobile ? "1rem" : "1.25rem",
+                  fontWeight: "medium",
+                  color: "#3f51b5",
+                  mb: isMobile ? 1 : 2,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <TransferIcon sx={{ mr: 1, fontSize: isMobile ? "1.2rem" : "1.5rem" }} />
+                Transfer Options
+              </Typography>
+              <Divider sx={{ mb: isMobile ? 1 : 2 }} />
+
+              <Grid container spacing={isMobile ? 1.5 : 2} alignItems="center">
+                <Grid item xs={12} sm={8} md={9}>
+                  <FormControl
+                    fullWidth
+                    size={isMobile ? "small" : "medium"}
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      },
+                      "& .MuiInputLabel-root": {
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      },
+                    }}
+                  >
+                    <InputLabel id="new-school-label">Select New School</InputLabel>
+                    <Select
+                      labelId="new-school-label"
+                      value={newSchoolId}
+                      label="Select New School"
+                      onChange={(e) => setNewSchoolId(e.target.value)}
+                    >
+                      <MenuItem value="">
+                        <em>Select a school</em>
+                      </MenuItem>
+                      {availableSchools.map((school) => (
+                        <MenuItem key={school.SchoolID} value={school.SchoolID}>
+                          {school.SchoolID} - {school.SchoolName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={4} md={3}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    size={isMobile ? "medium" : "large"}
+                    onClick={handleOpenConfirmDialog}
+                    disabled={loading || !newSchoolId}
+                    startIcon={loading ? <CircularProgress size={isMobile ? 16 : 20} /> : <TransferIcon />}
+                    sx={{
+                      height: isMobile ? "40px" : "56px",
+                      fontSize: isMobile ? "0.875rem" : "1rem",
+                    }}
+                  >
+                    Transfer Teacher
+                  </Button>
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
+
+          {/* Confirmation Dialog */}
+          <Dialog
+            open={confirmDialogOpen}
+            onClose={handleCloseConfirmDialog}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+              sx: {
+                margin: isMobile ? 1 : 3,
+                width: isMobile ? "calc(100% - 16px)" : "auto",
+                maxHeight: isMobile ? "90vh" : "80vh",
+              },
+            }}
+          >
+            <DialogTitle
+              id="alert-dialog-title"
+              sx={{
+                fontSize: isMobile ? "1.1rem" : "1.25rem",
+                padding: isMobile ? "12px 16px" : "16px 24px",
+                color: "#3f51b5",
+                fontWeight: "bold",
+              }}
+            >
+              {"Confirm Teacher Transfer"}
+            </DialogTitle>
+            <DialogContent
+              sx={{
+                padding: isMobile ? "8px 16px" : "16px 24px",
+                overflowY: "auto",
+              }}
+            >
+              <DialogContentText
+                id="alert-dialog-description"
+                sx={{
+                  mb: 2,
+                  fontSize: isMobile ? "0.875rem" : "1rem",
+                }}
+              >
+                Are you sure you want to transfer {teacherData?.Name} to the selected school? Please provide a new email
+                address for the teacher.
+              </DialogContentText>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="new-email"
+                label="New Email Address"
+                type="email"
+                fullWidth
+                variant="standard"
+                value={newEmail}
+                onChange={(e) => {
+                  setNewEmail(e.target.value)
+                  setEmailError(e.target.value && !validateEmail(e.target.value))
+                }}
+                error={emailError}
+                helperText={emailError ? "Please enter a valid email address" : ""}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  "& .MuiInputBase-root": {
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                  },
+                  "& .MuiInputLabel-root": {
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                  },
+                  "& .MuiFormHelperText-root": {
+                    fontSize: isMobile ? "0.75rem" : "0.875rem",
+                  },
+                }}
+              />
+            </DialogContent>
+            <DialogActions
+              sx={{
+                padding: isMobile ? "8px 16px 16px" : "8px 24px 24px",
+                gap: isMobile ? 1 : 0,
+                flexDirection: isMobile ? "column-reverse" : "row",
+              }}
+            >
+              <Button
+                onClick={handleCloseConfirmDialog}
+                color="primary"
+                size={isMobile ? "small" : "medium"}
+                fullWidth={isMobile}
+                sx={{ fontSize: isMobile ? "0.75rem" : "0.875rem" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleTransfer}
+                color="primary"
+                variant="contained"
+                autoFocus
+                disabled={!newEmail || emailError}
+                size={isMobile ? "small" : "medium"}
+                fullWidth={isMobile}
+                sx={{ fontSize: isMobile ? "0.75rem" : "0.875rem" }}
+              >
+                Confirm Transfer
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Alert Snackbar */}
+          <Snackbar
+            open={alert.open}
+            autoHideDuration={6000}
+            onClose={handleCloseAlert}
+            anchorOrigin={{
+              vertical: isMobile ? "top" : "bottom",
+              horizontal: "center",
+            }}
+          >
+            <Alert
+              onClose={handleCloseAlert}
+              severity={alert.severity}
+              sx={{
+                width: isMobile ? "90vw" : "100%",
+                maxWidth: isMobile ? "90vw" : "600px",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+              }}
+            >
+              {alert.message}
+            </Alert>
+          </Snackbar>
+        </CardContent>
+      </Card>
     </Box>
-  );
+  )
 }
 
-function DetailItem({ icon, label, value }) {
+function DetailItem({ icon, label, value, isMobile }) {
   return (
-    <Box sx={{ mb: 2 }}>
+    <Box sx={{ mb: isMobile ? 1.5 : 2 }}>
       <Typography
         variant="subtitle2"
         color="text.secondary"
-        sx={{ display: "flex", alignItems: "center" }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          fontSize: isMobile ? "0.75rem" : "0.875rem",
+        }}
       >
         {icon}
         <Box component="span" sx={{ ml: 1 }}>
           {label}
         </Box>
       </Typography>
-      <Typography variant="body1" sx={{ ml: 4 }}>
+      <Typography
+        variant="body1"
+        sx={{
+          ml: isMobile ? 3 : 4,
+          fontSize: isMobile ? "0.875rem" : "1rem",
+          wordBreak: "break-word",
+        }}
+      >
         {value || "N/A"}
       </Typography>
     </Box>
-  );
+  )
 }
 
-export default TransferTeacher;
+export default TransferTeacher

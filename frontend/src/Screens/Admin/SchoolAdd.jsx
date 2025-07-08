@@ -1829,186 +1829,377 @@ const SchoolManagement = () => {
   }
 
   // Handle actual submission after confirmation
+  // const handleConfirmedSubmit = async () => {
+  //   setOpenDialog(false) // Close the dialog
+  //   setLoading(true) // Start loading
+
+  //   const trimmedData = {
+  //     ...formData,
+  //     email: formData.email.trim(),
+  //     phoneNumber: formData.phoneNumber.trim(),
+  //     recognizedbyboard: formData.recognizedbyboard.trim(),
+  //     boardattestationId: formData.boardattestationId.trim(),
+  //   }
+
+  //   try {
+  //     // Check if email exists in DB first
+  //     const emailExists = await checkEmailExists(trimmedData.email)
+  //     if (emailExists) {
+  //       setAlert({
+  //         open: true,
+  //         message: "This email already exists in the database.",
+  //         severity: "error",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     // Check phone number
+  //     const phoneExists = await checkPhoneExists(trimmedData.phoneNumber)
+  //     if (phoneExists) {
+  //       setAlert({
+  //         open: true,
+  //         message: "This phone number is already registered.",
+  //         severity: "error",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     // STEP 1: Store current admin session BEFORE auth operations
+  //     const {
+  //       data: { session: currentAdminSession },
+  //       error: sessionError,
+  //     } = await supabase.auth.getSession()
+
+  //     if (sessionError || !currentAdminSession) {
+  //       setAlert({
+  //         open: true,
+  //         message: "Admin session not found. Please login again.",
+  //         severity: "error",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     console.log("Admin session stored successfully")
+
+  //     // STEP 2: Create the auth user (this will change the current session)
+  //     const { data: authData, error: authError } = await supabase.auth.signUp({
+  //       email: trimmedData.email,
+  //       password: formData.password,
+  //       options: {
+  //         data: {
+  //           role: "School",
+  //           school_name: formData.name,
+  //         },
+  //       },
+  //     })
+
+  //     if (authError) {
+  //       console.error("Auth Error:", authError.message)
+  //       setAlert({
+  //         open: true,
+  //         message: "User already exists against this email. Try again!",
+  //         severity: "error",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     if (!authData?.user) {
+  //       console.error("User creation incomplete, email confirmation likely required.")
+  //       setAlert({
+  //         open: true,
+  //         message: "User created! Please confirm the email before proceeding.",
+  //         severity: "warning",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     const user = authData.user
+  //     console.log("Auth user created successfully")
+
+  //     // STEP 3: IMMEDIATELY restore the admin session
+  //     const { error: restoreError } = await supabase.auth.setSession({
+  //       access_token: currentAdminSession.access_token,
+  //       refresh_token: currentAdminSession.refresh_token,
+  //     })
+
+  //     if (restoreError) {
+  //       console.error("Failed to restore admin session:", restoreError)
+  //       setAlert({
+  //         open: true,
+  //         message: "Session restore failed. Please try again.",
+  //         severity: "error",
+  //       })
+  //       setLoading(false)
+  //       return
+  //     }
+
+  //     console.log("Admin session restored successfully")
+
+  //     // Insert school data
+  //     const { error: dbError } = await supabase.from("School").insert([
+  //       {
+  //         SchoolID: formData.ID,
+  //         Email: trimmedData.email,
+  //         Password: formData.password,
+  //         SchoolName: formData.name,
+  //         SchoolFor: formData.schoolfor,
+  //         SchoolLevel: formData.schoollevel,
+  //         Address: formData.address,
+  //         PhoneNumber: trimmedData.phoneNumber,
+  //         EstablishedYear: formData.establishedYear ? Number.parseInt(formData.establishedYear) : null,
+  //         Library: formData.library,
+  //         SportsGround: formData.sports,
+  //         ComputerLab: formData.computerLab,
+  //         ScienceLab: formData.scienceLab,
+  //         Recognizedbyboard: trimmedData.recognizedbyboard,
+  //         BoardattestationId: trimmedData.boardattestationId ? Number.parseInt(trimmedData.boardattestationId) : null,
+  //         Role: "School",
+  //         user_id: user.id,
+  //       },
+  //     ])
+
+  //     if (dbError) {
+  //       console.error("DB Error:", dbError)
+  //       // Rollback: delete the auth user if school creation fails
+  //       await supabase.auth.admin.deleteUser(user.id)
+  //       setAlert({
+  //         open: true,
+  //         message: "Failed to save school data. Please try again.",
+  //         severity: "error",
+  //       })
+  //     } else {
+  //       setAlert({
+  //         open: true,
+  //         message: "School added successfully!",
+  //         severity: "success",
+  //       })
+  //       // Reset form
+  //       const newId = await generateSchoolId(formData.schoolfor)
+  //       setFormData({
+  //         ID: newId,
+  //         email: "",
+  //         password: "WW@123@b",
+  //         name: "Workers Welfare School",
+  //         schoolfor: formData.schoolfor,
+  //         schoollevel: "Primary",
+  //         address: "",
+  //         phoneNumber: "",
+  //         establishedYear: new Date().getFullYear(),
+  //         library: false,
+  //         sports: false,
+  //         computerLab: false,
+  //         scienceLab: false,
+  //         recognizedbyboard: "",
+  //         boardattestationId: "",
+  //       })
+  //     }
+  //   } catch (err) {
+  //     console.error("Submission error:", err)
+  //     setAlert({
+  //       open: true,
+  //       message: "An unexpected error occurred. Please try again.",
+  //       severity: "error",
+  //     })
+  //   } finally {
+  //     setLoading(false) // Stop loading in any case
+  //   }
+  // }
+
+
+
   const handleConfirmedSubmit = async () => {
-    setOpenDialog(false) // Close the dialog
-    setLoading(true) // Start loading
+        setOpenDialog(false); // Close the dialog
+        setLoading(true); // Start loading
+    
+        const trimmedData = {
+          ...formData,
+          email: formData.email.trim(),
+          phoneNumber: formData.phoneNumber.trim(),
+          recognizedbyboard: formData.recognizedbyboard.trim(),
+          boardattestationId: formData.boardattestationId.trim(),
+        };
+    
+        try {
+          // Check if email exists in DB first
+          const emailExists = await checkEmailExists(trimmedData.email);
+          if (emailExists) {
+            setAlert({
+              open: true,
+              message: "This email already exists in the database.",
+              severity: "error",
+            });
+            setLoading(false);
+            return;
+          }
+    
+          // Check phone number
+          const phoneExists = await checkPhoneExists(trimmedData.phoneNumber);
+          if (phoneExists) {
+            setAlert({
+              open: true,
+              message: "This phone number is already registered.",
+              severity: "error",
+            });
+            setLoading(false);
+            return;
+          }
+    
+          // STEP 1: Store current admin session BEFORE auth operations
+          const {
+            data: { session: currentAdminSession },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+    
+          if (sessionError || !currentAdminSession) {
+            setAlert({
+              open: true,
+              message: "Admin session not found. Please login again.",
+              severity: "error",
+            });
+            setLoading(false);
+            return;
+          }
+          console.log("Admin session stored successfully");
+    
+          // STEP 2: Create the auth user (this will change the current session)
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: trimmedData.email,
+            password: formData.password,
+            options: {
+              data: {
+                role: "School",
+                school_name: formData.name,
+              },
+            },
+          });
+    
+          if (authError) {
+            console.error("Auth Error:", authError.message);
+            setAlert({
+              open: true,
+              message: "User already exists against this email. Try again!",
+              severity: "error",
+            });
+            setLoading(false);
+            return;
+          }
+    
+          if (!authData?.user) {
+            console.error(
+              "User creation incomplete, email confirmation likely required."
+            );
+            setAlert({
+              open: true,
+              message: "User created! Please confirm the email before proceeding.",
+              severity: "warning",
+            });
+            setLoading(false);
+            return;
+          }
+    
+          const user = authData.user;
+          console.log("Auth user created successfully");
+    
+          // STEP 3: IMMEDIATELY restore the admin session
+          const { error: restoreError } = await supabase.auth.setSession({
+            access_token: currentAdminSession.access_token,
+            refresh_token: currentAdminSession.refresh_token,
+          });
+    
+          if (restoreError) {
+            console.error("Failed to restore admin session:", restoreError);
+            setAlert({
+              open: true,
+              message: "Session restore failed. Please try again.",
+              severity: "error",
+            });
+            setLoading(false);
+            return;
+          }
+          console.log("Admin session restored successfully");
+    
+          // Insert school data
+          const { error: dbError } = await supabase.from("School").insert([
+            {
+              SchoolID: formData.ID,
+              Email: trimmedData.email,
+              Password: formData.password,
+              SchoolName: formData.name,
+              SchoolFor: formData.schoolfor,
+              SchoolLevel: formData.schoollevel,
+              Address: formData.address,
+              PhoneNumber: trimmedData.phoneNumber,
+              EstablishedYear: formData.establishedYear
+                ? parseInt(formData.establishedYear)
+                : null,
+              Library: formData.library,
+              SportsGround: formData.sports,
+              ComputerLab: formData.computerLab,
+              ScienceLab: formData.scienceLab,
+              Recognizedbyboard: trimmedData.recognizedbyboard,
+              BoardattestationId: trimmedData.boardattestationId
+                ? parseInt(trimmedData.boardattestationId)
+                : null,
+              Role: "School",
+              user_id: user.id,
+            },
+          ]);
+    
+          if (dbError) {
+            console.error("DB Error:", dbError);
+            // Rollback: delete the auth user if school creation fails
+            await supabase.auth.admin.deleteUser(user.id);
+    
+            setAlert({
+              open: true,
+              message: "Failed to save school data. Please try again.",
+              severity: "error",
+            });
+          } else {
+            setAlert({
+              open: true,
+              message: "School added successfully!",
+              severity: "success",
+            });
+    
+            // Reset form
+            const newId = await generateSchoolId(formData.schoolfor);
+            setFormData({
+              ID: newId,
+              email: "",
+              password: "WW@123@b",
+              name: "Workers Welfare School",
+              schoolfor: formData.schoolfor,
+              schoollevel: "Primary",
+              address: "",
+              phoneNumber: "",
+              establishedYear: new Date().getFullYear(),
+              library: false,
+              sports: false,
+              computerLab: false,
+              scienceLab: false,
+              recognizedbyboard: "",
+              boardattestationId: "",
+            });
+          }
+        } catch (err) {
+          console.error("Submission error:", err);
+          setAlert({
+            open: true,
+            message: "An unexpected error occurred. Please try again.",
+            severity: "error",
+          });
+        } finally {
+          setLoading(false); // Stop loading in any case
+        }
+      };
 
-    const trimmedData = {
-      ...formData,
-      email: formData.email.trim(),
-      phoneNumber: formData.phoneNumber.trim(),
-      recognizedbyboard: formData.recognizedbyboard.trim(),
-      boardattestationId: formData.boardattestationId.trim(),
-    }
 
-    try {
-      // Check if email exists in DB first
-      const emailExists = await checkEmailExists(trimmedData.email)
-      if (emailExists) {
-        setAlert({
-          open: true,
-          message: "This email already exists in the database.",
-          severity: "error",
-        })
-        setLoading(false)
-        return
-      }
-
-      // Check phone number
-      const phoneExists = await checkPhoneExists(trimmedData.phoneNumber)
-      if (phoneExists) {
-        setAlert({
-          open: true,
-          message: "This phone number is already registered.",
-          severity: "error",
-        })
-        setLoading(false)
-        return
-      }
-
-      // STEP 1: Store current admin session BEFORE auth operations
-      const {
-        data: { session: currentAdminSession },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-
-      if (sessionError || !currentAdminSession) {
-        setAlert({
-          open: true,
-          message: "Admin session not found. Please login again.",
-          severity: "error",
-        })
-        setLoading(false)
-        return
-      }
-
-      console.log("Admin session stored successfully")
-
-      // STEP 2: Create the auth user (this will change the current session)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: trimmedData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: "School",
-            school_name: formData.name,
-          },
-        },
-      })
-
-      if (authError) {
-        console.error("Auth Error:", authError.message)
-        setAlert({
-          open: true,
-          message: "User already exists against this email. Try again!",
-          severity: "error",
-        })
-        setLoading(false)
-        return
-      }
-
-      if (!authData?.user) {
-        console.error("User creation incomplete, email confirmation likely required.")
-        setAlert({
-          open: true,
-          message: "User created! Please confirm the email before proceeding.",
-          severity: "warning",
-        })
-        setLoading(false)
-        return
-      }
-
-      const user = authData.user
-      console.log("Auth user created successfully")
-
-      // STEP 3: IMMEDIATELY restore the admin session
-      const { error: restoreError } = await supabase.auth.setSession({
-        access_token: currentAdminSession.access_token,
-        refresh_token: currentAdminSession.refresh_token,
-      })
-
-      if (restoreError) {
-        console.error("Failed to restore admin session:", restoreError)
-        setAlert({
-          open: true,
-          message: "Session restore failed. Please try again.",
-          severity: "error",
-        })
-        setLoading(false)
-        return
-      }
-
-      console.log("Admin session restored successfully")
-
-      // Insert school data
-      const { error: dbError } = await supabase.from("School").insert([
-        {
-          SchoolID: formData.ID,
-          Email: trimmedData.email,
-          Password: formData.password,
-          SchoolName: formData.name,
-          SchoolFor: formData.schoolfor,
-          SchoolLevel: formData.schoollevel,
-          Address: formData.address,
-          PhoneNumber: trimmedData.phoneNumber,
-          EstablishedYear: formData.establishedYear ? Number.parseInt(formData.establishedYear) : null,
-          Library: formData.library,
-          SportsGround: formData.sports,
-          ComputerLab: formData.computerLab,
-          ScienceLab: formData.scienceLab,
-          Recognizedbyboard: trimmedData.recognizedbyboard,
-          BoardattestationId: trimmedData.boardattestationId ? Number.parseInt(trimmedData.boardattestationId) : null,
-          Role: "School",
-          user_id: user.id,
-        },
-      ])
-
-      if (dbError) {
-        console.error("DB Error:", dbError)
-        // Rollback: delete the auth user if school creation fails
-        await supabase.auth.admin.deleteUser(user.id)
-        setAlert({
-          open: true,
-          message: "Failed to save school data. Please try again.",
-          severity: "error",
-        })
-      } else {
-        setAlert({
-          open: true,
-          message: "School added successfully!",
-          severity: "success",
-        })
-        // Reset form
-        const newId = await generateSchoolId(formData.schoolfor)
-        setFormData({
-          ID: newId,
-          email: "",
-          password: "WW@123@b",
-          name: "Workers Welfare School",
-          schoolfor: formData.schoolfor,
-          schoollevel: "Primary",
-          address: "",
-          phoneNumber: "",
-          establishedYear: new Date().getFullYear(),
-          library: false,
-          sports: false,
-          computerLab: false,
-          scienceLab: false,
-          recognizedbyboard: "",
-          boardattestationId: "",
-        })
-      }
-    } catch (err) {
-      console.error("Submission error:", err)
-      setAlert({
-        open: true,
-        message: "An unexpected error occurred. Please try again.",
-        severity: "error",
-      })
-    } finally {
-      setLoading(false) // Stop loading in any case
-    }
-  }
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false })
 
