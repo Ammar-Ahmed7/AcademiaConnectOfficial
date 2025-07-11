@@ -159,8 +159,6 @@
 
 
 
-
-
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
@@ -239,116 +237,6 @@ function ServerDay(props) {
   )
 }
 
-// function DateCalendarWithEvents() {
-//   const theme = useTheme()
-//   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-
-//   const requestAbortController = useRef(null)
-//   const [isLoading, setIsLoading] = useState(false)
-//   const [events, setEvents] = useState([])
-//   const [selectedDate, setSelectedDate] = useState(dayjs())
-
-//   const fetchEvents = useCallback(async () => {
-//     if (requestAbortController.current) {
-//       requestAbortController.current.abort()
-//     }
-//     const controller = new AbortController()
-//     requestAbortController.current = controller
-//     setIsLoading(true)
-//     try {
-//       const { data, error } = await supabase
-//         .from("Notice")
-//         .select("*")
-//         .eq("CreatedType", "Admin")
-//         .order("NoticeID", { ascending: true })
-//         .abortSignal(controller.signal)
-//       console.log("i am calendar", data)
-//       if (error) throw error
-
-//       const processedEvents = data.map((event) => {
-//         const start = dayjs(event.StartDate)
-//         const end = dayjs(event.EndDate)
-//         let color = "#DAB1DA" // Default pink color
-//         if (event.Urgent) {
-//           color = "#fae955" // Yellow
-//         } else if (event.SubType === "Holiday") {
-//           color = "#88E788" // Green
-//         }
-//         return {
-//           start,
-//           end,
-//           title: event.Title,
-//           color,
-//         }
-//       })
-//       setEvents(processedEvents)
-//     } catch (error) {
-//       if (error.name !== "AbortError") {
-//         console.error("Failed to fetch events:", error)
-//       }
-//     } finally {
-//       if (!controller.signal.aborted) {
-//         setIsLoading(false)
-//       }
-//     }
-//   }, [])
-
-//   useEffect(() => {
-//     fetchEvents()
-//     return () => requestAbortController.current?.abort()
-//   }, [fetchEvents])
-
-//   const handleMonthChange = (date) => {
-//     fetchEvents()
-//   }
-
-//   return (
-//     <Box
-//       sx={{
-//         "& .MuiDateCalendar-root": {
-//           width: "100%",
-//           maxWidth: { xs: "280px", sm: "320px" },
-//           margin: "0 auto",
-//         },
-//         "& .MuiPickersCalendarHeader-root": {
-//           paddingLeft: { xs: 1, sm: 2 },
-//           paddingRight: { xs: 1, sm: 2 },
-//         },
-//         "& .MuiPickersCalendarHeader-label": {
-//           fontSize: { xs: "0.9rem", sm: "1rem" },
-//         },
-//         "& .MuiDayCalendar-weekDayLabel": {
-//           fontSize: { xs: "0.75rem", sm: "0.875rem" },
-//           width: { xs: "32px", sm: "36px" },
-//           height: { xs: "32px", sm: "36px" },
-//         },
-//         "& .MuiPickersArrowSwitcher-button": {
-//           padding: { xs: "4px", sm: "8px" },
-//         },
-//       }}
-//     >
-//       <LocalizationProvider dateAdapter={AdapterDayjs}>
-//         <DateCalendar
-//           value={selectedDate}
-//           onChange={setSelectedDate}
-//           loading={isLoading}
-//           onMonthChange={handleMonthChange}
-//           renderLoading={() => <DayCalendarSkeleton />}
-//           slots={{
-//             day: ServerDay,
-//           }}
-//           slotProps={{
-//             day: {
-//               events,
-//             },
-//           }}
-//         />
-//       </LocalizationProvider>
-//     </Box>
-//   )
-// }
-
-
 function DateCalendarWithEvents() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -416,10 +304,24 @@ function DateCalendarWithEvents() {
     <Box
       sx={{
         overflowX: { xs: "auto", sm: "visible" },
+        overflowY: "hidden",
         WebkitOverflowScrolling: "touch",
-        "&::-webkit-scrollbar": { display: "none" },
-        "-ms-overflow-style": "none",
-        scrollbarWidth: "none",
+        ...(isMobile && {
+          "&::-webkit-scrollbar": {
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "#f1f1f1",
+            borderRadius: "3px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#c1c1c1",
+            borderRadius: "3px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "#a8a8a8",
+          },
+        }),
       }}
     >
       <Box
