@@ -362,7 +362,7 @@ const Dashboard = () => {
         <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
           {/* Class Timetable */}
           <Grid item xs={12} lg={6}>
-            <DashboardCard title="Class Timetable" icon={<ScheduleIcon />}>
+            <DashboardCard title="Timetable" icon={<ScheduleIcon />}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {timetableLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
