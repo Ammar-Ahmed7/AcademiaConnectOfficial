@@ -103,6 +103,11 @@ const HeaderBar = () => {
           >
             <MenuItem disabled>
               <Avatar sx={{ marginRight: 1 }}>{email ? email[0].toUpperCase() : "U"}</Avatar>
+             
+              {/* {email} */}
+            </MenuItem>
+            <MenuItem disabled>
+             
               {email}
             </MenuItem>
             <Divider />

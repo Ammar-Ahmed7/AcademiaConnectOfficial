@@ -506,15 +506,21 @@ function NoticeBoard() {
           };
         });
 
+        console.log("fornoted",formatted);
+
         const filtered = formatted.filter(evt => {
           const within = 
             (evt.start>=now && evt.start<=next7) ||
-            (evt.end  >=now && evt.end  <=next7);
+            (evt.end  >=now && evt.end  <=next7)||
+            (evt.start <= now && evt.end >= next7);
           const allowed =
             evt.createdType==="Admin" ||
             (evt.createdType==="School" && evt.createdBy===schoolId);
           return within && allowed;
         });
+
+        console.log("filtered",filtered);
+
 
         filtered.sort((a,b)=>
           b.isUrgent - a.isUrgent ||
@@ -535,7 +541,7 @@ function NoticeBoard() {
         <MoreIcon className="text-gray-400"/>
       </div>
       <div className="space-y-4">
-        {upcoming.length>0 ? (
+        {/* {upcoming.length>0 ? (
           upcoming.map(evt => (
             <div key={evt.id}
                  className="p-4 rounded-md shadow-sm"
@@ -558,7 +564,35 @@ function NoticeBoard() {
           <div className="text-center py-4 text-gray-500">
             No notices in the next 7 days.
           </div>
-        )}
+        )} */}
+
+{upcoming.length > 0 ? (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {upcoming.map(evt => (
+      <div key={evt.id}
+           className="p-4 rounded-md shadow-sm"
+           style={{ backgroundColor: evt.color }}>
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-semibold text-gray-800">{evt.title}</h4>
+            <p className="text-xs text-gray-700 italic">
+              {evt.start.toLocaleDateString()} – {evt.end.toLocaleDateString()} • {evt.createdType}
+            </p>
+          </div>
+          {evt.isUrgent && (
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">Urgent</span>
+          )}
+        </div>
+        <p className="text-sm text-gray-700 mt-2">{evt.desc}</p>
+      </div>
+    ))}
+  </div>
+) : (
+  <div className="text-center py-4 text-gray-500">
+    No notices in the next 7 days.
+  </div>
+)}
+
       </div>
     </div>
   );
