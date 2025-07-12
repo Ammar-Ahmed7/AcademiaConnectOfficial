@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-// Updated StudyMaterial.jsx UI consistent with Sidebar and Dashboard - Mobile Responsive
+// Updated StudyMaterial.jsx UI consistent with Sidebar and Dashboard - Mobile Responsive with Fixed Download
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, InputBase, IconButton, Divider, List,
@@ -32,12 +32,76 @@ const StudyMaterial = () => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resourceToDelete, setResourceToDelete] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const classInfo = location.state?.classInfo;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Helper function to get proper filename
+  const getFileName = (url, materialName) => {
+    try {
+      const urlParts = url.split('/');
+      const fileNameFromUrl = urlParts[urlParts.length - 1];
+      const extension = fileNameFromUrl.split('.').pop();
+      
+      // Use material name with proper extension
+      return `${materialName}.${extension}`;
+    } catch (error) {
+      return materialName || 'download';
+    }
+  };
+
+  // Enhanced download function for mobile
+  const handleDownloadClick = async (material) => {
+    try {
+      setDownloadingId(material.id);
+      
+      const fileName = getFileName(material.file_url, material.name);
+      
+      // Fetch the file
+      const response = await fetch(material.file_url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch file');
+      }
+      
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.style.display = 'none';
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      
+      setSnackbar({ 
+        open: true, 
+        message: 'Download started successfully! Check your downloads folder.', 
+        severity: 'success' 
+      });
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Download failed. Please try again.', 
+        severity: 'error' 
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,7 +137,6 @@ const StudyMaterial = () => {
         .eq('teacher_id', classInfo.TeacherID)
         .eq('class_id', classInfo.sections.class_id)
         .eq('section_id', classInfo.section_id)
-        // .eq('subject_id', classInfo.subject_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -140,7 +203,6 @@ const StudyMaterial = () => {
       setFormData({ name: '', description: '', file: null });
       setOpenModal(false);
       fetchResources();
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setSnackbar({ open: true, message: 'Error uploading resource.', severity: 'error' });
     } finally {
@@ -155,7 +217,6 @@ const StudyMaterial = () => {
       if (error) throw error;
       setSnackbar({ open: true, message: 'Resource deleted successfully.', severity: 'success' });
       fetchResources();
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setSnackbar({ open: true, message: 'Error deleting resource.', severity: 'error' });
     } finally {
@@ -193,8 +254,8 @@ const StudyMaterial = () => {
         sx={{ 
           flexGrow: 1, 
           p: { xs: 2, sm: 2, md: 3, lg: 4 }, 
-          ml: { xs: 0, md: '240px' }, // No left margin on mobile
-          mt: { xs: '64px', md: 0 }, // Add top margin on mobile for app bar
+          ml: { xs: 0, md: '240px' },
+          mt: { xs: '64px', md: 0 },
           overflowY: 'auto',
           width: { xs: '100%', md: 'calc(100% - 240px)' }
         }}
@@ -294,84 +355,104 @@ const StudyMaterial = () => {
               {filteredMaterials.map((material, index) => (
                 <React.Fragment key={material.id}>
                   <ListItem
-  sx={{
-    px: { xs: 2, sm: 3 },
-    py: { xs: 1.5, sm: 2 },
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap', // allows wrapping if too tight
-    gap: 2,
-  }}
->
-  {/* Left: Icon + Text */}
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      minWidth: 0,
-      flex: 1,
-    }}
-  >
-    <ListItemIcon sx={{ minWidth: 36 }}>
-      {getFileIcon(material.file_url)}
-    </ListItemIcon>
-    <ListItemText
-      primary={material.name}
-      secondary={material.description || 'No description'}
-      sx={{
-        '& .MuiListItemText-primary': {
-          fontSize: { xs: '0.9rem', sm: '1rem' },
-          fontWeight: 500,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        },
-        '& .MuiListItemText-secondary': {
-          fontSize: { xs: '0.8rem', sm: '0.875rem' },
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        },
-      }}
-    />
-  </Box>
+                    sx={{
+                      px: { xs: 2, sm: 3 },
+                      py: { xs: 1.5, sm: 2 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 2,
+                    }}
+                  >
+                    {/* Left: Icon + Text */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        {getFileIcon(material.file_url)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={material.name}
+                        secondary={material.description || 'No description'}
+                        sx={{
+                          '& .MuiListItemText-primary': {
+                            fontSize: { xs: '0.9rem', sm: '1rem' },
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          },
+                          '& .MuiListItemText-secondary': {
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          },
+                        }}
+                      />
+                    </Box>
 
-  {/* Right: Chip + Icons */}
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 1,
-      flexShrink: 0,
-    }}
-  >
-    
-   <a
-  href={material.file_url}
-  download
-  style={{ display: 'flex', color:theme.palette.info.main }}
->
-  <IconButton
-    size={isMobile ? 'small' : 'medium'}
-    component="span"
-    sx={{ color: theme.palette.info.main, '&:hover': { color: theme.palette.info.dark } }}
-  >
-    <DownloadIcon fontSize={isMobile ? 'small' : 'medium'} />
-  </IconButton>
-</a>
+                    {/* Right: Download + Delete Icons */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Box sx={{ position: 'relative' }}>
+                        <IconButton
+                          size={isMobile ? 'small' : 'medium'}
+                          onClick={() => handleDownloadClick(material)}
+                          disabled={downloadingId === material.id}
+                          sx={{ 
+                            color: theme.palette.info.main, 
+                            '&:hover': { color: theme.palette.info.dark },
+                            '&:disabled': { color: theme.palette.grey[400] }
+                          }}
+                        >
+                          <DownloadIcon fontSize={isMobile ? 'small' : 'medium'} />
+                        </IconButton>
+                        
+                        {downloadingId === material.id && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              bgcolor: 'rgba(255, 255, 255, 0.8)',
+                              borderRadius: '50%',
+                            }}
+                          >
+                            <CircularProgress 
+                              size={isMobile ? 16 : 20} 
+                              thickness={6}
+                            />
+                          </Box>
+                        )}
+                      </Box>
 
-    <IconButton
-      size={isMobile ? 'small' : 'medium'}
-      color="error"
-      onClick={() => openDeleteDialog(material)}
-    >
-      <DeleteIcon fontSize={isMobile ? 'small' : 'medium'} />
-    </IconButton>
-  </Box>
-</ListItem>
-
-
+                      <IconButton
+                        size={isMobile ? 'small' : 'medium'}
+                        color="error"
+                        onClick={() => openDeleteDialog(material)}
+                      >
+                        <DeleteIcon fontSize={isMobile ? 'small' : 'medium'} />
+                      </IconButton>
+                    </Box>
+                  </ListItem>
                   {index < filteredMaterials.length - 1 && <Divider />}
                 </React.Fragment>
               ))}

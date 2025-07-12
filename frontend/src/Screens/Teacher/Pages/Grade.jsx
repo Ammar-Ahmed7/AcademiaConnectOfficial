@@ -47,6 +47,7 @@ const Grade = () => {
   const [hasExistingGrades, setHasExistingGrades] = useState(false); // add at the top with other state
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
 
 
   // Added Snackbar state from Attendance.jsx
@@ -82,6 +83,61 @@ const Grade = () => {
       fetchAssignments();
     }
   }, [classInfo]);
+
+
+  // Add this helper function to the Grade component (near the top with other functions)
+const getFileName = (url, materialName) => {
+  try {
+    const urlParts = url.split('/');
+    const fileNameFromUrl = urlParts[urlParts.length - 1];
+    const extension = fileNameFromUrl.split('.').pop();
+    
+    // Use material name with proper extension
+    return `${materialName}.${extension}`;
+  } catch (error) {
+    return materialName || 'download';
+  }
+};
+
+// Update the handleDownloadClick function
+const handleDownloadClick = async (file, assignmentName, assignmentId) => {
+  try {
+    setDownloadingId(assignmentId);
+    const fileName = getFileName(file.url, assignmentName);
+    
+    // Fetch the file
+    const response = await fetch(file.url);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch file');
+    }
+    
+    const blob = await response.blob();
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    
+    // Trigger download
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    
+    showSnackbar('Download started successfully! Check you Downloads folder.', 'success');
+    
+  } catch (error) {
+    console.error('Download failed:', error);
+    showSnackbar('Download failed. Please try again.', 'error');
+  } finally {
+    setDownloadingId(null);
+  }
+};
 
 
   
@@ -736,16 +792,37 @@ const Grade = () => {
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           {assignment.file && (
-                            <Tooltip title="Download File">
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownload(assignment.file);
-                                }}
-                              >
-                                <DownloadIcon sx={{ color:'#05a5d4'}} className='mt-[4px]'/>
-                              </IconButton>
-                            </Tooltip>
+<Box sx={{ position: 'relative' }}>
+    <Tooltip title="Download File">
+      <IconButton
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDownloadClick(assignment.file, assignment.name, assignment.id);
+        }}
+        disabled={downloadingId === assignment.id}
+      >
+        <DownloadIcon sx={{ color: downloadingId === assignment.id ? theme.palette.grey[400] : '#05a5d4' }} className='mt-[4px]'/>
+      </IconButton>
+    </Tooltip>
+    {downloadingId === assignment.id && (
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          borderRadius: '50%',
+        }}
+      >
+        <CircularProgress size={20} thickness={6} />
+      </Box>
+    )}
+  </Box>
                           )}
 
                           {/* Only show delete button if assignment doesn't have grades */}
@@ -820,15 +897,37 @@ const Grade = () => {
   }}
 >
                     {selectedAssignment.file && (
-                      <Button
-                        variant="outlined"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleDownload(selectedAssignment.file)}
-                        size="small"
-                        sx={{ backgroundColor: '#05a5d4', color:'white', maxHeight: '50px', '&:hover': { backgroundColor: '#04a0d4' } }}
-                      >
-                        Download
-                      </Button>
+                      <Box sx={{ position: 'relative' }}>
+    <Button
+      variant="outlined"
+      startIcon={
+        downloadingId === selectedAssignment.id ? (
+          <CircularProgress size={20} thickness={4} />
+        ) : (
+          <DownloadIcon />
+        )
+      }
+      onClick={() => handleDownloadClick(
+        selectedAssignment.file, 
+        selectedAssignment.name,
+        selectedAssignment.id
+      )}
+      disabled={downloadingId === selectedAssignment.id}
+      size="small"
+      sx={{ 
+        backgroundColor: '#05a5d4', 
+        color: 'white', 
+        maxHeight: '50px', 
+        '&:hover': { backgroundColor: '#04a0d4' },
+        '&:disabled': {
+          backgroundColor: theme.palette.grey[300],
+          color: theme.palette.grey[500]
+        }
+      }}
+    >
+      {downloadingId === selectedAssignment.id ? 'Downloading...' : 'Download'}
+    </Button>
+  </Box>
                     )}
                     <Button variant="outlined" onClick={handleBack} sx={{ maxHeight: '50px'}}>
                       Back to Assignments
