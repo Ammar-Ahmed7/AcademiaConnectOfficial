@@ -2067,22 +2067,29 @@ const SchoolManagement = () => {
           console.log("Admin session stored successfully");
     
           // STEP 2: Create the auth user (this will change the current session)
+          // const { data: authData, error: authError } = await supabase.auth.signUp({
+          //   email: trimmedData.email,
+          //   password: formData.password,
+          //   // options: {
+          //   //   data: {
+          //   //     role: "School",
+          //   //     school_name: formData.name,
+          //   //   },
+          //   // },
+          // });
+
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: trimmedData.email,
             password: formData.password,
-            options: {
-              data: {
-                role: "School",
-                school_name: formData.name,
-              },
-            },
           });
+          
     
           if (authError) {
             console.error("Auth Error:", authError.message);
             setAlert({
               open: true,
-              message: "User already exists against this email. Try again!",
+              // message: "User already exists against this email. Try again!",
+              message: `Auth Error: ${authError.message}`,
               severity: "error",
             });
             setLoading(false);

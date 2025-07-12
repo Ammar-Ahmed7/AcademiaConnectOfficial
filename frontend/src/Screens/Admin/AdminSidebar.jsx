@@ -710,7 +710,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         })}
       </List>
 
-      <Divider />
+      {/* <Divider />
       <Box sx={{ p: collapsed ? 2 : 2, borderBottom: "2px solid #eee" }}>
         <List>
           <ListItem disablePadding>
@@ -730,7 +730,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             </ListItemButton>
           </ListItem>
         </List>
-      </Box>
+      </Box> */}
     </Box>
   );
 };
