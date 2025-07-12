@@ -804,14 +804,14 @@
 //   };
 
 //   // // Handle sending reminder to school
-  
+
 //   // const handleReminder = async (school) => {
 //   //   try {
 //   //     setIsLoading(true);
-  
+
 //   //     const session = await supabase.auth.getSession();
 //   //     const accessToken = session.data?.session?.access_token;
-  
+
 //   //     if (!accessToken) {
 //   //       throw new Error("User not authenticated");
 //   //     }
@@ -834,29 +834,28 @@
 //   //     };
 //   //     console.log("i ma here2")
 
-  
 //   //     const { data, error } = await supabase.functions.invoke("send-reminder-email", {
 //   //       body: emailData,
 //   //       headers: {
 //   //         Authorization: `Bearer ${accessToken}`, // ✅ Pass user token!
 //   //       },
 //   //     });
-  
+
 //   //     if (error) {
 //   //       console.error("❌ Function invocation error:", error);
 //   //       throw error;
 //   //     }
-  
+
 //   //     if (!data?.success) {
 //   //       throw new Error(data?.error || "Email sending failed");
 //   //     }
-  
+
 //   //     setAlert({
 //   //       open: true,
 //   //       message: `Reminder sent successfully to ${school.SchoolName} (${school.Email})`,
 //   //       severity: "success",
 //   //     });
-  
+
 //   //   } catch (error) {
 //   //     setAlert({
 //   //       open: true,
@@ -871,12 +870,12 @@
 //   const handleReminder = async (school) => {
 //     try {
 //       setIsLoading(true);
-  
+
 //       // Validate email
 //       if (!school.Email || !school.Email.includes('@')) {
 //         throw new Error('Invalid email address');
 //       }
-  
+
 //       // Prepare email data
 //       const emailData = {
 //         to: [school.Email.trim()], // Must be an array!
@@ -894,9 +893,9 @@
 //           </div>
 //         `,
 //       };
-  
+
 //       console.log("📤 Sending to Supabase Edge Function:", emailData);
-  
+
 //       const response = await fetch(
 //         "https://pabfmpqggljjhncdlzwx.functions.supabase.co/send-reminder-email",
 //         {
@@ -907,38 +906,37 @@
 //           body: JSON.stringify(emailData)
 //         }
 //       );
-  
+
 //       const data = await response.json();
-  
+
 //       if (!response.ok || !data.success) {
 //         throw new Error(data?.error || "Email sending failed");
 //       }
-  
+
 //       setAlert({
 //         open: true,
 //         message: `Reminder sent to ${school.SchoolName} (${school.Email})`,
 //         severity: "success",
 //       });
-  
+
 //       console.log("✅ Email sent:", data);
-  
+
 //     } catch (error) {
 //       console.error("❌ Error sending reminder:", error);
-  
+
 //       setAlert({
 //         open: true,
 //         message: `Failed to send reminder: ${error.message}`,
 //         severity: "error",
 //       });
-  
+
 //     } finally {
 //       setIsLoading(false);
 //     }
 //   };
-  
-  
+
 //   return (
-   
+
 // //     <Box
 // //   display="flex"
 // //   justifyContent="center"
@@ -967,7 +965,6 @@
 // //           >
 // //             Pending Reports
 // //           </Typography>
-
 
 // <Box
 //   display="flex"
@@ -1336,11 +1333,9 @@
 
 // export default PendingReports;
 
+"use client";
 
-
-"use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -1367,41 +1362,41 @@ import {
   Select,
   useTheme,
   useMediaQuery,
-} from "@mui/material"
-import { Search } from "@mui/icons-material"
-import { supabase } from "../../../supabase-client"
+} from "@mui/material";
+import { Search } from "@mui/icons-material";
+import { supabase } from "../../../supabase-client";
 
 const PendingReports = () => {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-  const isTablet = useMediaQuery(theme.breakpoints.down("md"))
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
   // Month and year selection states
-  const [selectedMonth, setSelectedMonth] = useState("")
-  const [selectedYear, setSelectedYear] = useState("")
-  const [isSelectionComplete, setIsSelectionComplete] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [isSelectionComplete, setIsSelectionComplete] = useState(false);
 
   // Schools and reports states
-  const [allSchools, setAllSchools] = useState([])
-  const [pendingSchools, setPendingSchools] = useState([])
-  const [filteredPendingSchools, setFilteredPendingSchools] = useState([])
+  const [allSchools, setAllSchools] = useState([]);
+  const [pendingSchools, setPendingSchools] = useState([]);
+  const [filteredPendingSchools, setFilteredPendingSchools] = useState([]);
 
   // UI states
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [alert, setAlert] = useState({
     open: false,
     message: "",
     severity: "info",
-  })
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterField, setFilterField] = useState("SchoolName") // default filter by SchoolName
+  });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterField, setFilterField] = useState("SchoolName"); // default filter by SchoolName
 
   const filterOptions = [
     { value: "SchoolID", label: "School ID" },
     { value: "SchoolName", label: "School Name" },
-  ]
+  ];
 
   const monthNames = [
     "January",
@@ -1416,35 +1411,39 @@ const PendingReports = () => {
     "October",
     "November",
     "December",
-  ]
+  ];
 
   // Generate years for dropdown (current year and 5 years back)
-  const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: 6 }, (_, i) => currentYear - i)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-  const handleCloseAlert = () => setAlert({ ...alert, open: false })
+  const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   // Filter pending schools based on search term
   useEffect(() => {
-    if (!isSelectionComplete) return
+    if (!isSelectionComplete) return;
     if (searchTerm === "") {
-      setFilteredPendingSchools(pendingSchools)
+      setFilteredPendingSchools(pendingSchools);
     } else {
       const filtered = pendingSchools.filter((school) => {
         // Handle different filter fields
         switch (filterField) {
           case "SchoolID":
-            return (school.SchoolID?.toString().toLowerCase() || "").includes(searchTerm.toLowerCase())
+            return (school.SchoolID?.toString().toLowerCase() || "").includes(
+              searchTerm.toLowerCase()
+            );
           case "SchoolName":
-            return (school.SchoolName?.toString().toLowerCase() || "").includes(searchTerm.toLowerCase())
+            return (school.SchoolName?.toString().toLowerCase() || "").includes(
+              searchTerm.toLowerCase()
+            );
           default:
-            return true
+            return true;
         }
-      })
-      setFilteredPendingSchools(filtered)
+      });
+      setFilteredPendingSchools(filtered);
     }
-    setPage(0) // Reset to first page when filtering
-  }, [searchTerm, filterField, pendingSchools, isSelectionComplete])
+    setPage(0); // Reset to first page when filtering
+  }, [searchTerm, filterField, pendingSchools, isSelectionComplete]);
 
   // Handle view pending reports button click
   const handleViewPendingReports = async () => {
@@ -1453,49 +1452,52 @@ const PendingReports = () => {
         open: true,
         message: "Please select both month and year",
         severity: "warning",
-      })
-      return
+      });
+      return;
     }
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Fetch all schools
-      const schoolsData = await fetchAllSchools()
-      setAllSchools(schoolsData)
+      const schoolsData = await fetchAllSchools();
+      setAllSchools(schoolsData);
       // Fetch reports for selected period
-      const reportsData = await fetchReportsForPeriod(selectedMonth, selectedYear)
+      const reportsData = await fetchReportsForPeriod(
+        selectedMonth,
+        selectedYear
+      );
       // Compute pending schools
-      const pending = computePendingSchools(schoolsData, reportsData)
-      setPendingSchools(pending)
-      setFilteredPendingSchools(pending)
+      const pending = computePendingSchools(schoolsData, reportsData);
+      setPendingSchools(pending);
+      setFilteredPendingSchools(pending);
       // Set selection complete to show the table
-      setIsSelectionComplete(true)
+      setIsSelectionComplete(true);
     } catch (error) {
-      console.error("Error processing data:", error)
+      console.error("Error processing data:", error);
       setAlert({
         open: true,
         message: "Error processing data: " + error.message,
         severity: "error",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Fetch all schools from School table
   const fetchAllSchools = async () => {
     try {
       const { data: schoolsData, error: schoolsError } = await supabase
         .from("School")
-        .select("user_id, SchoolID, SchoolName , Email")
+        .select("user_id, SchoolID, SchoolName , Email");
 
-      if (schoolsError) throw schoolsError
+      if (schoolsError) throw schoolsError;
 
-      return schoolsData
+      return schoolsData;
     } catch (error) {
-      console.error("Error fetching schools:", error)
-      throw error
+      console.error("Error fetching schools:", error);
+      throw error;
     }
-  }
+  };
 
   // Fetch reports for selected period
   const fetchReportsForPeriod = async (month, year) => {
@@ -1504,52 +1506,56 @@ const PendingReports = () => {
         .from("SendedReports")
         .select("*")
         .eq("Month", month)
-        .eq("Year", year)
+        .eq("Year", year);
 
-      if (reportsError) throw reportsError
+      if (reportsError) throw reportsError;
 
-      return reportsData
+      return reportsData;
     } catch (error) {
-      console.error("Error fetching reports:", error)
-      throw error
+      console.error("Error fetching reports:", error);
+      throw error;
     }
-  }
+  };
 
   // Compute which schools have not submitted reports
   const computePendingSchools = (allSchools, submittedReports) => {
     // Extract user_ids of schools that have submitted reports
-    const submittedSchoolIds = new Set(submittedReports.map((report) => report.Sender))
+    const submittedSchoolIds = new Set(
+      submittedReports.map((report) => report.Sender)
+    );
 
     // Filter all schools to find those that haven't submitted
-    const pending = allSchools.filter((school) => !submittedSchoolIds.has(school.user_id))
+    const pending = allSchools.filter(
+      (school) => !submittedSchoolIds.has(school.user_id)
+    );
 
-    return pending
-  }
+    return pending;
+  };
 
   // Reset selection and go back to month/year selection
   const handleResetSelection = () => {
-    setIsSelectionComplete(false)
-    setPendingSchools([])
-    setFilteredPendingSchools([])
-    setSearchTerm("")
-  }
+    setIsSelectionComplete(false);
+    setPendingSchools([]);
+    setFilteredPendingSchools([]);
+    setSearchTerm("");
+  };
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage)
-  }
+    setPage(newPage);
+  };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(Number.parseInt(event.target.value, 10))
-    setPage(0)
-  }
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleReminder = async (school) => {
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Validate email
       if (!school.Email || !school.Email.includes("@")) {
-        throw new Error("Invalid email address")
+        throw new Error("Invalid email address");
       }
 
       // Prepare email data
@@ -1568,44 +1574,54 @@ const PendingReports = () => {
             </div>
           </div>
         `,
-      }
+      };
 
-      console.log("📤 Sending to Supabase Edge Function:", emailData)
+      console.log("📤 Sending to Supabase Edge Function:", emailData);
 
-      const response = await fetch("https://pabfmpqggljjhncdlzwx.functions.supabase.co/send-reminder-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailData),
-      })
+      const response = await fetch(
+        "https://pabfmpqggljjhncdlzwx.functions.supabase.co/send-reminder-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailData),
+        }
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data?.error || "Email sending failed")
+        throw new Error(data?.error || "Email sending failed");
       }
 
       setAlert({
         open: true,
         message: `Reminder sent to ${school.SchoolName} (${school.Email})`,
         severity: "success",
-      })
+      });
 
-      console.log("✅ Email sent:", data)
+      console.log("✅ Email sent:", data);
     } catch (error) {
-      console.error("❌ Error sending reminder:", error)
+      console.error("❌ Error sending reminder:", error);
 
       setAlert({
         open: true,
         message: `Failed to send reminder: ${error.message}`,
         severity: "error",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
+  };
+  const isFutureDateSelected = () => {
+    if (selectedMonth === "" || selectedYear === "") return false;
+    const selected = new Date(selectedYear, selectedMonth); // month is 0-indexed
+    const now = new Date();
+    const current = new Date(now.getFullYear(), now.getMonth()); // Start of current month
+    return selected > current;
+  };
+  
   return (
     <Box
       display="flex"
@@ -1641,7 +1657,11 @@ const PendingReports = () => {
           </Typography>
 
           {/* Month and Year Selection UI */}
-          <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: isMobile ? 2 : 3 }}>
+          <Grid
+            container
+            spacing={isMobile ? 1 : 2}
+            sx={{ mb: isMobile ? 2 : 3 }}
+          >
             {/* Month Select */}
             <Grid item xs={12} sm={6} md={4}>
               <FormControl
@@ -1666,11 +1686,25 @@ const PendingReports = () => {
                   label="Month"
                   disabled={isSelectionComplete}
                 >
-                  {monthNames.map((month, index) => (
+                  {/* {monthNames.map((month, index) => (
                     <MenuItem key={index} value={index}>
                       {month}
                     </MenuItem>
-                  ))}
+                  ))} */}
+
+
+{monthNames.map((month, index) => {
+  const isFuture =
+    selectedYear !== "" &&
+    new Date(selectedYear, index) > new Date(new Date().getFullYear(), new Date().getMonth());
+
+  return (
+    <MenuItem key={index} value={index} disabled={isFuture}>
+      {month}
+    </MenuItem>
+  );
+})}
+
                 </Select>
               </FormControl>
             </Grid>
@@ -1709,14 +1743,24 @@ const PendingReports = () => {
             </Grid>
 
             {/* Button */}
-            <Grid item xs={12} md={4} sx={{ display: "flex", alignItems: "center" }}>
+            <Grid
+              item
+              xs={12}
+              md={4}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
               {!isSelectionComplete ? (
                 <Button
                   variant="contained"
                   color="primary"
                   fullWidth
                   onClick={handleViewPendingReports}
-                  disabled={selectedMonth === "" || selectedYear === ""}
+                  // disabled={selectedMonth === "" || selectedYear === ""}
+                  disabled={
+                    selectedMonth === "" ||
+                    selectedYear === "" ||
+                    isFutureDateSelected()
+                  }
                   sx={{
                     height: isMobile ? "48px" : "56px",
                     fontSize: isMobile ? "0.875rem" : "1rem",
@@ -1745,12 +1789,18 @@ const PendingReports = () => {
 
           {/* Only show search and filters after selection is complete */}
           {isSelectionComplete && (
-            <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: isMobile ? 2 : 3 }}>
+            <Grid
+              container
+              spacing={isMobile ? 1 : 2}
+              sx={{ mb: isMobile ? 2 : 3 }}
+            >
               <Grid item xs={12} md={8}>
                 <TextField
                   fullWidth
                   variant="outlined"
-                  placeholder={`Search by ${filterOptions.find((f) => f.value === filterField)?.label}...`}
+                  placeholder={`Search by ${
+                    filterOptions.find((f) => f.value === filterField)?.label
+                  }...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   size={isMobile ? "small" : "medium"}
@@ -1784,7 +1834,12 @@ const PendingReports = () => {
           )}
 
           {isLoading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" py={3}>
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              py={3}
+            >
               <CircularProgress />
             </Box>
           ) : (
@@ -1847,7 +1902,10 @@ const PendingReports = () => {
                       <TableBody>
                         {filteredPendingSchools.length > 0 ? (
                           filteredPendingSchools
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
                             .map((school) => (
                               <TableRow key={school.user_id}>
                                 <TableCell
@@ -1876,7 +1934,9 @@ const PendingReports = () => {
                                   <Typography
                                     color="error"
                                     sx={{
-                                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                                      fontSize: isMobile
+                                        ? "0.75rem"
+                                        : "0.875rem",
                                       fontWeight: "medium",
                                     }}
                                   >
@@ -1894,9 +1954,13 @@ const PendingReports = () => {
                                     onClick={() => handleReminder(school)}
                                     size={isMobile ? "small" : "medium"}
                                     sx={{
-                                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                                      fontSize: isMobile
+                                        ? "0.75rem"
+                                        : "0.875rem",
                                       minWidth: isMobile ? "auto" : "64px",
-                                      padding: isMobile ? "4px 8px" : "6px 16px",
+                                      padding: isMobile
+                                        ? "4px 8px"
+                                        : "6px 16px",
                                       whiteSpace: "nowrap",
                                     }}
                                   >
@@ -1916,7 +1980,9 @@ const PendingReports = () => {
                                 fontSize: isMobile ? "0.875rem" : "1rem",
                               }}
                             >
-                              {isLoading ? "Loading schools..." : "All schools have submitted reports for this period."}
+                              {isLoading
+                                ? "Loading schools..."
+                                : "All schools have submitted reports for this period."}
                             </TableCell>
                           </TableRow>
                         )}
@@ -1936,9 +2002,10 @@ const PendingReports = () => {
                         fontSize: isMobile ? "0.75rem" : "0.875rem",
                         minHeight: isMobile ? "48px" : "52px",
                       },
-                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-                        fontSize: isMobile ? "0.75rem" : "0.875rem",
-                      },
+                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+                        {
+                          fontSize: isMobile ? "0.75rem" : "0.875rem",
+                        },
                     }}
                   />
                 </>
@@ -1971,7 +2038,7 @@ const PendingReports = () => {
         </Alert>
       </Snackbar>
     </Box>
-  )
-}
+  );
+};
 
-export default PendingReports
+export default PendingReports;
