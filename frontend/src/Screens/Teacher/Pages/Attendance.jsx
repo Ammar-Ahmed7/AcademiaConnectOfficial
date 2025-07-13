@@ -52,7 +52,9 @@ const Attendance = () => {
 
   const handleDateChange = async (date) => {
     if (!date) return setSelectedDate(null);
-    setSelectedDate(date);
+    // Use UTC date
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  setSelectedDate(utcDate);
     const formatted = date.toISOString().split('T')[0];
     try {
       setLoading(true);
