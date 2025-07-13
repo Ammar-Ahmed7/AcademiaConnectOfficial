@@ -143,11 +143,11 @@ const Attendance = () => {
             gap: 2
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1,alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
             <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 1 }}>
-              <ArrowBackIcon />
+              <ArrowBackIcon fontSize="large"/>
             </IconButton>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
               Attendance Management
             </Typography>
           </Box>

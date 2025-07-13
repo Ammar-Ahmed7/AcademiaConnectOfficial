@@ -269,7 +269,7 @@ const StudyMaterial = () => {
           flexDirection: { xs: 'column', sm: 'row' },
           gap: { xs: 2, sm: 0 }
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', sm: 'auto' }, gap: 1 }}>
             <IconButton 
               onClick={() => navigate(-1)} 
               sx={{ 

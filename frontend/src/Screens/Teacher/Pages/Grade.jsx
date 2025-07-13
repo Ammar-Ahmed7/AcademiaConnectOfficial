@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import { 
@@ -180,7 +181,8 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
   description: "", 
   file: null,
    deadline: "", // Add deadline field
-  total_marks: "" // Add total marks field
+  total_marks: "", // Add total marks field
+   type: "Assignment" // Add type with default value
 });
 
   
@@ -476,7 +478,8 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
           class_id: classInfo.sections.class_id,
           section_id: classInfo.section_id,
           deadline: formData.deadline, // Add deadline
-          total_marks: formData.total_marks // Add total marks
+          total_marks: formData.total_marks, // Add total marks
+          Type: formData.type // Add this line
         }]);
 
       if (error) {
@@ -637,18 +640,6 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
     setStudents(resetStudentsMarks); // Update the state with the reset marks
   };
 
-
-  const handleDownload = (file) => {
-    if (file && file.url) {
-      const link = document.createElement('a');
-      link.href = file.url;
-      link.setAttribute('download', file.name); // optional: lets browser name the file
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showSnackbar(`Downloading ${file.name}...`, 'info');
-    }
-  };
   
 
  const modalStyle = {
@@ -656,11 +647,14 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: { xs: '90%', sm: 500 },
+  width: { xs: '90vw', sm: '80vw', md: '500px' }, // Responsive width
+  maxWidth: '500px', // Maximum width
+  maxHeight: '90vh', // Prevent vertical overflow
+  overflowY: 'auto', // Enable scrolling if content is too long
   bgcolor: 'background.paper',
   borderRadius: 2,
   boxShadow: 24,
-  p: { xs: 2, sm: 4 },
+  p: { xs: 2, sm: 3 },
 };
 
 
@@ -705,7 +699,7 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
 >
 
 
-                 <Box sx={{ display: 'flex', gap: 1 }}>
+                 <Box sx={{ display: 'flex', gap: 1,alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
                  <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.primary.main, mr: 2, fontSize: 'medium' }}>
                   <ArrowBackIcon fontSize="large" />
                 </IconButton>
@@ -1059,6 +1053,57 @@ const handleDownloadClick = async (file, assignmentName, assignmentId) => {
         required
         fullWidth
       />
+
+      {/* Add this after the deadline field in the modal */}
+<Box sx={{ mt: 2 }}>
+  <Typography variant="body1" sx={{ mb: 1 }}>Type</Typography>
+  <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <input
+        type="radio"
+        id="assignment"
+        name="type"
+        value="Assignment"
+        checked={formData.type === "Assignment"}
+        onChange={handleInputChange}
+      />
+      <label htmlFor="assignment" style={{ marginLeft: '8px' }}>Assignment</label>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <input
+        type="radio"
+        id="quiz"
+        name="type"
+        value="Quiz"
+        checked={formData.type === "Quiz"}
+        onChange={handleInputChange}
+      />
+      <label htmlFor="quiz" style={{ marginLeft: '8px' }}>Quiz</label>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <input
+        type="radio"
+        id="mid-exam"
+        name="type"
+        value="Mid-Exam"
+        checked={formData.type === "Mid-Exam"}
+        onChange={handleInputChange}
+      />
+      <label htmlFor="mid-exam" style={{ marginLeft: '8px' }}>Mid-Exam</label>
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <input
+        type="radio"
+        id="final-exam"
+        name="type"
+        value="Final-Exam"
+        checked={formData.type === "Final-Exam"}
+        onChange={handleInputChange}
+      />
+      <label htmlFor="final-exam" style={{ marginLeft: '8px' }}>Final-Exam</label>
+    </Box>
+  </Box>
+</Box>
       <Box>
         <Typography variant="body2">Attach File (optional)</Typography>
         <input type="file" onChange={handleFileChange} />
