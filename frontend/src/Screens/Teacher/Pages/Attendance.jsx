@@ -26,6 +26,7 @@ const Attendance = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [isExistingAttendance, setIsExistingAttendance] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
   const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
@@ -119,20 +120,29 @@ const Attendance = () => {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, sm: 2, md: 3 },
-          ml: { xs: 0, md: '240px' }, // Respect mobile sidebar
-          mt: { xs: '64px', md: 0 }, // Space for mobile AppBar
-          width: '100%',
-          overflowY: 'auto'
-        }}
-      >
+              component="main"
+              sx={{
+                flexGrow: 1,
+                p: { xs: 1, sm: 2, md: 3, lg: 4 },
+                ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
+                mt: { xs: '64px', md: 0 },
+                minHeight: "100vh",
+                width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
+                transition: theme.transitions.create(['margin', 'width'], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
+              }}
+            >
+              
         <Box
           sx={{
             display: 'flex',

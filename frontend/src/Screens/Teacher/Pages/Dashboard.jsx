@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable react/prop-types */
+// Updated Dashboard.jsx with mobile responsiveness
 import React, { useState, useEffect } from "react"
 import { Box, Typography, Paper, Grid, Button, CircularProgress, Chip, useTheme, alpha, useMediaQuery } from "@mui/material"
 import NotificationsIcon from "@mui/icons-material/Notifications"
@@ -19,16 +21,21 @@ import ScheduleIcon from "@mui/icons-material/Schedule"
 const Dashboard = () => {
   const theme = useTheme()
   const navigate = useNavigate()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
   
   const [assignedClasses, setAssignedClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [notifications, setNotifications] = useState([])
   const [loadingNotices, setLoadingNotices] = useState(true)
+
   const [timetableFilePath, setTimetableFilePath] = useState(null)
   const [timetableFileName, setTimetableFileName] = useState("")
   const [timetableLoading, setTimetableLoading] = useState(true)
+
   const [calendarValue, setCalendarValue] = useState(new Date())
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
     const fetchTimetableFile = async () => {
@@ -256,13 +263,13 @@ const Dashboard = () => {
     })
   }
 
- // Updated DashboardCard component without gradient effect
+  // Professional card component with mobile responsiveness
   const DashboardCard = ({ title, icon, children, height = 400 }) => (
     <Paper
       elevation={2}
       sx={{
         p: { xs: 2, sm: 2.5, md: 3 },
-        height: { xs: '40vh', md: height },
+        height: { xs: 'auto', md: height },
         minHeight: { xs: 300, md: height },
         display: "flex",
         flexDirection: "column",
@@ -307,33 +314,36 @@ const Dashboard = () => {
           {title}
         </Typography>
       </Box>
-      <Box sx={{ 
-        flexGrow: 1,
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
-      }}>
-        {children}
-      </Box>
+      {children}
     </Paper>
   )
 
+   const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
+        <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}/>
+      
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: { xs: 1, sm: 2, md: 3, lg: 4 },
-          ml: { xs: 0, md: "240px" },
+          ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
           mt: { xs: '64px', md: 0 },
           minHeight: "100vh",
-          width: { xs: '100%', md: 'calc(100% - 240px)' },
-          pb: { xs: 4, md: 0 },
+          width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
-        {/* Header */}
+        
+        {/* Header with gradient underline */}
         <Box sx={{ 
           mb: { xs: 2, sm: 3, md: 4 }, 
           pb: 2, 
@@ -493,198 +503,54 @@ const Dashboard = () => {
           {/* Notifications */}
           <Grid item xs={12} lg={6}>
             <DashboardCard title="Notifications & Announcements" icon={<AnnouncementIcon />}>
-              {loadingNotices ? (
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-                  <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
-                </Box>
-              ) : notifications.length === 0 ? (
-                <Box sx={{ textAlign: "center", mt: 4 }}>
-                  <NotificationsIcon sx={{ 
-                    fontSize: { xs: 40, sm: 48 }, 
-                    color: alpha(theme.palette.text.primary, 0.2), 
-                    mb: 2 
-                  }} />
-                  <Typography 
-                    variant="body1" 
-                    color="text.secondary"
-                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-                  >
-                    No notifications found.
-                  </Typography>
-                </Box>
-              ) : (
-                notifications.map((notification, index) => (
-                  <Paper
-                    key={index}
-                    elevation={1}
-                    sx={{
-                      p: { xs: 1.5, sm: 2 },
-                      mb: 2,
-                      borderRadius: 2,
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                      background:
-                        notification.CreatedType === "Admin"
-                          ? alpha(theme.palette.info.main, 0.08)
-                          : alpha(theme.palette.secondary.main, 0.08),
-                      borderLeft: `4px solid ${
-                        notification.CreatedType === "Admin"
-                          ? theme.palette.info.main
-                          : theme.palette.secondary.main
-                      }`,
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        transform: "translateX(4px)",
-                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
-                      },
-                      display: "flex",
-                      gap: { xs: 1, sm: 2 },
-                    }}
-                  >
-                    <Box
+              <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                {loadingNotices ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                    <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
+                  </Box>
+                ) : notifications.length === 0 ? (
+                  <Box sx={{ textAlign: "center", mt: 4 }}>
+                    <NotificationsIcon sx={{ 
+                      fontSize: { xs: 40, sm: 48 }, 
+                      color: alpha(theme.palette.text.primary, 0.2), 
+                      mb: 2 
+                    }} />
+                    <Typography 
+                      variant="body1" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
+                      No notifications found.
+                    </Typography>
+                  </Box>
+                ) : (
+                  notifications.map((notification, index) => (
+                    <Paper
+                      key={index}
+                      elevation={1}
                       sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: { xs: 32, sm: 36 },
-                        height: { xs: 32, sm: 36 },
-                        borderRadius: 1.5,
-                        bgcolor:
+                        p: { xs: 1.5, sm: 2 },
+                        mb: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                        background:
+                          notification.CreatedType === "Admin"
+                            ? alpha(theme.palette.info.main, 0.08)
+                            : alpha(theme.palette.secondary.main, 0.08),
+                        borderLeft: `4px solid ${
                           notification.CreatedType === "Admin"
                             ? theme.palette.info.main
-                            : theme.palette.secondary.main,
-                        flexShrink: 0,
+                            : theme.palette.secondary.main
+                        }`,
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                          transform: "translateX(4px)",
+                          boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+                        },
+                        display: "flex",
+                        gap: { xs: 1, sm: 2 },
                       }}
                     >
-                      <NotificationsIcon sx={{ 
-                        color: "white", 
-                        fontSize: { xs: 16, sm: 18 } 
-                      }} />
-                    </Box>
-                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
-                        <Typography 
-                          variant="subtitle1" 
-                          sx={{ 
-                            fontWeight: 600, 
-                            color: theme.palette.text.primary,
-                            fontSize: { xs: '0.875rem', sm: '1rem' }
-                          }}
-                        >
-                          {notification.Title}
-                        </Typography>
-                        {notification.Urgent && (
-                          <Chip
-                            label="Urgent"
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.error.main,
-                              color: "white",
-                              fontSize: { xs: "8px", sm: "10px" },
-                              height: { xs: 18, sm: 20 },
-                              fontWeight: 600,
-                            }}
-                          />
-                        )}
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        sx={{ 
-                          color: theme.palette.text.secondary, 
-                          display: "block", 
-                          mb: 1,
-                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                        }}
-                      >
-                        {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ 
-                          color: theme.palette.text.secondary, 
-                          lineHeight: 1.5, 
-                          mb: 1,
-                          fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                        }}
-                      >
-                        {notification.Message}
-                      </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          color: alpha(theme.palette.text.primary, 0.6),
-                          fontSize: { xs: '0.65rem', sm: '0.75rem' }
-                        }}
-                      >
-                        From: {notification.CreatedType}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                ))
-              )}
-            </DashboardCard>
-          </Grid>
-
-          {/* Assigned Classes */}
-          <Grid item xs={12} lg={6}>
-            <DashboardCard title="Assigned Classes" icon={<ClassIcon />}>
-              {loading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-                  <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
-                </Box>
-              ) : error ? (
-                <Typography 
-                  color="error" 
-                  sx={{ 
-                    p: 2, 
-                    textAlign: "center",
-                    fontSize: { xs: '0.875rem', sm: '1rem' }
-                  }}
-                >
-                  {error}
-                </Typography>
-              ) : assignedClasses.length === 0 ? (
-                <Box sx={{ textAlign: "center", mt: 4 }}>
-                  <ClassIcon sx={{ 
-                    fontSize: { xs: 40, sm: 48 }, 
-                    color: alpha(theme.palette.text.primary, 0.2), 
-                    mb: 2 
-                  }} />
-                  <Typography 
-                    variant="body1" 
-                    color="text.secondary"
-                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-                  >
-                    No classes assigned yet.
-                  </Typography>
-                </Box>
-              ) : (
-                assignedClasses.map((class_, index) => (
-                  <Paper
-                    key={index}
-                    elevation={1}
-                    sx={{
-                      p: { xs: 1.5, sm: 2.5 },
-                      mb: 2,
-                      borderRadius: 2,
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      transition: "all 0.2s ease",
-                      flexDirection: { xs: 'column', sm: 'row' },
-                      gap: { xs: 1.5, sm: 0 },
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.1)}`,
-                      },
-                    }}
-                  >
-                    <Box sx={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: 2,
-                      width: { xs: '100%', sm: 'auto' }
-                    }}>
                       <Box
                         sx={{
                           display: "flex",
@@ -693,62 +559,210 @@ const Dashboard = () => {
                           width: { xs: 32, sm: 36 },
                           height: { xs: 32, sm: 36 },
                           borderRadius: 1.5,
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          bgcolor:
+                            notification.CreatedType === "Admin"
+                              ? theme.palette.info.main
+                              : theme.palette.secondary.main,
                           flexShrink: 0,
                         }}
                       >
-                        <ClassIcon sx={{ 
-                          color: theme.palette.primary.main, 
+                        <NotificationsIcon sx={{ 
+                          color: "white", 
                           fontSize: { xs: 16, sm: 18 } 
                         }} />
                       </Box>
                       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Typography 
-                          variant="subtitle1" 
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
+                          <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              color: theme.palette.text.primary,
+                              fontSize: { xs: '0.875rem', sm: '1rem' }
+                            }}
+                          >
+                            {notification.Title}
+                          </Typography>
+                          {notification.Urgent && (
+                            <Chip
+                              label="Urgent"
+                              size="small"
+                              sx={{
+                                bgcolor: theme.palette.error.main,
+                                color: "white",
+                                fontSize: { xs: "8px", sm: "10px" },
+                                height: { xs: 18, sm: 20 },
+                                fontWeight: 600,
+                              }}
+                            />
+                          )}
+                        </Box>
+                        <Typography
+                          variant="caption"
                           sx={{ 
-                            fontWeight: 600, 
-                            color: theme.palette.text.primary,
-                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                            color: theme.palette.text.secondary, 
+                            display: "block", 
+                            mb: 1,
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' }
                           }}
                         >
-                          {class_.className} - {class_.section}
+                          {`${formatDate(notification.StartDate)} - ${formatDate(notification.EndDate)}`}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ 
+                            color: theme.palette.text.secondary, 
+                            lineHeight: 1.5, 
+                            mb: 1,
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                          }}
+                        >
+                          {notification.Message}
                         </Typography>
                         <Typography 
-                          variant="body2" 
-                          color="text.secondary"
+                          variant="caption" 
                           sx={{ 
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                            wordBreak: 'break-word'
+                            color: alpha(theme.palette.text.primary, 0.6),
+                            fontSize: { xs: '0.65rem', sm: '0.75rem' }
                           }}
                         >
-                          {class_.displaySubjects || class_.subject}
+                          From: {notification.CreatedType}
                         </Typography>
                       </Box>
-                    </Box>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleManageClick(class_)}
+                    </Paper>
+                  ))
+                )}
+              </Box>
+            </DashboardCard>
+          </Grid>
+
+          {/* Assigned Classes */}
+          <Grid item xs={12} lg={6}>
+            <DashboardCard title="Assigned Classes" icon={<ClassIcon />}>
+              <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                {loading ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                    <CircularProgress size={30} sx={{ color: theme.palette.primary.main }} />
+                  </Box>
+                ) : error ? (
+                  <Typography 
+                    color="error" 
+                    sx={{ 
+                      p: 2, 
+                      textAlign: "center",
+                      fontSize: { xs: '0.875rem', sm: '1rem' }
+                    }}
+                  >
+                    {error}
+                  </Typography>
+                ) : assignedClasses.length === 0 ? (
+                  <Box sx={{ textAlign: "center", mt: 4 }}>
+                    <ClassIcon sx={{ 
+                      fontSize: { xs: 40, sm: 48 }, 
+                      color: alpha(theme.palette.text.primary, 0.2), 
+                      mb: 2 
+                    }} />
+                    <Typography 
+                      variant="body1" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
+                      No classes assigned yet.
+                    </Typography>
+                  </Box>
+                ) : (
+                  assignedClasses.map((class_, index) => (
+                    <Paper
+                      key={index}
+                      elevation={1}
                       sx={{
-                        bgcolor: theme.palette.primary.main,
-                        color: "white",
-                        borderRadius: 1.5,
-                        textTransform: "none",
-                        fontWeight: 600,
-                        px: { xs: 2, sm: 2.5 },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        width: { xs: '100%', sm: 'auto' },
+                        p: { xs: 1.5, sm: 2.5 },
+                        mb: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        transition: "all 0.2s ease",
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 1.5, sm: 0 },
                         "&:hover": {
-                          bgcolor: theme.palette.primary.dark,
-                          transform: "translateY(-1px)",
+                          transform: "translateY(-2px)",
+                          boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.1)}`,
                         },
                       }}
                     >
-                      Manage
-                    </Button>
-                  </Paper>
-                ))
-              )}
+                      <Box sx={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 2,
+                        width: { xs: '100%', sm: 'auto' }
+                      }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: { xs: 32, sm: 36 },
+                            height: { xs: 32, sm: 36 },
+                            borderRadius: 1.5,
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            flexShrink: 0,
+                          }}
+                        >
+                          <ClassIcon sx={{ 
+                            color: theme.palette.primary.main, 
+                            fontSize: { xs: 16, sm: 18 } 
+                          }} />
+                        </Box>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              color: theme.palette.text.primary,
+                              fontSize: { xs: '0.875rem', sm: '1rem' }
+                            }}
+                          >
+                            {class_.className} - {class_.section}
+                          </Typography>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ 
+                              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                              wordBreak: 'break-word'
+                            }}
+                          >
+                            {class_.displaySubjects || class_.subject}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleManageClick(class_)}
+                        sx={{
+                          bgcolor: theme.palette.primary.main,
+                          color: "white",
+                          borderRadius: 1.5,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          px: { xs: 2, sm: 2.5 },
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          width: { xs: '100%', sm: 'auto' },
+                          "&:hover": {
+                            bgcolor: theme.palette.primary.dark,
+                            transform: "translateY(-1px)",
+                          },
+                        }}
+                      >
+                        Manage
+                      </Button>
+                    </Paper>
+                  ))
+                )}
+              </Box>
             </DashboardCard>
           </Grid>
         </Grid>

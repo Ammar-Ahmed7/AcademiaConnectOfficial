@@ -33,6 +33,7 @@ const StudyMaterial = () => {
   const [deleting, setDeleting] = useState(false);
   const [resourceToDelete, setResourceToDelete] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -246,20 +247,30 @@ const StudyMaterial = () => {
     overflowY: 'auto'
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          p: { xs: 2, sm: 2, md: 3, lg: 4 }, 
-          ml: { xs: 0, md: '240px' },
-          mt: { xs: '64px', md: 0 },
-          overflowY: 'auto',
-          width: { xs: '100%', md: 'calc(100% - 240px)' }
-        }}
-      >
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      
+       <Box
+                    component="main"
+                    sx={{
+                      flexGrow: 1,
+                      p: { xs: 1, sm: 2, md: 3, lg: 4 },
+                      ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
+                      mt: { xs: '64px', md: 0 },
+                      minHeight: "100vh",
+                      width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
+                      transition: theme.transitions.create(['margin', 'width'], {
+                        easing: theme.transitions.easing.sharp,
+                        duration: theme.transitions.duration.leavingScreen,
+                      }),
+                    }}
+                  >
+
         {/* Header Section */}
         <Box sx={{ 
           mb: { xs: 2, md: 4 }, 

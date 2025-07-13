@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable no-unused-vars */
 // TeacherNotifications.jsx with Monthly filtering
 import React, { useEffect, useState, useCallback } from 'react';
@@ -21,6 +22,7 @@ const TeacherNotifications = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [teacherData, setTeacherData] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   
   // Generate months array
   const months = [
@@ -234,19 +236,28 @@ const TeacherNotifications = () => {
     return month ? month.label : '';
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       <Box
-  component="main"
-  sx={{
-    flexGrow: 1,
-    p: { xs: 2, sm: 2, md: 3, lg: 4 },
-    ml: { xs: 0, md: '240px' },
-    mt: { xs: '64px', md: 0 },
-    overflowY: 'auto',
-  }}
->
+              component="main"
+              sx={{
+                flexGrow: 1,
+                p: { xs: 1, sm: 2, md: 3, lg: 4 },
+                ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
+                mt: { xs: '64px', md: 0 },
+                minHeight: "100vh",
+                width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
+                transition: theme.transitions.create(['margin', 'width'], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
+              }}
+            >
 
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: theme.palette.text.primary }}>
           Notifications and Announcements
