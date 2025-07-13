@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 // Updated Management.jsx UI consistent with Sidebar and Dashboard
-import React, { useEffect } from 'react';
+import React, { useEffect,useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Paper, Typography, Button, useTheme, alpha } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -14,6 +14,7 @@ const Management = () => {
   const location = useLocation();
   const theme = useTheme();
   const classInfo = location.state?.classInfo;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
     if (classInfo) {
@@ -42,22 +43,34 @@ const Management = () => {
     }
   ];
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-      <Box
-  component="main"
-  sx={{
-    flexGrow: 1,
-    p: { xs: 2, md: 3, lg: 4 },
-    ml: { xs: 0, md: '240px' },
-    mt: { xs: '64px', md: 0 },
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-  }}
->
+       <Box
+              component="main"
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                flexGrow: 1,
+                p: { xs: 1, sm: 2, md: 3, lg: 4 },
+                ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
+                mt: { xs: '64px', md: 0 },
+                minHeight: "100vh",
+                width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
+                transition: theme.transitions.create(['margin', 'width'], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                
+                }),
+              }}
+            >
+
   <Typography
     variant="h4"
     sx={{

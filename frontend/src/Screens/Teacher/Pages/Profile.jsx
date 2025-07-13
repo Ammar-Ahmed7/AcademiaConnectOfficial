@@ -28,6 +28,7 @@ const Profile = () => {
 const [newPhoneNumber, setNewPhoneNumber] = useState('');
 const [phoneError, setPhoneError] = useState('');
 const [isSaving, setIsSaving] = useState(false);
+const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
 const [snackbar, setSnackbar] = useState({
   open: false,
@@ -142,18 +143,25 @@ const [snackbar, setSnackbar] = useState({
     setIsSaving(false); // End saving regardless of success/failure
   }
 };
+
+const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Sidebar />
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       
      <Box
   component="main"
   sx={{
     flexGrow: 1,
-    p: { xs: 2, sm: 2, md: 3 },
-    ml: { xs: 0, md: '240px' },
+    p: { xs: 1, sm: 2, md: 3, lg: 4 },
+    ml: { xs: 0, md: isSidebarOpen ? "20px" : "10px" },
     mt: { xs: '64px', md: 0 },
     height: '100vh',
+    minHeight: "100vh",
+    width: { xs: '100%', md: `calc(100% - ${isSidebarOpen ? 240 : 72}px)` },
     overflowY: 'auto',
     '&::-webkit-scrollbar': {
       width: '0.4em'
@@ -163,7 +171,11 @@ const [snackbar, setSnackbar] = useState({
     },
     '&::-webkit-scrollbar-thumb': {
       backgroundColor: '#888'
-    }
+    },
+     transition: theme.transitions.create(['margin', 'width'], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
   }}
 >
 
