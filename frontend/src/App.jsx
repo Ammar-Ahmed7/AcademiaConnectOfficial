@@ -19,7 +19,7 @@ import ManageTeachers from './Screens/School/ManageTeachers';
 import AddStaff from './Screens/School/AddStaff';
 import Notice from './Screens/School/Notice';
 import UploadTimetables from './Screens/School/UploadTimetables';
-// import UploadExamTimetable from './Screens/School/UploadExamTimetable';
+import StudentPerformance from "./Screens/School/studentPerformance";
 import UploadBusRoutes from './Screens/School/UploadBusRoutes';
 import Reports from './Screens/School/Reports';
 import EditSchoolDetails from './Screens/School/EditSchoolDetails';
@@ -98,7 +98,7 @@ function App() {
         <Route path="/school/notice" element={<Notice />} />
 
         <Route path="/school/upload-timetables" element={<UploadTimetables />} />
-        {/* <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} /> */}
+        <Route path="/school/student-Performance" element={<StudentPerformance />} />
         <Route path="/school/upload-bus-routes" element={<UploadBusRoutes />} />
         <Route path="/school/reports" element={<Reports />} />
         <Route path="/school/edit-school-details" element={<EditSchoolDetails />} />
