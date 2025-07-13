@@ -6,7 +6,7 @@ import Navigation from "./Navigation";
 function SchoolLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
-      <div className="h-full overflow-y-auto">
+      <div className="h-full ">
         <Navigation />
       </div>
       <div className="flex-1 p-4 overflow-y-auto h-full">
