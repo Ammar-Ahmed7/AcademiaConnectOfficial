@@ -506,7 +506,6 @@ function NoticeBoard() {
           };
         });
 
-        console.log("fornoted",formatted);
 
         const filtered = formatted.filter(evt => {
           const within = 
@@ -519,7 +518,6 @@ function NoticeBoard() {
           return within && allowed;
         });
 
-        console.log("filtered",filtered);
 
 
         filtered.sort((a,b)=>

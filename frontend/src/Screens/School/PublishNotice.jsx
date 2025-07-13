@@ -476,27 +476,6 @@
 
 // export default PublishNotice;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
@@ -736,7 +715,7 @@ function PublishNotice({ onPublish }) {
   const handleTeacherAudienceChange = (event) => {
     const isChecked = event.target.checked;
     formik.setFieldValue("AudienceTeacher", isChecked);
-    
+
     // If teacher is unchecked, also uncheck student
     if (!isChecked) {
       formik.setFieldValue("AudienceStudent", false);
@@ -753,7 +732,7 @@ function PublishNotice({ onPublish }) {
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   return (
-    <Card sx={{ maxWidth: '100vw', margin: "auto", mt: 4, p: 3 }}>
+    <Card sx={{ maxWidth: "100vw", margin: "auto", mt: 4, p: 3 }}>
       <Typography
         variant="h5"
         component="h2"
@@ -941,11 +920,12 @@ function PublishNotice({ onPublish }) {
                   label="Students"
                 />
               </Box>
-              {formik.touched.AudienceTeacher && formik.errors.AudienceTeacher && (
-                <Typography variant="caption" color="error">
-                  {formik.errors.AudienceTeacher}
-                </Typography>
-              )}
+              {formik.touched.AudienceTeacher &&
+                formik.errors.AudienceTeacher && (
+                  <Typography variant="caption" color="error">
+                    {formik.errors.AudienceTeacher}
+                  </Typography>
+                )}
             </Grid>
 
             {/* Urgency */}

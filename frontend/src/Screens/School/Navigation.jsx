@@ -24,7 +24,7 @@ const Navigation = () => {
     { icon: <Users className="h-5 w-5" />, text: 'Students', path: '/school/add-student' },
     { icon: <UsersRound className="h-5 w-5" />, text: 'Teachers', path: '/school/manage-teachers' },
     { icon: <UsersRound className="h-5 w-5" />, text: 'Staff', path: '/school/add-staff' },
-    { icon: <NotepadText className="h-5 w-5" />, text: 'Notice', path: '/school/publish-notice' },
+    { icon: <NotepadText className="h-5 w-5" />, text: 'Notice', path: '/school/notice' },
     { icon: <Bus className="h-5 w-5" />, text: 'Bus Routes', path: '/school/upload-bus-routes' },
     { icon: <Calendar className="h-5 w-5" />, text: 'Timetables', path: '/school/upload-timetables' },
     // { icon: <Clock className="h-5 w-5" />, text: 'Exam Timetable', path: '/school/upload-exam-timetable' },

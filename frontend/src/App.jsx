@@ -17,7 +17,7 @@ import Dashboard from './Screens/School//Dashboard';
 import AddStudent from './Screens/School/AddStudent';
 import ManageTeachers from './Screens/School/ManageTeachers';
 import AddStaff from './Screens/School/AddStaff';
-import PublishNotice from './Screens/School/PublishNotice';
+import Notice from './Screens/School/Notice';
 import UploadTimetables from './Screens/School/UploadTimetables';
 // import UploadExamTimetable from './Screens/School/UploadExamTimetable';
 import UploadBusRoutes from './Screens/School/UploadBusRoutes';
@@ -95,7 +95,7 @@ function App() {
         <Route path="add-staff-member" element={<AddStaffMember />} />
         <Route path="edit-staff/:id"   element={<EditStaffMember />} />
         <Route path="/school/add-staff" element={<AddStaff />} />
-        <Route path="/school/publish-notice" element={<PublishNotice />} />
+        <Route path="/school/notice" element={<Notice />} />
 
         <Route path="/school/upload-timetables" element={<UploadTimetables />} />
         {/* <Route path="/school/upload-exam-timetable" element={<UploadExamTimetable />} /> */}
