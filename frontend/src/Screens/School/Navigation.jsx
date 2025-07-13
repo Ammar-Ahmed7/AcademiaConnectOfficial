@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutGrid,
   Users,
@@ -9,15 +9,19 @@ import {
   Clock,
   FileText,
   File,
-  LogOut
+  LogOut,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import supabase from "../../../supabase-client.js"
+import supabase from "../../../supabase-client.js";
+import SchoolLogo from '../School/School Logo.jpg';
 
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
     { icon: <LayoutGrid className="h-5 w-5" />, text: 'Dashboard', path: '/school/dashboard' },
@@ -33,71 +37,114 @@ const Navigation = () => {
     { icon: <File className="h-5 w-5" />, text: 'Edit School Details', path: '/school/edit-school-details' },
   ];
 
-
   const handleLogout = async () => {
     console.log("Logging out...");
   
     try {
-      // Call Supabase signOut
       const { error } = await supabase.auth.signOut();
   
-      // Suppress harmless "session missing" error
       if (error && error.message !== "Auth session missing!") {
         console.error("Error logging out:", error.message);
         return;
       }
   
-      // Remove Supabase's cached auth session manually
-      localStorage.removeItem('supabase.auth.token'); // For older versions
-      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token'); // <- KEY NAME DEPENDS on your project ref
-      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token'); // optional
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-auth-token');
+      localStorage.removeItem('sb-pabfmpqggljjhncdlzwx-refresh-token');
   
-      // Clear all localStorage if needed (optional)
-      // localStorage.clear();
-  
-      // Force reload the app to reset state
       window.location.href = '/school-login';
   
     } catch (err) {
       console.error("Unexpected error during logout:", err);
     }
   };
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
   
   return (
-    <div className="w-20 bg-white flex flex-col items-center shadow-sm py-8 h-full overflow-y-auto">
-      {/* Logo */}
-      <div className="mb-10 bg-blue-100 p-3 rounded-xl">
-        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-          </svg>
+    <div className="relative"> {/* Add relative positioning wrapper */}
+      <div className={`
+        ${isCollapsed ? 'w-20' : 'w-64'} 
+        bg-white 
+        flex flex-col items-center 
+        shadow-sm py-8 h-full 
+        overflow-y-auto 
+        transition-all duration-300 
+        relative 
+        [&::-webkit-scrollbar]:hidden 
+        [-ms-overflow-style:'none'] 
+        [scrollbar-width:'none']
+        border-r border-gray-200
+      `}>
+        {/* Logo */}
+        <div className={`mb-10 bg-blue-100 ${isCollapsed ? 'p-2 w-12 h-12' : 'p-4 w-16 h-16'} rounded-xl flex items-center justify-center transition-all`}>
+          <img 
+            src={SchoolLogo} 
+            alt="School Logo" 
+            className={`${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded-lg object-cover transition-all`}
+          />
         </div>
-      </div>
 
-      {/* Scrollable Menu */}
-      <div className="flex flex-col items-center gap-6 flex-1 w-full">
-        {menuItems.map((item, index) => (
-          <Link to={item.path} key={index}>
-            <button
-              className={`flex flex-col items-center gap-1 w-full p-2 ${
-                location.pathname === item.path ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'
-              }`}
-            >
-              <div className={`p-2 rounded-xl ${location.pathname === item.path ? 'bg-blue-50' : ''}`}>
-                {item.icon}
-              </div>
-              <span className="text-xs">{item.text}</span>
-            </button>
-          </Link>
-        ))}
-      </div>
-
-      {/* Logout Button */}
-      <button className="mt-auto flex flex-col items-center gap-1 text-gray-500 hover:text-blue-500 p-2" onClick={handleLogout}>
-        <div className="p-2 rounded-xl">
-          <LogOut className="h-5 w-5" />
+        {/* Scrollable Menu */}
+        <div className="flex flex-col items-start gap-1 flex-1 w-full px-4">
+          {menuItems.map((item, index) => (
+            <Link to={item.path} key={index} className="w-full">
+              <button
+                className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 w-full p-3 rounded-lg ${
+                  location.pathname === item.path 
+                    ? 'text-blue-600 bg-blue-50' 
+                    : 'text-gray-600 hover:text-blue-500 hover:bg-gray-50'
+                }`}
+              >
+                <div className={`p-2 rounded-xl ${location.pathname === item.path ? 'bg-blue-100' : ''}`}>
+                  {item.icon}
+                </div>
+                {!isCollapsed && (
+                  <span className="text-md font-medium whitespace-nowrap">{item.text}</span>
+                )}
+              </button>
+            </Link>
+          ))}
         </div>
-        <span className="text-xs">Logout</span>
+
+        {/* Logout Button */}
+        <button 
+          className={`mt-auto flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 text-gray-600 hover:text-blue-500 p-3 rounded-lg hover:bg-gray-50 w-full px-4`}
+          onClick={handleLogout}
+        >
+          <div className="p-2 rounded-xl">
+            <LogOut className="h-5 w-5" />
+          </div>
+          {!isCollapsed && (
+            <span className="text-sm font-medium">Logout</span>
+          )}
+        </button>
+      </div>
+      
+      {/* Toggle Button - Positioned outside the sidebar container */}
+      <button 
+        onClick={toggleSidebar}
+        className={`
+          absolute top-24 
+          ${isCollapsed ? 'left-16' : 'left-60'} 
+          bg-blue-100 p-2 
+          rounded-full 
+          shadow-md 
+          border-2 border-blue-200 
+          hover:bg-blue-200 
+          z-50 
+          transition-all duration-300 
+          flex items-center justify-center 
+          h-10 w-10
+          focus:outline-none focus:ring-2 focus:ring-blue-300
+        `}
+      >
+        {isCollapsed ? 
+          <ChevronRight className="h-5 w-5 text-blue-600" /> : 
+          <ChevronLeft className="h-5 w-5 text-blue-600" />
+        }
       </button>
     </div>
   );
