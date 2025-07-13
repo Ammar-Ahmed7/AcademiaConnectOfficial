@@ -64,31 +64,30 @@ const Navigation = () => {
   };
   
   return (
-    <div className="relative"> {/* Add relative positioning wrapper */}
-      <div className={`
-        ${isCollapsed ? 'w-20' : 'w-64'} 
-        bg-white 
-        flex flex-col items-center 
-        shadow-sm py-8 h-full 
-        overflow-y-auto 
-        transition-all duration-300 
-        relative 
-        [&::-webkit-scrollbar]:hidden 
-        [-ms-overflow-style:'none'] 
-        [scrollbar-width:'none']
-        border-r border-gray-200
-      `}>
-        {/* Logo */}
-        <div className={`mb-10 bg-blue-100 ${isCollapsed ? 'p-2 w-12 h-12' : 'p-4 w-16 h-16'} rounded-xl flex items-center justify-center transition-all`}>
-          <img 
-            src={SchoolLogo} 
-            alt="School Logo" 
-            className={`${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded-lg object-cover transition-all`}
-          />
-        </div>
+  <div className="relative h-full">
+    <div className={`
+      ${isCollapsed ? 'w-20' : 'w-64'} 
+      bg-white 
+      flex flex-col 
+      shadow-sm py-8 
+      h-full 
+      overflow-y-auto overflow-x-hidden
+      transition-all duration-300 
+      relative 
+      border-r border-gray-200
+    `}>
+      {/* Logo */}
+      <div className={`mb-10 bg-blue-100 ${isCollapsed ? 'p-2 w-12 h-12' : 'p-4 w-16 h-16'} rounded-xl flex items-center justify-center transition-all mx-auto`}>
+        <img 
+          src={SchoolLogo} 
+          alt="School Logo" 
+          className={`${isCollapsed ? 'h-8 w-8' : 'h-10 w-10'} rounded-lg object-cover transition-all`}
+        />
+      </div>
 
-        {/* Scrollable Menu */}
-        <div className="flex flex-col items-start gap-1 flex-1 w-full px-4">
+      {/* Scrollable Menu */}
+      <div className="flex-1 w-full px-4 overflow-y-auto">
+        <div className="flex flex-col items-start gap-1 w-full">
           {menuItems.map((item, index) => (
             <Link to={item.path} key={index} className="w-full">
               <button
@@ -108,10 +107,12 @@ const Navigation = () => {
             </Link>
           ))}
         </div>
+      </div>
 
-        {/* Logout Button */}
+      {/* Logout Button */}
+      <div className="mt-auto w-full px-4">
         <button 
-          className={`mt-auto flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 text-gray-600 hover:text-blue-500 p-3 rounded-lg hover:bg-gray-50 w-full px-4`}
+          className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 text-gray-600 hover:text-blue-500 p-3 rounded-lg hover:bg-gray-50 w-full`}
           onClick={handleLogout}
         >
           <div className="p-2 rounded-xl">
@@ -122,32 +123,33 @@ const Navigation = () => {
           )}
         </button>
       </div>
-      
-      {/* Toggle Button - Positioned outside the sidebar container */}
-      <button 
-        onClick={toggleSidebar}
-        className={`
-          absolute top-24 
-          ${isCollapsed ? 'left-16' : 'left-60'} 
-          bg-blue-100 p-2 
-          rounded-full 
-          shadow-md 
-          border-2 border-blue-200 
-          hover:bg-blue-200 
-          z-50 
-          transition-all duration-300 
-          flex items-center justify-center 
-          h-10 w-10
-          focus:outline-none focus:ring-2 focus:ring-blue-300
-        `}
-      >
-        {isCollapsed ? 
-          <ChevronRight className="h-5 w-5 text-blue-600" /> : 
-          <ChevronLeft className="h-5 w-5 text-blue-600" />
-        }
-      </button>
     </div>
-  );
+    
+    {/* Toggle Button */}
+    <button 
+      onClick={toggleSidebar}
+      className={`
+        absolute top-24 
+        ${isCollapsed ? 'left-16' : 'left-60'} 
+        bg-blue-100 p-2 
+        rounded-full 
+        shadow-md 
+        border-2 border-blue-200 
+        hover:bg-blue-200 
+        z-50 
+        transition-all duration-300 
+        flex items-center justify-center 
+        h-10 w-10
+        focus:outline-none focus:ring-2 focus:ring-blue-300
+      `}
+    >
+      {isCollapsed ? 
+        <ChevronRight className="h-5 w-5 text-blue-600" /> : 
+        <ChevronLeft className="h-5 w-5 text-blue-600" />
+      }
+    </button>
+  </div>
+);
 };
 
 export default Navigation;
