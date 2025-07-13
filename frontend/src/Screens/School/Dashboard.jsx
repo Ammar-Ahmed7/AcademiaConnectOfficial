@@ -480,7 +480,7 @@ function NoticeBoard() {
     (async () => {
       try {
         const { data, error } = await supabase
-          .from("Notice").select("*").order("NoticeID",{ascending:true});
+          .from("Notice").select("*").order("NoticeID",{ascending:true}).eq("Status","ON");
         if (error) throw error;
 
         const now = new Date();
