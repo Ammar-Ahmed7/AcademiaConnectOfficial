@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
 
-
 function UploadBusRoutes() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -17,35 +16,67 @@ function UploadBusRoutes() {
     }
   
     setUploadStatus('Uploading...');
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        setUploadStatus('Error: User not authenticated');
+        return;
+      }
+
+      // Get school_id from School table using user_id
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('School')
+        .select('SchoolID')
+        .eq('user_id', user.id)
+        .single();
+
+      if (schoolError || !schoolData) {
+        setUploadStatus('Error: Could not find school for current user');
+        return;
+      }
+
+      const school_id = schoolData.SchoolID;
   
-    const fileName = `route_${Date.now()}_${selectedFile.name}`;
-    const filePath = `routes/${fileName}`; // optional folder inside bucket
+      const fileName = `route_${Date.now()}_${selectedFile.name}`;
+      const filePath = `routes/${fileName}`;
   
-    const { error: uploadError } = await supabase.storage
-      .from('bus-routes')
-      .upload(filePath, selectedFile);
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('bus-routes')
+        .upload(filePath, selectedFile);
   
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      setUploadStatus(`Upload failed: ${uploadError.message}`);
-      return;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        setUploadStatus(`Upload failed: ${uploadError.message}`);
+        return;
+      }
+  
+      // Save file record in database with school_id
+      const { error: insertError } = await supabase
+        .from('bus_timetables')
+        .insert([{ 
+          school_id: school_id,
+          file_name: selectedFile.name, 
+          file_path: filePath 
+        }]);
+  
+      if (insertError) {
+        console.error('DB insert error:', insertError);
+        setUploadStatus(`Upload succeeded but DB insert failed: ${insertError.message}`);
+        return;
+      }
+  
+      setUploadStatus('Uploaded successfully!');
+      setSelectedFile(null);
+      
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      setUploadStatus(`Upload failed: ${error.message}`);
     }
-  
-    // OPTIONAL: Save file record in database
-    const { error: insertError } = await supabase
-      .from('bus_routes')
-      .insert([{ file_name: selectedFile.name, file_path: filePath }]);
-  
-    if (insertError) {
-      console.error('DB insert error:', insertError);
-      setUploadStatus(`Upload succeeded but DB insert failed.`);
-      return;
-    }
-  
-    setUploadStatus('Uploaded successfully!');
-    setSelectedFile(null);
   };
-  
 
   return (
     <div className="p-8 bg-white rounded-lg">
@@ -71,7 +102,11 @@ function UploadBusRoutes() {
         >
           Upload PDF
         </button>
-        {uploadStatus && <p className="text-green-500 font-semibold">{uploadStatus}</p>}
+        {uploadStatus && (
+          <p className={`font-semibold ${uploadStatus.includes('Error') || uploadStatus.includes('failed') ? 'text-red-500' : 'text-green-500'}`}>
+            {uploadStatus}
+          </p>
+        )}
       </div>
       {selectedFile && (
         <div className="mt-4">
