@@ -541,6 +541,7 @@ import { CircularProgress } from "@mui/material";
 import JSZip from "jszip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 function CreatedReports() {
   const [reports, setReports] = useState([]);
@@ -554,6 +555,9 @@ function CreatedReports() {
   const [Year, setYear] = useState(null);
   const [Sender, setSender] = useState(0);
   const Receiver = "a8d80b7b-42fe-4998-95df-4600ac69a2da";
+  // const [filterMonth, setFilterMonth] = useState("");
+  // const [filterYear, setFilterYear] = useState("");
+
   const [alert, setAlert] = useState({
     open: false,
     message: "",
@@ -600,7 +604,12 @@ function CreatedReports() {
   const fetchReports = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from("SavedReports").select("*");
+      // const { data, error } = await supabase.from("SavedReports").select("*");
+      const { data, error } = await supabase
+  .from("SavedReports")
+  .select("*")
+  .order("created_at", { ascending: false });
+
       if (error) throw error;
       setReports(data);
     } catch (error) {
@@ -935,9 +944,63 @@ function CreatedReports() {
     }
   };
 
+  // const filteredReports = reports.filter((report) => {
+  //   const matchMonth =
+  //     filterMonth === "" || report.Month === parseInt(filterMonth);
+  //   const matchYear = filterYear === "" || report.Year === parseInt(filterYear);
+  //   return matchMonth && matchYear;
+  // });
+
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-lg font-semibold mb-4">Created Reports</h2>
+
+      {/* <FormControl sx={{ minWidth: 200 }}>
+        <InputLabel id="month-filter-label">Filter by Month</InputLabel>
+        <Select
+          labelId="month-filter-label"
+          id="month-filter"
+          value={filterMonth}
+          label="Filter by Month"
+          onChange={(e) => {
+            setFilterMonth(e.target.value);
+            setSelectedReports([]);
+          }}
+        >
+          <MenuItem value="">All Months</MenuItem>
+          {monthNames.map((month, index) => (
+            <MenuItem key={index} value={index.toString()}>
+              {month}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl> */}
+
+      {/* Filter by Year
+      <FormControl sx={{ minWidth: 200 }}>
+        <InputLabel id="year-filter-label">Filter by Year</InputLabel>
+        <Select
+          labelId="year-filter-label"
+          id="year-filter"
+          value={filterYear}
+          label="Filter by Year"
+          onChange={(e) => {
+            setFilterYear(e.target.value);
+            setSelectedReports([]);
+          }}
+        >
+          <MenuItem value="">All Years</MenuItem>
+          {reports.length > 0 &&
+            [...new Set(reports.map((report) => report.Year))]
+              .filter((year) => year != null) // Filter out null/undefined years
+              .sort((a, b) => b - a)
+              .map((year) => (
+                <MenuItem key={year} value={year.toString()}>
+                  {year}
+                </MenuItem>
+              ))}
+        </Select>
+      </FormControl> */}
 
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1019,6 +1082,7 @@ function CreatedReports() {
           <tbody>
             {reports.length > 0 ? (
               reports.map((report) => (
+              // filteredReports.map((report) => (
                 <tr
                   key={report.id}
                   onClick={() => !isLoading && handleRowClick(report)}
